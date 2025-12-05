@@ -1,3 +1,11 @@
+/**
+ * mushu/core/shader3d — 3D shader utilities and preset materials.
+ *
+ * Exposes default vertex/fragment strings and helper shader snippets for PBR,
+ * unlit materials, and normal mapping. These are GLSL snippets intended for
+ * use with the WebGL2 `flow()` runtime.
+ * @module mushu/core/shader3d
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/core/shader3d — 3D Shader Support
 // 

@@ -1,3 +1,10 @@
+/**
+ * mushu/gpu/shader3d — WebGPU 3D shader utilities and WGSL snippets.
+ *
+ * Exposes common WGSL struct definitions and prebuilt shader snippets for
+ * 3D rendering and PBR materials.
+ * @module mushu/gpu/shader3d
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/gpu/shader3d — WebGPU 3D Shader Support
 // 

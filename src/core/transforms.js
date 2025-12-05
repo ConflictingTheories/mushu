@@ -1,3 +1,10 @@
+/**
+ * mushu/core/transforms — 3D Math Utilities (vec3, mat4, camera helpers)
+ *
+ * Small, dependency-free vector/matrix helpers intended for use with the
+ * 3D geometry and shader helpers in `mushu/core`.
+ * @module mushu/core/transforms
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/core/transforms — 3D Math Utilities
 // 

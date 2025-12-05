@@ -1,3 +1,8 @@
+/**
+ * mushu/glsl — Module index for GLSL snippets and presets.
+ * Re-exports common shader snippet symbols from `shaders.js`.
+ * @module mushu/glsl
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/glsl — GLSL Module Exports
 // ═══════════════════════════════════════════════════════════════════════════

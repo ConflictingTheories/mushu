@@ -1,3 +1,10 @@
+/**
+ * mushu/core/textures — Texture loading and management for WebGL2.
+ *
+ * Provides plugins for loading images, video, data textures and render targets.
+ * These plugins are intended to be used with the `flow()` runtime.
+ * @module mushu/core/textures
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/core/textures — Texture Loading and Management
 // 

@@ -1,3 +1,8 @@
+/**
+ * mushu/core — Core WebGL2 runtime and utility exports.
+ * Re-exports runtime builders and plugins for convenient top-level imports.
+ * @module mushu/core
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/core — WebGL2 Core Module Exports
 // ═══════════════════════════════════════════════════════════════════════════

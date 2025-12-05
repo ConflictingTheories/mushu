@@ -1,3 +1,10 @@
+/**
+ * mushu/core/geometry — 3D Geometry, VAO, and Mesh Utilities
+ *
+ * Provides VAO builders, mesh helpers, primitive generators (cube, sphere, torus),
+ * and an OBJ loader. Designed to work as plugins for the `flow()` runtime.
+ * @module mushu/core/geometry
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/core/geometry — 3D Geometry, VAO, and Mesh Utilities
 // 

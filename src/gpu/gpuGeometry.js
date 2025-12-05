@@ -1,3 +1,10 @@
+/**
+ * mushu/gpu/geometry — WebGPU 3D geometry helpers and vertex buffer utilities.
+ *
+ * Contains helpers to build interleaved vertex/index buffers for WebGPU and
+ * convenience primitive generators (cube, sphere, torus) for GPU pipelines.
+ * @module mushu/gpu/geometry
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/gpu/geometry — WebGPU 3D Geometry and VAO Support
 // 

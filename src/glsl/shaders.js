@@ -1,3 +1,12 @@
+/**
+ * mushu/glsl — GLSL Shader Utilities & Snippets
+ *
+ * Exports many GLSL snippet strings (noise, hash, fbm, voronoi, color helpers)
+ * intended to be interpolated into fragment shaders. These are plain strings
+ * that can be imported selectively to keep payload small.
+ * @module mushu/glsl/shaders
+ */
+
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/glsl — GLSL Shader Utilities & Snippets
 // 

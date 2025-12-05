@@ -1,3 +1,10 @@
+/**
+ * mushu/gpu/textures — WebGPU texture loading and helpers.
+ *
+ * Utilities for creating GPU textures from images, ImageBitmap, and raw data
+ * and helpers to generate mipmaps. Returns `{ texture, sampler, width, height }`.
+ * @module mushu/gpu/textures
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/gpu/textures — WebGPU Texture Loading and Management
 // 

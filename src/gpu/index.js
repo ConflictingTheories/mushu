@@ -1,3 +1,9 @@
+/**
+ * mushu/gpu — WebGPU module index and exports.
+ * Re-exports GPU runtime, geometry, texture and shader helpers suitable for
+ * building WebGPU-based demos and pipelines.
+ * @module mushu/gpu
+ */
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/gpu — WebGPU Module Exports
 // ═══════════════════════════════════════════════════════════════════════════

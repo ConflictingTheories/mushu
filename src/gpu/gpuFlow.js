@@ -291,7 +291,8 @@ export function gpuFlow(canvasOrSelector) {
           var pos = array<vec2f, 3>(vec2f(-1,-1), vec2f(3,-1), vec2f(-1,3));
           var output: VertexOutput;
           output.position = vec4f(pos[i], 0.0, 1.0);
-          output.uv = pos[i] * 0.5 + 0.5;
+          var tmp = pos[i] * 0.5 + 0.5;
+          output.uv = vec2f(tmp.x, 1.0 - tmp.y);
           return output;
         }
         
@@ -460,7 +461,8 @@ export function gpuFlow(canvasOrSelector) {
 
       device.queue.writeBuffer(timeBuffer, 0, new Float32Array([time]));
       device.queue.writeBuffer(resBuffer, 0, new Float32Array([width, height]));
-      device.queue.writeBuffer(mouseBuffer, 0, new Float32Array([mouse.x, mouse.y]));
+      // Flip mouse Y to match GL-style coordinate (0 = bottom)
+      device.queue.writeBuffer(mouseBuffer, 0, new Float32Array([mouse.x, 1.0 - mouse.y]));
       device.queue.writeBuffer(mouseDownBuffer, 0, new Float32Array([mouse.down ? 1 : 0]));
 
       const encoder = device.createCommandEncoder();
@@ -479,6 +481,7 @@ export function gpuFlow(canvasOrSelector) {
         entries: [
           { binding: 0, resource: { buffer: timeBuffer } },
           { binding: 1, resource: { buffer: resBuffer } },
+          // Flip mouse Y so fragment shaders receive Y with origin at bottom
           { binding: 2, resource: { buffer: mouseBuffer } },
           { binding: 3, resource: { buffer: mouseDownBuffer } }
         ]
@@ -717,7 +720,8 @@ export async function gpu(computeCode, renderCode, options = {}) {
         );
         var output: VertexOutput;
         output.position = vec4<f32>(pos[i], 0.0, 1.0);
-        output.uv = pos[i] * 0.5 + 0.5;
+        var tmp = pos[i] * 0.5 + 0.5;
+        output.uv = vec2<f32>(tmp.x, 1.0 - tmp.y);
         return output;
       }
 
@@ -729,6 +733,7 @@ export async function gpu(computeCode, renderCode, options = {}) {
 
       @fragment
       fn fs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+        // UV were flipped in the vertex shader so user code receives Y-origin at bottom
         let data = textureSample(tex, samp, uv);
         return render(data, uv);
       }

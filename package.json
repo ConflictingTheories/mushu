@@ -1,6 +1,6 @@
 {
   "name": "mushu-flow",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "The Fluent Pattern for Shader Coding - WebGL & WebGPU made simple",
   "type": "module",
   "main": "src/index.js",

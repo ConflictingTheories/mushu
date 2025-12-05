@@ -19,6 +19,30 @@
 // Core: The Hookable Runtime (flow)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Flow context object passed to plugins.
+ * @typedef {Object} FlowContext
+ * @property {WebGL2RenderingContext} gl
+ * @property {HTMLCanvasElement} canvas
+ * @property {number} time
+ * @property {number} delta
+ * @property {number} frame
+ * @property {number} width
+ * @property {number} height
+ * @property {number} aspect
+ * @property {[number,number]} mouse
+ * @property {[number,number]} mouseNDC
+ * @property {boolean} mouseDown
+ * @property {[number,number]} mouseVelocity
+ * @property {WebGLProgram|null} program
+ * @property {Object} state - shared plugin state
+ */
+
+/**
+ * Create a WebGL2 flow runtime with plugin support.
+ * @param {HTMLCanvasElement|string|WebGL2RenderingContext} canvasOrGl - Canvas element, selector or GL context.
+ * @returns {{use:function(*):*, scale:function(number):*, go:function():*, stop:function():*, ctx: FlowContext, hot:function(string, *):*, reset:function():*, destroy:function():*}}
+ */
 export function flow(canvasOrGl) {
   // Accept either canvas element, selector, or WebGL context
   let canvas, gl;

@@ -36,6 +36,11 @@ import { gpuFlow, gpu as gpuSimple } from './gpu/index.js';
 //   mushu(canvas).gpu().flow()         — WebGPU with simulation
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Unified entry point for mushu.
+ * @param {HTMLElement|string=} canvasOrSelector - Canvas element or CSS selector. If omitted, a fullscreen canvas is created.
+ * @returns {{glsl: function(string=), gl: function(string=), flow: function(): *, gpu: function(*=, *=, *=): *}}
+ */
 export function mushu(canvasOrSelector) {
   let canvas;
 

@@ -16,6 +16,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Check for WebGPU support
+/**
+ * Return whether WebGPU is available in the current environment.
+ * @returns {boolean}
+ */
 export function hasWebGPU() {
   return !!navigator.gpu;
 }
@@ -24,6 +28,14 @@ export function hasWebGPU() {
 // gpuFlow — Fluent WebGPU Runtime
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a fluent WebGPU runtime attached to a canvas.
+ * Builder usage:
+ *   gpuFlow(canvas).display(wgsl) | .simulate(wgsl) | .go()
+ *
+ * @param {HTMLCanvasElement|string} canvasOrSelector - Canvas element or selector.
+ * @returns {{display: function(string), simulate: function(string), scale: function(number), go: function(): Promise<*> , stop: function(): *}}
+ */
 export function gpuFlow(canvasOrSelector) {
   let canvas;
 
@@ -659,14 +671,20 @@ export async function gpu(computeCode, renderCode, options = {}) {
   // Create dummy texture for render binding if no compute shader
   let dummyTexture = null;
   if (!computeCode) {
+    // Textures cannot be mapped at creation. Create a small 1x1 texture
+    // and upload a single white pixel via the queue.
     dummyTexture = device.createTexture({
       size: [1, 1],
-      format: 'rgba16float',
-      usage: GPUTextureUsage.TEXTURE_BINDING,
-      mappedAtCreation: true
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
     });
-    new Float32Array(dummyTexture.getMappedRange()).fill(1.0);
-    dummyTexture.unmap();
+    const pixel = new Uint8Array([255, 255, 255, 255]);
+    device.queue.writeTexture(
+      { texture: dummyTexture },
+      pixel,
+      { bytesPerRow: 4 },
+      { width: 1, height: 1, depthOrArrayLayers: 1 }
+    );
   }
 
   // Render pipeline

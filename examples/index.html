@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>🍡 mushu - Creative Coding Made Simple</title>
   <link rel="stylesheet" href="./index.css">
   <link rel="stylesheet" href="./support.css">
 </head>
+
 <body>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
@@ -16,7 +18,7 @@
     <p class="tagline">Shader Graphics Without the Hassle</p>
     <p class="description">
       A minimal WebGL2 & WebGPU library that gets out of your way.
-      <br/>
+      <br />
       Write shaders, not boilerplate.
     </p>
     <div class="hero-buttons">
@@ -26,22 +28,25 @@
   </header>
 
   <div class="container">
-  
+
     <!-- ═══════════════════════════════════════════════════════════════════════
          ABOUT / WHY MUSHU
          ═══════════════════════════════════════════════════════════════════════ -->
     <section class="about">
       <div class="about-card">
         <h3>⚡ Skip the Setup</h3>
-        <p>WebGL normally takes 200+ lines before you draw anything. With mushu, you're rendering in one function call.</p>
+        <p>WebGL normally takes 200+ lines before you draw anything. With mushu, you're rendering in one function call.
+        </p>
       </div>
       <div class="about-card">
         <h3>🎯 Pick Your Style</h3>
-        <p>Quick sketch? Use <code>mushu().gl()</code>. Need plugins? Try <code>mushu().gl().flow()</code>. Want compute shaders? Go <code>mushu().gpu()</code>.</p>
+        <p>Quick sketch? Use <code>mushu().gl()</code>. Need plugins? Try <code>mushu().gl().flow()</code>. Want compute
+          shaders? Go <code>mushu().gpu()</code>.</p>
       </div>
       <div class="about-card">
         <h3>🔥 Batteries Included</h3>
-        <p><code>time</code>, <code>mouse</code>, and <code>resolution</code> uniforms are wired up automatically. Just use them.</p>
+        <p><code>time</code>, <code>mouse</code>, and <code>resolution</code> uniforms are wired up automatically. Just
+          use them.</p>
       </div>
       <div class="about-card">
         <h3>🚀 WebGPU Support</h3>
@@ -54,14 +59,14 @@
          ═══════════════════════════════════════════════════════════════════════ -->
     <section class="code-section">
       <h2>Four Ways to <span>Cook</span></h2>
-      
+
       <div class="tabs">
         <button class="tab glsl active" onclick="showTab('glsl')">mushu().gl()</button>
         <button class="tab gpu" onclick="showTab('gpu')">mushu().gpu()</button>
         <button class="tab flow" onclick="showTab('flow')">mushu().gl().flow()</button>
         <button class="tab gpuFlow" onclick="showTab('gpuFlow')">mushu().gpu().flow()</button>
       </div>
-      
+
       <div class="code-panels">
         <!-- GLSL Tab -->
         <div class="code-panel active" id="panel-glsl">
@@ -81,7 +86,7 @@
   }
 `</span>);</code></pre>
         </div>
-        
+
         <!-- GPU Tab -->
         <div class="code-panel" id="panel-gpu">
           <span class="code-label gpu">WebGPU • Compute + Render</span>
@@ -100,7 +105,7 @@
   }`</span>
 );</code></pre>
         </div>
-        
+
         <!-- Flow Tab -->
         <div class="code-panel" id="panel-flow">
           <span class="code-label flow">WebGL2 • Fluent Builder</span>
@@ -117,7 +122,7 @@
   .<span class="function">use</span>(<span class="function">fps</span>())  <span class="comment">// Add FPS counter plugin</span>
   .<span class="function">go</span>();      <span class="comment">// Start the render loop</span></code></pre>
         </div>
-        
+
         <!-- GPU Flow Tab -->
         <div class="code-panel" id="panel-gpuFlow">
           <span class="code-label gpuFlow">WebGPU • Fluent Builder</span>
@@ -148,13 +153,14 @@
         <h2>🎨 Examples</h2>
         <p>See different shader examples using all four APIs as well as Vanilla JS!</p>
       </div>
-      
+
       <div class="method-legend">
         <div class="item"><span class="dot boilerplate"></span> Boilerplate (Vanilla)</div>
         <div class="item"><span class="dot glsl"></span> mushu().gl()</div>
         <div class="item"><span class="dot gpu"></span> mushu().gpu()</div>
         <div class="item"><span class="dot flow"></span> mushu().gl().flow()</div>
         <div class="item"><span class="dot gpuFlow"></span> mushu().gpu().flow()</div>
+        <div class="item"><span class="dot 3d"></span> 3D (Geometry/Textures)</div>
       </div>
 
       <div class="compare-section">
@@ -168,10 +174,22 @@
       <div class="section">
         <h3 class="glsl">🎨 GLSL Examples <code>mushu('#c').gl(shaderCode)</code></h3>
         <div class="grid">
-          <div class="card glsl"><h4>🔥 Fire</h4><p>Procedural flames with blackbody colors</p><a href="./glsl/fire.html">Demo →</a></div>
-          <div class="card glsl"><h4>💨 Smoke</h4><p>Volumetric smoke with turbulence</p><a href="./glsl/smoke.html">Demo →</a></div>
-          <div class="card glsl"><h4>🌊 Water</h4><p>Gerstner waves with reflections</p><a href="./glsl/water.html">Demo →</a></div>
-          <div class="card glsl"><h4>🌈 Plasma</h4><p>Classic plasma with rainbow colors</p><a href="./glsl/plasma.html">Demo →</a></div>
+          <div class="card glsl">
+            <h4>🔥 Fire</h4>
+            <p>Procedural flames with blackbody colors</p><a href="./glsl/fire.html">Demo →</a>
+          </div>
+          <div class="card glsl">
+            <h4>💨 Smoke</h4>
+            <p>Volumetric smoke with turbulence</p><a href="./glsl/smoke.html">Demo →</a>
+          </div>
+          <div class="card glsl">
+            <h4>🌊 Water</h4>
+            <p>Gerstner waves with reflections</p><a href="./glsl/water.html">Demo →</a>
+          </div>
+          <div class="card glsl">
+            <h4>🌈 Plasma</h4>
+            <p>Classic plasma with rainbow colors</p><a href="./glsl/plasma.html">Demo →</a>
+          </div>
         </div>
       </div>
 
@@ -179,10 +197,22 @@
       <div class="section">
         <h3 class="gpu">⚡ GPU Examples <code>mushu('#c').gpu(compute, render)</code></h3>
         <div class="grid">
-          <div class="card gpu"><h4>🔥 Fire</h4><p>Candle flame following mouse</p><a href="./gpu/fire.html">Demo →</a></div>
-          <div class="card gpu"><h4>💨 Smoke</h4><p>Match smoke from cursor</p><a href="./gpu/smoke.html">Demo →</a></div>
-          <div class="card gpu"><h4>🌊 Water</h4><p>Wave equation compute shader</p><a href="./gpu/water.html">Demo →</a></div>
-          <div class="card gpu"><h4>🌈 Plasma</h4><p>High-performance plasma</p><a href="./gpu/plasma.html">Demo →</a></div>
+          <div class="card gpu">
+            <h4>🔥 Fire</h4>
+            <p>Candle flame following mouse</p><a href="./gpu/fire.html">Demo →</a>
+          </div>
+          <div class="card gpu">
+            <h4>💨 Smoke</h4>
+            <p>Match smoke from cursor</p><a href="./gpu/smoke.html">Demo →</a>
+          </div>
+          <div class="card gpu">
+            <h4>🌊 Water</h4>
+            <p>Wave equation compute shader</p><a href="./gpu/water.html">Demo →</a>
+          </div>
+          <div class="card gpu">
+            <h4>🌈 Plasma</h4>
+            <p>High-performance plasma</p><a href="./gpu/plasma.html">Demo →</a>
+          </div>
         </div>
       </div>
 
@@ -190,10 +220,22 @@
       <div class="section">
         <h3 class="flow">🎯 Flow Examples <code>mushu('#c').gl().flow().use(shader()).go()</code></h3>
         <div class="grid">
-          <div class="card flow"><h4>🔥 Fire</h4><p>Plugin-based fire with FPS</p><a href="./flow-glsl/fire.html">Demo →</a></div>
-          <div class="card flow"><h4>💨 Smoke</h4><p>Fluent smoke simulation</p><a href="./flow-glsl/smoke.html">Demo →</a></div>
-          <div class="card flow"><h4>🌊 Water</h4><p>Chainable water with Fresnel</p><a href="./flow-glsl/water.html">Demo →</a></div>
-          <div class="card flow"><h4>🌈 Plasma</h4><p>Interactive plasma effect</p><a href="./flow-glsl/plasma.html">Demo →</a></div>
+          <div class="card flow">
+            <h4>🔥 Fire</h4>
+            <p>Plugin-based fire with FPS</p><a href="./flow-glsl/fire.html">Demo →</a>
+          </div>
+          <div class="card flow">
+            <h4>💨 Smoke</h4>
+            <p>Fluent smoke simulation</p><a href="./flow-glsl/smoke.html">Demo →</a>
+          </div>
+          <div class="card flow">
+            <h4>🌊 Water</h4>
+            <p>Chainable water with Fresnel</p><a href="./flow-glsl/water.html">Demo →</a>
+          </div>
+          <div class="card flow">
+            <h4>🌈 Plasma</h4>
+            <p>Interactive plasma effect</p><a href="./flow-glsl/plasma.html">Demo →</a>
+          </div>
         </div>
       </div>
 
@@ -201,10 +243,22 @@
       <div class="section">
         <h3 class="gpuFlow">🚀 GPU Flow Examples <code>mushu('#c').gpu().flow().display().go()</code></h3>
         <div class="grid">
-          <div class="card gpuFlow"><h4>🔥 Fire</h4><p>WebGPU candle flame</p><a href="./flow-gpu/fire.html">Demo →</a></div>
-          <div class="card gpuFlow"><h4>💨 Smoke</h4><p>WebGPU match smoke</p><a href="./flow-gpu/smoke.html">Demo →</a></div>
-          <div class="card gpuFlow"><h4>🌊 Water</h4><p>Compute shader waves</p><a href="./flow-gpu/water.html">Demo →</a></div>
-          <div class="card gpuFlow"><h4>🌈 Plasma</h4><p>GPU-accelerated plasma</p><a href="./flow-gpu/plasma.html">Demo →</a></div>
+          <div class="card gpuFlow">
+            <h4>🔥 Fire</h4>
+            <p>WebGPU candle flame</p><a href="./flow-gpu/fire.html">Demo →</a>
+          </div>
+          <div class="card gpuFlow">
+            <h4>💨 Smoke</h4>
+            <p>WebGPU match smoke</p><a href="./flow-gpu/smoke.html">Demo →</a>
+          </div>
+          <div class="card gpuFlow">
+            <h4>🌊 Water</h4>
+            <p>Compute shader waves</p><a href="./flow-gpu/water.html">Demo →</a>
+          </div>
+          <div class="card gpuFlow">
+            <h4>🌈 Plasma</h4>
+            <p>GPU-accelerated plasma</p><a href="./flow-gpu/plasma.html">Demo →</a>
+          </div>
         </div>
       </div>
 
@@ -212,10 +266,41 @@
       <div class="section">
         <h3 class="boilerplate">📝 Boilerplate Examples <code>Vanilla WebGL2</code></h3>
         <div class="grid">
-          <div class="card boilerplate"><h4>🔥 Fire</h4><p>Raw WebGL2 from scratch</p><a href="./boilerplate/fire.html">Code →</a></div>
-          <div class="card boilerplate"><h4>💨 Smoke</h4><p>Manual WebGL2 setup</p><a href="./boilerplate/smoke.html">Code →</a></div>
-          <div class="card boilerplate"><h4>🌊 Water</h4><p>Hand-coded water sim</p><a href="./boilerplate/water.html">Code →</a></div>
-          <div class="card boilerplate"><h4>🌈 Plasma</h4><p>Classic plasma vanilla</p><a href="./boilerplate/plasma.html">Code →</a></div>
+          <div class="card boilerplate">
+            <h4>🔥 Fire</h4>
+            <p>Raw WebGL2 from scratch</p><a href="./boilerplate/fire.html">Code →</a>
+          </div>
+          <div class="card boilerplate">
+            <h4>💨 Smoke</h4>
+            <p>Manual WebGL2 setup</p><a href="./boilerplate/smoke.html">Code →</a>
+          </div>
+          <div class="card boilerplate">
+            <h4>🌊 Water</h4>
+            <p>Hand-coded water sim</p><a href="./boilerplate/water.html">Code →</a>
+          </div>
+          <div class="card boilerplate">
+            <h4>🌈 Plasma</h4>
+            <p>Classic plasma vanilla</p><a href="./boilerplate/plasma.html">Code →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3D Section -->
+      <div class="section">
+        <h3 class="3d">🎲 3D Examples <code>Geometry, Textures & Cameras</code></h3>
+        <div class="grid">
+          <div class="card 3d">
+            <h4>📦 Cube</h4>
+            <p>Basic 3D cube with orbit camera</p><a href="./3d/cube.html">Demo →</a>
+          </div>
+          <div class="card 3d">
+            <h4>🔮 PBR Sphere</h4>
+            <p>Metallic sphere with PBR lighting</p><a href="./3d/pbr-sphere.html">Demo →</a>
+          </div>
+          <div class="card 3d">
+            <h4>🍩 Textured Torus</h4>
+            <p>Procedural textures & custom shaders</p><a href="./3d/textured-torus.html">Demo →</a>
+          </div>
         </div>
       </div>
     </section>
@@ -228,27 +313,34 @@
       <div class="faq-grid">
         <div class="faq-item">
           <h4>What's the difference between gl() and flow()?</h4>
-          <p><code>mushu().gl()</code> is a one-liner for quick shader sketches. <code>mushu().gl().flow()</code> is a fluent builder that supports plugins like FPS counters, simulations, and post-processing chains.</p>
+          <p><code>mushu().gl()</code> is a one-liner for quick shader sketches. <code>mushu().gl().flow()</code> is a
+            fluent builder that supports plugins like FPS counters, simulations, and post-processing chains.</p>
         </div>
         <div class="faq-item">
           <h4>Do I need WebGPU support?</h4>
-          <p>No! The <code>mushu().gl()</code> and <code>mushu().gl().flow()</code> APIs use WebGL2, which works everywhere. WebGPU (<code>mushu().gpu()</code> and <code>mushu().gpu().flow()</code>) is optional for when you need compute shaders.</p>
+          <p>No! The <code>mushu().gl()</code> and <code>mushu().gl().flow()</code> APIs use WebGL2, which works
+            everywhere. WebGPU (<code>mushu().gpu()</code> and <code>mushu().gpu().flow()</code>) is optional for when
+            you need compute shaders.</p>
         </div>
         <div class="faq-item">
           <h4>What uniforms are available?</h4>
-          <p>All shaders get <code>time</code> (seconds), <code>resolution</code> (canvas size), and <code>mouse</code> (0-1 normalized position) automatically. No setup needed.</p>
+          <p>All shaders get <code>time</code> (seconds), <code>resolution</code> (canvas size), and <code>mouse</code>
+            (0-1 normalized position) automatically. No setup needed.</p>
         </div>
         <div class="faq-item">
           <h4>Can I use this for Shadertoy-style effects?</h4>
-          <p>Absolutely! The <code>mainImage(out vec4 O, vec2 C)</code> signature is Shadertoy-compatible. Just paste your shader code.</p>
+          <p>Absolutely! The <code>mainImage(out vec4 O, vec2 C)</code> signature is Shadertoy-compatible. Just paste
+            your shader code.</p>
         </div>
         <div class="faq-item">
           <h4>How do I add mouse interaction?</h4>
-          <p>The <code>mouse</code> uniform is already there! It's a <code>vec2</code> with values 0-1. Use it in your shader for interactive effects.</p>
+          <p>The <code>mouse</code> uniform is already there! It's a <code>vec2</code> with values 0-1. Use it in your
+            shader for interactive effects.</p>
         </div>
         <div class="faq-item">
           <h4>Is mushu good for learning shaders?</h4>
-          <p>Yes! Compare the boilerplate examples (200+ lines) to the <code>mushu().gl()</code> versions (10 lines) to see how much easier it is to focus on the actual shader code.</p>
+          <p>Yes! Compare the boilerplate examples (200+ lines) to the <code>mushu().gl()</code> versions (10 lines) to
+            see how much easier it is to focus on the actual shader code.</p>
         </div>
       </div>
     </section>
@@ -256,7 +348,8 @@
   </div>
 
   <footer>
-    <p>Made with 🍡 by <a href="https://github.com/ConflictingTheories">ConflictingTheories</a> &mdash; <a href="https://github.com/ConflictingTheories/mushu">View on GitHub</a></p>
+    <p>Made with 🍡 by <a href="https://github.com/ConflictingTheories">ConflictingTheories</a> &mdash; <a
+        href="https://github.com/ConflictingTheories/mushu">View on GitHub</a></p>
   </footer>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
@@ -301,14 +394,14 @@
     const supportFab = document.getElementById('supportFab');
     const supportFabBtn = document.getElementById('supportFabBtn');
     const supportPopup = document.getElementById('supportPopup');
-    
+
     supportFabBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const isOpen = supportPopup.classList.contains('open');
       supportPopup.classList.toggle('open');
       supportFabBtn.classList.toggle('active');
     });
-    
+
     // Close popup when clicking outside
     document.addEventListener('click', (e) => {
       if (!supportFab.contains(e.target)) {
@@ -321,11 +414,12 @@
       // Update tabs
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelector('.tab.' + tab).classList.add('active');
-      
+
       // Update panels
       document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
       document.getElementById('panel-' + tab).classList.add('active');
     }
   </script>
 </body>
+
 </html>

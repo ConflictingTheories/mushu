@@ -359,6 +359,10 @@ body {
     background: var(--accent4);
 }
 
+.method-legend .dot.\33d {
+    background: linear-gradient(135deg, #f472b6, #06b6d4);
+}
+
 .compare-section {
     background: linear-gradient(135deg, rgba(255, 107, 157, 0.1), rgba(0, 212, 170, 0.1));
     border: 2px solid var(--border);
@@ -424,6 +428,13 @@ body {
 
 .section h3.gpuFlow {
     color: var(--accent4);
+}
+
+.section h3.\\33d {
+    background: linear-gradient(135deg, #f472b6, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .section h3 code {
@@ -509,6 +520,10 @@ body {
 
 .card.gpuFlow a {
     background: linear-gradient(135deg, var(--accent4), #c084fc);
+}
+
+.card.\33d a {
+    background: linear-gradient(135deg, #f472b6, #06b6d4);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════

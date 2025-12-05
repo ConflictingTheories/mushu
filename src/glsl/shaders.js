@@ -216,6 +216,216 @@ float warpedNoise(vec2 p, float t) {
 }`;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 3D Lighting — Blinn-Phong and PBR
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const lighting = /* glsl */`
+// Blinn-Phong lighting model
+vec3 blinnPhong(
+  vec3 N, vec3 V, vec3 L,
+  vec3 lightColor, float lightIntensity,
+  vec3 ambient, vec3 diffuse, vec3 specular, float shininess
+) {
+  vec3 H = normalize(L + V);
+  
+  // Ambient
+  vec3 ambientTerm = ambient * diffuse;
+  
+  // Diffuse
+  float diff = max(dot(N, L), 0.0);
+  vec3 diffuseTerm = diff * lightColor * diffuse * lightIntensity;
+  
+  // Specular
+  float spec = pow(max(dot(N, H), 0.0), shininess);
+  vec3 specularTerm = spec * lightColor * specular * lightIntensity;
+  
+  return ambientTerm + diffuseTerm + specularTerm;
+}
+
+// Simple directional light
+vec3 directionalLight(vec3 N, vec3 lightDir, vec3 lightColor) {
+  float diff = max(dot(N, lightDir), 0.0);
+  return lightColor * diff;
+}
+
+// Point light with attenuation
+vec3 pointLight(vec3 N, vec3 fragPos, vec3 lightPos, vec3 lightColor, float constant, float linear, float quadratic) {
+  vec3 L = lightPos - fragPos;
+  float distance = length(L);
+  L = normalize(L);
+  
+  float attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
+  float diff = max(dot(N, L), 0.0);
+  
+  return lightColor * diff * attenuation;
+}
+
+// Hemisphere lighting (ambient)
+vec3 hemisphereLight(vec3 N, vec3 skyColor, vec3 groundColor, vec3 upDir) {
+  float blend = 0.5 + 0.5 * dot(N, upDir);
+  return mix(groundColor, skyColor, blend);
+}
+`;
+
+export const pbr = /* glsl */`
+#define PI 3.14159265359
+
+// Fresnel-Schlick approximation
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+  return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+// With roughness
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
+  return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+// GGX/Trowbridge-Reitz Normal Distribution Function
+float DistributionGGX(vec3 N, vec3 H, float roughness) {
+  float a = roughness * roughness;
+  float a2 = a * a;
+  float NdotH = max(dot(N, H), 0.0);
+  float NdotH2 = NdotH * NdotH;
+  float denom = NdotH2 * (a2 - 1.0) + 1.0;
+  return a2 / (PI * denom * denom);
+}
+
+// Geometry Schlick-GGX
+float GeometrySchlickGGX(float NdotV, float roughness) {
+  float r = roughness + 1.0;
+  float k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+// Smith's method
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+  float NdotV = max(dot(N, V), 0.0);
+  float NdotL = max(dot(N, L), 0.0);
+  return GeometrySchlickGGX(NdotV, roughness) * GeometrySchlickGGX(NdotL, roughness);
+}
+
+// Complete PBR lighting calculation
+vec3 pbrLighting(
+  vec3 N, vec3 V, vec3 L,
+  vec3 albedo, float metallic, float roughness, float ao,
+  vec3 lightColor, float lightIntensity
+) {
+  vec3 H = normalize(V + L);
+  
+  // F0 for dielectrics (0.04) and metals (albedo)
+  vec3 F0 = vec3(0.04);
+  F0 = mix(F0, albedo, metallic);
+  
+  // Cook-Torrance BRDF
+  float NDF = DistributionGGX(N, H, roughness);
+  float G = GeometrySmith(N, V, L, roughness);
+  vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+  
+  vec3 numerator = NDF * G * F;
+  float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+  vec3 specular = numerator / denominator;
+  
+  // Energy conservation
+  vec3 kS = F;
+  vec3 kD = vec3(1.0) - kS;
+  kD *= 1.0 - metallic;  // Metals have no diffuse
+  
+  float NdotL = max(dot(N, L), 0.0);
+  vec3 Lo = (kD * albedo / PI + specular) * lightColor * lightIntensity * NdotL;
+  
+  // Ambient
+  vec3 ambient = vec3(0.03) * albedo * ao;
+  
+  return ambient + Lo;
+}
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3D Math Utilities
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const math3d = /* glsl */`
+// Rotation matrices
+mat3 rotateX(float angle) {
+  float c = cos(angle), s = sin(angle);
+  return mat3(1, 0, 0, 0, c, -s, 0, s, c);
+}
+
+mat3 rotateY(float angle) {
+  float c = cos(angle), s = sin(angle);
+  return mat3(c, 0, s, 0, 1, 0, -s, 0, c);
+}
+
+mat3 rotateZ(float angle) {
+  float c = cos(angle), s = sin(angle);
+  return mat3(c, -s, 0, s, c, 0, 0, 0, 1);
+}
+
+// Axis-angle rotation
+mat3 rotate(vec3 axis, float angle) {
+  axis = normalize(axis);
+  float c = cos(angle), s = sin(angle);
+  float oc = 1.0 - c;
+  return mat3(
+    oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s,
+    oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,          oc * axis.y * axis.z - axis.x * s,
+    oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c
+  );
+}
+
+// Look-at matrix (view direction)
+mat3 lookAt(vec3 forward, vec3 up) {
+  vec3 right = normalize(cross(up, forward));
+  vec3 newUp = cross(forward, right);
+  return mat3(right, newUp, forward);
+}
+
+// Camera ray from screen UV
+vec3 getCameraRay(vec2 uv, vec3 camPos, vec3 target, float fov) {
+  vec3 forward = normalize(target - camPos);
+  vec3 right = normalize(cross(vec3(0, 1, 0), forward));
+  vec3 up = cross(forward, right);
+  
+  float fovFactor = tan(fov * 0.5);
+  return normalize(forward + right * uv.x * fovFactor + up * uv.y * fovFactor);
+}
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Normal Mapping
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const normalMapping = /* glsl */`
+// TBN matrix for normal mapping (requires tangent attribute)
+mat3 getTBN(vec3 N, vec3 T, vec3 B) {
+  return mat3(normalize(T), normalize(B), normalize(N));
+}
+
+// Derive TBN from world position and UV (no tangent attribute needed)
+mat3 cotangentFrame(vec3 N, vec3 p, vec2 uv) {
+  vec3 dp1 = dFdx(p);
+  vec3 dp2 = dFdy(p);
+  vec2 duv1 = dFdx(uv);
+  vec2 duv2 = dFdy(uv);
+  
+  vec3 dp2perp = cross(dp2, N);
+  vec3 dp1perp = cross(N, dp1);
+  vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+  vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+  
+  float invmax = inversesqrt(max(dot(T, T), dot(B, B)));
+  return mat3(T * invmax, B * invmax, N);
+}
+
+// Apply normal map
+vec3 applyNormalMap(sampler2D normalMap, vec2 uv, vec3 N, vec3 V, vec3 worldPos) {
+  vec3 tangentNormal = texture(normalMap, uv).xyz * 2.0 - 1.0;
+  mat3 TBN = cotangentFrame(N, worldPos, uv);
+  return normalize(TBN * tangentNormal);
+}
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SDF Primitives
 // ─────────────────────────────────────────────────────────────────────────────
 

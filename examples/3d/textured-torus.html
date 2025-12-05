@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mushu Textured Mesh Example</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0a0f;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .info {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      color: white;
+      font-family: monospace;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px 16px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+  <div class="info">Drag to rotate • Scroll to zoom</div>
+
+  <script type="module">
+    import {
+      flow,
+      torus,
+      texture,
+      noiseTexture,
+      shader3d,
+      camera,
+      orbitControls,
+      clear,
+      mat4,
+      fps
+    } from '../../src/core/index.js';
+
+    // Custom textured shader
+    const vertexShader = /* glsl */`#version 300 es
+      precision highp float;
+      
+      layout(location = 0) in vec3 position;
+      layout(location = 1) in vec3 normal;
+      layout(location = 2) in vec2 uv;
+      
+      uniform mat4 modelMatrix;
+      uniform mat4 viewMatrix;
+      uniform mat4 projectionMatrix;
+      uniform float time;
+      
+      out vec3 vNormal;
+      out vec3 vPosition;
+      out vec2 vUv;
+      
+      void main() {
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        vPosition = worldPos.xyz;
+        vNormal = mat3(modelMatrix) * normal;
+        vUv = uv;
+        
+        gl_Position = projectionMatrix * viewMatrix * worldPos;
+      }
+    `;
+
+    const fragmentShader = /* glsl */`#version 300 es
+      precision highp float;
+      
+      in vec3 vNormal;
+      in vec3 vPosition;
+      in vec2 vUv;
+      
+      uniform float time;
+      uniform vec3 cameraPosition;
+      uniform sampler2D noiseTex;
+      
+      out vec4 fragColor;
+      
+      void main() {
+        vec3 N = normalize(vNormal);
+        vec3 V = normalize(cameraPosition - vPosition);
+        
+        // Sample noise texture for color variation
+        vec2 uv = vUv * 4.0 + vec2(time * 0.1, 0.0);
+        vec3 noiseColor = texture(noiseTex, uv).rgb;
+        
+        // Create a flowing pattern
+        float pattern = sin(vUv.x * 20.0 + time * 2.0) * 0.5 + 0.5;
+        pattern *= sin(vUv.y * 10.0 - time) * 0.5 + 0.5;
+        
+        // Mix colors
+        vec3 color1 = vec3(0.1, 0.4, 0.8);
+        vec3 color2 = vec3(0.8, 0.2, 0.5);
+        vec3 baseColor = mix(color1, color2, pattern);
+        baseColor = mix(baseColor, noiseColor, 0.3);
+        
+        // Lighting
+        vec3 lightDir = normalize(vec3(1, 1, 1));
+        float diff = max(dot(N, lightDir), 0.0);
+        vec3 color = baseColor * (0.2 + 0.8 * diff);
+        
+        // Fresnel rim
+        float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+        color += vec3(0.5, 0.7, 1.0) * fresnel * 0.5;
+        
+        fragColor = vec4(color, 1.0);
+      }
+    `;
+
+    // Camera and controls
+    const cam = camera({
+      position: [4, 2, 4],
+      target: [0, 0, 0],
+      fov: 50
+    });
+
+    const controls = orbitControls(cam);
+
+    // Rotation
+    let rotation = 0;
+    const modelMatrix = mat4.create();
+
+    // Create noise texture
+    const noise = noiseTexture({
+      name: 'noiseTex',
+      unit: 0,
+      size: 256,
+      type: 'perlin'
+    });
+
+    // Start render
+    flow('#canvas')
+      .use(clear([0.02, 0.02, 0.04, 1]))
+      .use(cam)
+      .use(controls)
+      .use(noise)
+      .use(shader3d(vertexShader, fragmentShader, {
+        depthTest: true,
+        cullFace: 'BACK'
+      }))
+      .use({
+        render(ctx) {
+          rotation += ctx.delta * 0.5;
+          mat4.rotateY(modelMatrix, rotation);
+          mat4.rotateX(modelMatrix, rotation * 0.3);
+
+          const shader = ctx.state.shader3d;
+          if (shader) {
+            shader.setModelMatrix(modelMatrix);
+          }
+        }
+      })
+      .use(torus({
+        radius: 1.5,
+        tube: 0.5,
+        radialSegments: 48,
+        tubularSegments: 32
+      }))
+      .use(fps())
+      .go();
+  </script>
+</body>
+
+</html>

@@ -288,6 +288,11 @@ export function mesh(geometry, options = {}) {
     }
   };
 
+  /**
+   * Update model transform object `t` by recalculating derived matrices.
+   * This function is called when a mesh's transform parameters change.
+   * @param {object} t Transform object containing position/rotation/scale and matrices.
+   */
   function updateTransform(t) {
     identity();
     const { position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1] } = t;

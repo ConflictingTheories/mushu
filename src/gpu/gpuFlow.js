@@ -131,6 +131,12 @@ export function gpuFlow(canvasOrSelector) {
     }
   };
 
+  /**
+   * Render an in-canvas overlay to show an error title and message to the user.
+   * This creates/updates an HTML overlay element positioned over the canvas.
+   * @param {string} title Short title describing the error.
+   * @param {string} message Detailed message to display.
+   */
   function showError(title, message) {
     const div = document.createElement('div');
     div.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#111;color:#fff;font-family:system-ui;text-align:center;padding:40px;';
@@ -138,6 +144,11 @@ export function gpuFlow(canvasOrSelector) {
     document.body.appendChild(div);
   }
 
+  /**
+   * Install pointer and wheel listeners on the canvas to keep a `mouse` state
+   * object updated. The returned object contains `mouse` and `dispose()`.
+   * @returns {{mouse: {x:number,y:number,down:boolean}, dispose: Function}}
+   */
   function setupMouse() {
     const updateMouse = (x, y) => {
       const rect = canvas.getBoundingClientRect();
@@ -171,6 +182,11 @@ export function gpuFlow(canvasOrSelector) {
   // Compute Pipeline (simulation with ping-pong textures)
   // ─────────────────────────────────────────────────────────────────────────
 
+  /**
+   * Execute the compute pipeline (if provided) to update simulation or GPGPU state.
+   * This function encodes commands onto a command encoder and submits them.
+   * @returns {Promise<void>} Resolves after commands are submitted.
+   */
   async function runComputePipeline() {
     let width, height, simWidth, simHeight;
     let stateA, stateB;
@@ -401,6 +417,11 @@ export function gpuFlow(canvasOrSelector) {
   // Display-only Pipeline (no compute, just fragment shader)
   // ─────────────────────────────────────────────────────────────────────────
 
+  /**
+   * Execute the display/render pipeline which draws to the swap chain or canvas.
+   * It encodes render passes, sets pipelines and bind groups, and submits.
+   * @returns {Promise<void>} Resolves after the frame has been submitted.
+   */
   async function runDisplayPipeline() {
     let width, height;
 
@@ -860,14 +881,23 @@ export async function gpu(computeCode, renderCode, options = {}) {
   };
 }
 
-function createFullscreenCanvas() {
+  /**
+   * Create and return a canvas element sized to cover the full window.
+   * Used when no canvas selector is provided to `gpuFlow()`.
+   * @returns {HTMLCanvasElement} The created canvas element.
+   */
+  function createFullscreenCanvas() {
   const canvas = document.createElement('canvas');
   canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
   document.body.appendChild(canvas);
   return canvas;
 }
 
-function showGPUError(message = 'WebGPU is not supported in this browser. Try Chrome 113+ or Edge 113+.') {
+  /**
+   * Show a simple DOM-level alert instructing the user that WebGPU isn't available.
+   * @param {string} [message] Message to display in the created notice element.
+   */
+  function showGPUError(message = 'WebGPU is not supported in this browser. Try Chrome 113+ or Edge 113+.') {
   document.body.innerHTML = `
     <div style="color:#fff;font-family:system-ui;padding:40px;text-align:center;background:#111;position:fixed;inset:0;display:flex;align-items:center;justify-content:center">
       <div>

@@ -107,6 +107,15 @@ export async function gpuTexture(device, source, options = {}) {
 // Mipmap Generation
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Generate mipmaps for a GPU texture using render passes and blits where available.
+ * @param {GPUDevice} device The GPU device.
+ * @param {GPUTexture} texture The texture to generate mips for.
+ * @param {number} width Base-level width.
+ * @param {number} height Base-level height.
+ * @param {number} mipLevelCount Number of mip levels to generate.
+ * @returns {Promise<void>} Resolves when mip generation commands have been submitted.
+ */
 async function generateMips(device, texture, width, height, mipLevelCount) {
   const mipmapShader = device.createShaderModule({
     code: /* wgsl */`
@@ -250,6 +259,11 @@ export function gpuDataTexture(device, options = {}) {
  * @returns {{texture:GPUTexture, sampler:GPUSampler, width:number, height:number, format:string, update:function(Uint8Array|Float32Array)}}
  */
 
+/**
+ * Return the byte size per pixel for a given texture format.
+ * @param {string} format The texture format string (e.g., 'rgba8unorm').
+ * @returns {number} Bytes per pixel for the format.
+ */
 function getBytesPerPixel(format) {
   const sizes = {
     'r8unorm': 1,

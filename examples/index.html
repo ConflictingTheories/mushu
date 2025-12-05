@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>🍡 mushu Examples</title>
+  <title>🍡 mushu - Creative Coding Made Simple</title>
   <style>
     :root {
       --bg: #0a0a0f;
@@ -14,31 +14,225 @@
       --accent3: #ffaa00;
       --accent4: #a855f7;
       --accent5: #3b82f6;
+      --code-bg: #1a1a24;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 40px;
+      padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
+      line-height: 1.6;
     }
-    h1 {
+    
+    /* ═══════════════════════════════════════════════════════════════════════
+       HERO SECTION
+       ═══════════════════════════════════════════════════════════════════════ */
+    .hero {
       text-align: center;
-      font-size: 3rem;
-      margin-bottom: 0.5rem;
+      padding: 80px 40px 60px;
+      background: linear-gradient(180deg, rgba(255,107,157,0.08) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: 4rem;
+      margin: 0 0 0.5rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero .tagline {
+      font-size: 1.4rem;
+      color: #aaa;
+      margin-bottom: 2rem;
+    }
+    .hero .description {
+      max-width: 700px;
+      margin: 0 auto 2rem;
+      font-size: 1.1rem;
+      color: #999;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .hero-buttons a {
+      display: inline-block;
+      padding: 14px 28px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .hero-buttons a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .hero-buttons .primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+    }
+    .hero-buttons .secondary {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════════════
+       CONTENT CONTAINER
+       ═══════════════════════════════════════════════════════════════════════ */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 60px 40px;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════════════
+       PREFACE / ABOUT SECTION
+       ═══════════════════════════════════════════════════════════════════════ */
+    .about {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+    .about-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+    }
+    .about-card h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 12px;
+      font-size: 1.2rem;
+    }
+    .about-card p {
+      color: #888;
+      margin: 0;
+    }
+    .about-card code {
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════════════
+       CODE TABS
+       ═══════════════════════════════════════════════════════════════════════ */
+    .code-section {
+      margin-bottom: 60px;
+    }
+    .code-section h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+    .code-section h2 span {
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .subtitle {
-      text-align: center;
-      color: #888;
-      margin-bottom: 1rem;
-      font-size: 1.1rem;
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 0;
+      flex-wrap: wrap;
     }
+    .tab {
+      padding: 12px 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-weight: 600;
+      color: #888;
+      transition: all 0.2s;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    .tab:hover {
+      color: var(--text);
+      background: #1a1a24;
+    }
+    .tab.active {
+      background: var(--code-bg);
+      color: var(--accent);
+      border-color: var(--accent);
+      border-bottom: 1px solid var(--code-bg);
+    }
+    .tab.active.glsl { color: var(--accent); border-color: var(--accent); }
+    .tab.active.gpu { color: var(--accent2); border-color: var(--accent2); }
+    .tab.active.yo { color: var(--accent3); border-color: var(--accent3); }
+    .tab.active.yogpu { color: var(--accent4); border-color: var(--accent4); }
+    
+    .code-panels {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 0 12px 12px 12px;
+      overflow: hidden;
+    }
+    .code-panel {
+      display: none;
+      padding: 24px;
+    }
+    .code-panel.active {
+      display: block;
+    }
+    .code-panel pre {
+      margin: 0;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .code-panel code {
+      color: #ccc;
+    }
+    .code-panel .comment { color: #6a737d; }
+    .code-panel .keyword { color: #ff79c6; }
+    .code-panel .function { color: #50fa7b; }
+    .code-panel .string { color: #f1fa8c; }
+    .code-panel .number { color: #bd93f9; }
+    .code-label {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+    .code-label.glsl { background: rgba(255,107,157,0.2); color: var(--accent); }
+    .code-label.gpu { background: rgba(0,212,170,0.2); color: var(--accent2); }
+    .code-label.yo { background: rgba(255,170,0,0.2); color: var(--accent3); }
+    .code-label.yogpu { background: rgba(168,85,247,0.2); color: var(--accent4); }
+    
+    /* ═══════════════════════════════════════════════════════════════════════
+       DEMO SECTIONS
+       ═══════════════════════════════════════════════════════════════════════ */
+    .demos-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .demos-header h2 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    .demos-header p {
+      color: #888;
+    }
+    
     .method-legend {
       display: flex;
       justify-content: center;
@@ -66,97 +260,7 @@
     .method-legend .dot.gpu { background: var(--accent2); }
     .method-legend .dot.yo { background: var(--accent3); }
     .method-legend .dot.yogpu { background: var(--accent4); }
-    .section {
-      margin-bottom: 3rem;
-    }
-    .section h2 {
-      color: var(--accent);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.5rem;
-      margin-bottom: 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .section h2.boilerplate { color: var(--accent5); }
-    .section h2.glsl { color: var(--accent); }
-    .section h2.gpu { color: var(--accent2); }
-    .section h2.yo { color: var(--accent3); }
-    .section h2.yogpu { color: var(--accent4); }
-    .section h2 code {
-      background: rgba(255,255,255,0.1);
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 0.9rem;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 24px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-    }
-    .card h3 {
-      margin: 0 0 0.5rem;
-      font-size: 1.3rem;
-    }
-    .card p {
-      color: #888;
-      margin: 0 0 1rem;
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-    .card a {
-      display: inline-block;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-      text-decoration: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: opacity 0.2s;
-    }
-    .card a:hover {
-      opacity: 0.85;
-    }
-    .card.boilerplate a { background: linear-gradient(135deg, var(--accent5), #60a5fa); }
-    .card.glsl a { background: linear-gradient(135deg, var(--accent), #ff8fab); }
-    .card.gpu a { background: linear-gradient(135deg, var(--accent2), #34d399); }
-    .card.yo a { background: linear-gradient(135deg, var(--accent3), #fbbf24); }
-    .card.yogpu a { background: linear-gradient(135deg, var(--accent4), #c084fc); }
-    .tag {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      margin-right: 8px;
-      margin-bottom: 12px;
-    }
-    .tag.boilerplate { background: rgba(59,130,246,0.15); color: var(--accent5); }
-    .tag.glsl { background: rgba(255,107,157,0.15); color: var(--accent); }
-    .tag.gpu { background: rgba(0,212,170,0.15); color: var(--accent2); }
-    .tag.yo { background: rgba(255,170,0,0.15); color: var(--accent3); }
-    .tag.yogpu { background: rgba(168,85,247,0.15); color: var(--accent4); }
-    footer {
-      text-align: center;
-      margin-top: 4rem;
-      color: #666;
-      font-size: 0.9rem;
-    }
-    footer a {
-      color: var(--accent);
-      text-decoration: none;
-    }
+    
     .compare-section {
       background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(0,212,170,0.1));
       border: 2px solid var(--border);
@@ -165,10 +269,9 @@
       margin-bottom: 3rem;
       text-align: center;
     }
-    .compare-section h2 {
-      border: none;
-      justify-content: center;
-      color: var(--text);
+    .compare-section h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.5rem;
     }
     .compare-section p {
       color: #aaa;
@@ -179,189 +282,402 @@
       background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3), var(--accent4));
       color: white;
       text-decoration: none;
-      padding: 14px 32px;
+      padding: 12px 24px;
       border-radius: 8px;
-      font-weight: 700;
+      font-weight: 600;
+      margin: 0 6px;
+    }
+    
+    .section {
+      margin-bottom: 3rem;
+    }
+    .section h3 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .section h3.boilerplate { color: var(--accent5); }
+    .section h3.glsl { color: var(--accent); }
+    .section h3.gpu { color: var(--accent2); }
+    .section h3.yo { color: var(--accent3); }
+    .section h3.yogpu { color: var(--accent4); }
+    .section h3 code {
+      background: rgba(255,255,255,0.1);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .card h4 {
+      margin: 0 0 0.5rem;
       font-size: 1.1rem;
+    }
+    .card p {
+      color: #888;
+      margin: 0 0 1rem;
+      font-size: 0.9rem;
+    }
+    .card a {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: opacity 0.2s;
+    }
+    .card a:hover { opacity: 0.85; }
+    .card.boilerplate a { background: linear-gradient(135deg, var(--accent5), #60a5fa); }
+    .card.glsl a { background: linear-gradient(135deg, var(--accent), #ff8fab); }
+    .card.gpu a { background: linear-gradient(135deg, var(--accent2), #34d399); }
+    .card.yo a { background: linear-gradient(135deg, var(--accent3), #fbbf24); }
+    .card.yogpu a { background: linear-gradient(135deg, var(--accent4), #c084fc); }
+    
+    /* ═══════════════════════════════════════════════════════════════════════
+       FAQ SECTION
+       ═══════════════════════════════════════════════════════════════════════ */
+    .faq {
+      margin-top: 60px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+    .faq h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 2rem;
+    }
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .faq-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .faq-item h4 {
+      color: var(--accent);
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+    }
+    .faq-item p {
+      color: #888;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+    .faq-item code {
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════════════ */
+    footer {
+      text-align: center;
+      padding: 40px;
+      border-top: 1px solid var(--border);
+      color: #666;
+      font-size: 0.9rem;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <h1>🍡 mushu</h1>
-  <p class="subtitle">Simple WebGL2 & WebGPU creative coding library</p>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       HERO
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <header class="hero">
+    <h1>🍡 mushu</h1>
+    <p class="tagline">Creative Coding Made Stupid Simple</p>
+    <p class="description">
+      A tiny WebGL2 & WebGPU library for shader art, simulations, and visual effects.
+      Go from zero to beautiful in one line of code. No boilerplate. No complexity. Just creativity.
+    </p>
+    <div class="hero-buttons">
+      <a href="#demos" class="primary">View Demos ↓</a>
+      <a href="https://github.com/ConflictingTheories/mushu" class="secondary">GitHub →</a>
+    </div>
+  </header>
+
+  <div class="container">
   
-  <div class="method-legend">
-    <div class="item"><span class="dot boilerplate"></span> Boilerplate (Vanilla WebGL2)</div>
-    <div class="item"><span class="dot glsl"></span> glsl() helper</div>
-    <div class="item"><span class="dot gpu"></span> gpu() helper (WebGPU)</div>
-    <div class="item"><span class="dot yo"></span> YO framework (WebGL2)</div>
-    <div class="item"><span class="dot yogpu"></span> YO-GPU framework (WebGPU)</div>
-  </div>
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ABOUT / WHY MUSHU
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="about">
+      <div class="about-card">
+        <h3>⚡ Zero Boilerplate</h3>
+        <p>No more 200 lines of WebGL setup. Just write your shader code and go. mushu handles all the boring stuff.</p>
+      </div>
+      <div class="about-card">
+        <h3>🎯 Multiple APIs</h3>
+        <p>Choose your style: one-liner <code>glsl()</code>, fluent <code>yo()</code> builder, or raw WebGPU <code>gpu()</code> power.</p>
+      </div>
+      <div class="about-card">
+        <h3>🔥 Built-in Uniforms</h3>
+        <p>Time, mouse position, and resolution are automatically provided. Focus on the creative part.</p>
+      </div>
+      <div class="about-card">
+        <h3>🚀 WebGPU Ready</h3>
+        <p>Full WebGPU support with compute shaders. Same simple API, next-gen GPU performance.</p>
+      </div>
+    </section>
 
-  <div class="compare-section">
-    <h2>🔬 Side-by-Side Comparison</h2>
-    <p>Compare all 5 methods running the same effect simultaneously</p>
-    <a href="visual-compare.html">Launch Visual Comparison →</a>
-    <a href="compare.html" style="background: linear-gradient(135deg, #666, #888); margin-left: 12px;">Code Comparison →</a>
-  </div>
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         CODE EXAMPLES WITH TABS
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="code-section">
+      <h2>Pick Your <span>Flavor</span></h2>
+      
+      <div class="tabs">
+        <button class="tab glsl active" onclick="showTab('glsl')">glsl()</button>
+        <button class="tab gpu" onclick="showTab('gpu')">gpu()</button>
+        <button class="tab yo" onclick="showTab('yo')">yo()</button>
+        <button class="tab yogpu" onclick="showTab('yogpu')">yoGPU()</button>
+      </div>
+      
+      <div class="code-panels">
+        <!-- GLSL Tab -->
+        <div class="code-panel active" id="panel-glsl">
+          <span class="code-label glsl">WebGL2 • One-liner</span>
+          <pre><code><span class="keyword">import</span> { glsl } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
-  <!-- BOILERPLATE SECTION -->
-  <div class="section">
-    <h2 class="boilerplate">📝 Boilerplate Examples <code>Vanilla WebGL2</code></h2>
-    <div class="grid">
-      <div class="card boilerplate">
-        <span class="tag boilerplate">Vanilla</span>
-        <h3>🔥 Fire</h3>
-        <p>Raw WebGL2 boilerplate showing how fire simulation works from scratch.</p>
-        <a href="boilerplate-fire.html">View Code →</a>
-      </div>
-      <div class="card boilerplate">
-        <span class="tag boilerplate">Vanilla</span>
-        <h3>💨 Smoke</h3>
-        <p>Manual WebGL2 setup for volumetric smoke with turbulence.</p>
-        <a href="boilerplate-smoke.html">View Code →</a>
-      </div>
-      <div class="card boilerplate">
-        <span class="tag boilerplate">Vanilla</span>
-        <h3>🌊 Water</h3>
-        <p>Hand-coded WebGL2 water ripple simulation.</p>
-        <a href="boilerplate-water.html">View Code →</a>
-      </div>
-      <div class="card boilerplate">
-        <span class="tag boilerplate">Vanilla</span>
-        <h3>🌈 Plasma</h3>
-        <p>Classic plasma effect with raw WebGL2 code.</p>
-        <a href="boilerplate-plasma.html">View Code →</a>
-      </div>
-    </div>
-  </div>
+<span class="comment">// That's it. Seriously. One line.</span>
+<span class="function">glsl</span>(<span class="string">`
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    float t = time * 0.5;
+    
+    // Your shader magic here
+    vec3 col = 0.5 + 0.5 * cos(t + uv.xyx + vec3(0,2,4));
+    
+    O = vec4(col, 1.0);
+  }
+`</span>, canvas);</code></pre>
+        </div>
+        
+        <!-- GPU Tab -->
+        <div class="code-panel" id="panel-gpu">
+          <span class="code-label gpu">WebGPU • Compute + Render</span>
+          <pre><code><span class="keyword">import</span> { gpu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
-  <!-- GLSL SECTION -->
-  <div class="section">
-    <h2 class="glsl">🎨 GLSL Examples <code>glsl()</code></h2>
-    <div class="grid">
-      <div class="card glsl">
-        <span class="tag glsl">glsl()</span>
-        <h3>🔥 Fire</h3>
-        <p>One-liner fire effect using the glsl() helper function.</p>
-        <a href="fire.html">Launch Demo →</a>
-      </div>
-      <div class="card glsl">
-        <span class="tag glsl">glsl()</span>
-        <h3>💨 Smoke</h3>
-        <p>Volumetric smoke with turbulent vorticity using glsl().</p>
-        <a href="smoke.html">Launch Demo →</a>
-      </div>
-      <div class="card glsl">
-        <span class="tag glsl">glsl()</span>
-        <h3>🌊 Water</h3>
-        <p>Water ripples with reflection using the glsl() helper.</p>
-        <a href="water.html">Launch Demo →</a>
-      </div>
-      <div class="card glsl">
-        <span class="tag glsl">glsl()</span>
-        <h3>🌈 Plasma</h3>
-        <p>Classic plasma effect with rainbow colors using glsl().</p>
-        <a href="plasma.html">Launch Demo →</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- GPU SECTION -->
-  <div class="section">
-    <h2 class="gpu">⚡ GPU Examples <code>gpu()</code></h2>
-    <div class="grid">
-      <div class="card gpu">
-        <span class="tag gpu">gpu()</span>
-        <h3>🔥 Fire</h3>
-        <p>WebGPU compute shader fire with parallel fuel combustion.</p>
-        <a href="gpu-fire.html">Launch Demo →</a>
-      </div>
-      <div class="card gpu">
-        <span class="tag gpu">gpu()</span>
-        <h3>💨 Smoke</h3>
-        <p>GPU-accelerated volumetric smoke with buoyancy.</p>
-        <a href="gpu-smoke.html">Launch Demo →</a>
-      </div>
-      <div class="card gpu">
-        <span class="tag gpu">gpu()</span>
-        <h3>🌊 Water</h3>
-        <p>Wave equation simulation on WebGPU compute shaders.</p>
-        <a href="gpu-water.html">Launch Demo →</a>
-      </div>
-      <div class="card gpu">
-        <span class="tag gpu">gpu()</span>
-        <h3>🌈 Plasma</h3>
-        <p>High-performance plasma with WebGPU compute state.</p>
-        <a href="gpu-plasma.html">Launch Demo →</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- YO SECTION -->
-  <div class="section">
-    <h2 class="yo">🎯 YO Examples <code>yo().use().go()</code></h2>
-    <div class="grid">
-      <div class="card yo">
-        <span class="tag yo">YO</span>
-        <h3>🔥 Fire</h3>
-        <p>Fluent simulation framework with fuel, heat, and smoke channels.</p>
-        <a href="yo-fire.html">Launch Demo →</a>
-      </div>
-      <div class="card yo">
-        <span class="tag yo">YO</span>
-        <h3>💨 Smoke</h3>
-        <p>Plugin-based smoke with turbulence and dissipation.</p>
-        <a href="yo-smoke.html">Launch Demo →</a>
-      </div>
-      <div class="card yo">
-        <span class="tag yo">YO</span>
-        <h3>🌊 Water</h3>
-        <p>Chainable water simulation with Fresnel reflections.</p>
-        <a href="yo-water.html">Launch Demo →</a>
-      </div>
-      <div class="card yo">
-        <span class="tag yo">YO</span>
-        <h3>🌈 Plasma</h3>
-        <p>Hookable plasma with mouse interaction.</p>
-        <a href="yo-plasma.html">Launch Demo →</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- YO-GPU SECTION -->
-  <div class="section">
-    <h2 class="yogpu">🚀 YO-GPU Examples <code>yoGPU().simulate().display().go()</code></h2>
-    <div class="grid">
-      <div class="card yogpu">
-        <span class="tag yogpu">YO-GPU</span>
-        <h3>🔥 Fire</h3>
-        <p>WebGPU fluent API with compute shader fire physics.</p>
-        <a href="yogpu-fire.html">Launch Demo →</a>
-      </div>
-      <div class="card yogpu">
-        <span class="tag yogpu">YO-GPU</span>
-        <h3>💨 Smoke</h3>
-        <p>Fluent WebGPU smoke with ping-pong compute textures.</p>
-        <a href="yogpu-smoke.html">Launch Demo →</a>
-      </div>
-      <div class="card yogpu">
-        <span class="tag yogpu">YO-GPU</span>
-        <h3>🌊 Water</h3>
-        <p>Chainable WebGPU water with real-time wave simulation.</p>
-        <a href="yogpu-water.html">Launch Demo →</a>
-      </div>
-      <div class="card yogpu">
-        <span class="tag yogpu">YO-GPU</span>
-        <h3>🌈 Plasma</h3>
-        <p>Fluent WebGPU plasma with compute state management.</p>
-        <a href="yogpu-plasma.html">Launch Demo →</a>
-      </div>
-    </div>
-  </div>
+<span class="comment">// WebGPU with optional compute shader</span>
+<span class="function">gpu</span>(
+  <span class="comment">// Compute shader (or null for render-only)</span>
+  <span class="string">`@compute fn main(@builtin(global_invocation_id) id: vec3u) {
+      // Parallel computation here
+  }`</span>,
   
+  <span class="comment">// Render shader</span>
+  <span class="string">`fn render(data: vec4f, uv: vec2f) -> vec4f {
+      return vec4f(uv, sin(u.time), 1.0);
+  }`</span>,
+  
+  { canvas }
+);</code></pre>
+        </div>
+        
+        <!-- YO Tab -->
+        <div class="code-panel" id="panel-yo">
+          <span class="code-label yo">WebGL2 • Fluent Builder</span>
+          <pre><code><span class="keyword">import</span> { yo, shader, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+
+<span class="comment">// Chainable, pluggable, beautiful</span>
+<span class="function">yo</span>(canvas)
+  .<span class="function">use</span>(<span class="function">shader</span>(<span class="string">`
+    void mainImage(out vec4 O, vec2 C) {
+      vec2 uv = C / resolution;
+      O = vec4(uv, 0.5 + 0.5 * sin(time), 1.0);
+    }
+  `</span>))
+  .<span class="function">use</span>(<span class="function">fps</span>())  <span class="comment">// Add FPS counter plugin</span>
+  .<span class="function">go</span>();      <span class="comment">// Start the render loop</span></code></pre>
+        </div>
+        
+        <!-- YOGPU Tab -->
+        <div class="code-panel" id="panel-yogpu">
+          <span class="code-label yogpu">WebGPU • Fluent Builder</span>
+          <pre><code><span class="keyword">import</span> { yoGPU } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+
+<span class="comment">// WebGPU with fluent API</span>
+<span class="function">yoGPU</span>(canvas)
+  .<span class="function">compute</span>(<span class="string">`
+    @compute fn main(@builtin(global_invocation_id) id: vec3u) {
+      // Physics simulation
+    }
+  `</span>)
+  .<span class="function">display</span>(<span class="string">`
+    @fragment fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+      return vec4f(uv, sin(time), 1.0);
+    }
+  `</span>)
+  .<span class="function">go</span>();</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         DEMOS
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section id="demos">
+      <div class="demos-header">
+        <h2>🎨 Live Demos</h2>
+        <p>See mushu in action with these interactive examples</p>
+      </div>
+      
+      <div class="method-legend">
+        <div class="item"><span class="dot boilerplate"></span> Boilerplate (Vanilla)</div>
+        <div class="item"><span class="dot glsl"></span> glsl()</div>
+        <div class="item"><span class="dot gpu"></span> gpu()</div>
+        <div class="item"><span class="dot yo"></span> yo()</div>
+        <div class="item"><span class="dot yogpu"></span> yoGPU()</div>
+      </div>
+
+      <div class="compare-section">
+        <h3>🔬 Side-by-Side Comparison</h3>
+        <p>Compare all methods running the same effect simultaneously</p>
+        <a href="visual-compare.html">Visual Comparison →</a>
+        <a href="compare.html" style="background: linear-gradient(135deg, #555, #777);">Code Comparison →</a>
+      </div>
+
+      <!-- GLSL Section -->
+      <div class="section">
+        <h3 class="glsl">🎨 GLSL Examples <code>glsl(shaderCode, canvas)</code></h3>
+        <div class="grid">
+          <div class="card glsl"><h4>🔥 Fire</h4><p>Procedural flames with blackbody colors</p><a href="fire.html">Demo →</a></div>
+          <div class="card glsl"><h4>💨 Smoke</h4><p>Volumetric smoke with turbulence</p><a href="smoke.html">Demo →</a></div>
+          <div class="card glsl"><h4>🌊 Water</h4><p>Gerstner waves with reflections</p><a href="water.html">Demo →</a></div>
+          <div class="card glsl"><h4>🌈 Plasma</h4><p>Classic plasma with rainbow colors</p><a href="plasma.html">Demo →</a></div>
+          <div class="card glsl"><h4>✨ Caustics</h4><p>Underwater light patterns</p><a href="caustics.html">Demo →</a></div>
+        </div>
+      </div>
+
+      <!-- GPU Section -->
+      <div class="section">
+        <h3 class="gpu">⚡ GPU Examples <code>gpu(compute, render, opts)</code></h3>
+        <div class="grid">
+          <div class="card gpu"><h4>🔥 Fire</h4><p>Candle flame following mouse</p><a href="gpu-fire.html">Demo →</a></div>
+          <div class="card gpu"><h4>💨 Smoke</h4><p>Match smoke from cursor</p><a href="gpu-smoke.html">Demo →</a></div>
+          <div class="card gpu"><h4>🌊 Water</h4><p>Wave equation compute shader</p><a href="gpu-water.html">Demo →</a></div>
+          <div class="card gpu"><h4>🌈 Plasma</h4><p>High-performance plasma</p><a href="gpu-plasma.html">Demo →</a></div>
+        </div>
+      </div>
+
+      <!-- YO Section -->
+      <div class="section">
+        <h3 class="yo">🎯 YO Examples <code>yo().use(shader()).go()</code></h3>
+        <div class="grid">
+          <div class="card yo"><h4>🔥 Fire</h4><p>Plugin-based fire with FPS</p><a href="yo-fire.html">Demo →</a></div>
+          <div class="card yo"><h4>💨 Smoke</h4><p>Fluent smoke simulation</p><a href="yo-smoke.html">Demo →</a></div>
+          <div class="card yo"><h4>🌊 Water</h4><p>Chainable water with Fresnel</p><a href="yo-water.html">Demo →</a></div>
+          <div class="card yo"><h4>🌈 Plasma</h4><p>Interactive plasma effect</p><a href="yo-plasma.html">Demo →</a></div>
+        </div>
+      </div>
+
+      <!-- YOGPU Section -->
+      <div class="section">
+        <h3 class="yogpu">🚀 YO-GPU Examples <code>yoGPU().display().go()</code></h3>
+        <div class="grid">
+          <div class="card yogpu"><h4>🔥 Fire</h4><p>WebGPU candle flame</p><a href="yogpu-fire.html">Demo →</a></div>
+          <div class="card yogpu"><h4>💨 Smoke</h4><p>WebGPU match smoke</p><a href="yogpu-smoke.html">Demo →</a></div>
+          <div class="card yogpu"><h4>🌊 Water</h4><p>Compute shader waves</p><a href="yogpu-water.html">Demo →</a></div>
+          <div class="card yogpu"><h4>🌈 Plasma</h4><p>GPU-accelerated plasma</p><a href="yogpu-plasma.html">Demo →</a></div>
+        </div>
+      </div>
+
+      <!-- Boilerplate Section -->
+      <div class="section">
+        <h3 class="boilerplate">📝 Boilerplate Examples <code>Vanilla WebGL2</code></h3>
+        <div class="grid">
+          <div class="card boilerplate"><h4>🔥 Fire</h4><p>Raw WebGL2 from scratch</p><a href="boilerplate-fire.html">Code →</a></div>
+          <div class="card boilerplate"><h4>💨 Smoke</h4><p>Manual WebGL2 setup</p><a href="boilerplate-smoke.html">Code →</a></div>
+          <div class="card boilerplate"><h4>🌊 Water</h4><p>Hand-coded water sim</p><a href="boilerplate-water.html">Code →</a></div>
+          <div class="card boilerplate"><h4>🌈 Plasma</h4><p>Classic plasma vanilla</p><a href="boilerplate-plasma.html">Code →</a></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         FAQ
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="faq">
+      <h2>❓ Frequently Asked Questions</h2>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h4>What's the difference between glsl() and yo()?</h4>
+          <p><code>glsl()</code> is a one-liner for quick shader sketches. <code>yo()</code> is a fluent builder that supports plugins like FPS counters, simulations, and post-processing chains.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Do I need WebGPU support?</h4>
+          <p>No! The <code>glsl()</code> and <code>yo()</code> APIs use WebGL2, which works everywhere. WebGPU (<code>gpu()</code> and <code>yoGPU()</code>) is optional for when you need compute shaders.</p>
+        </div>
+        <div class="faq-item">
+          <h4>What uniforms are available?</h4>
+          <p>All shaders get <code>time</code> (seconds), <code>resolution</code> (canvas size), and <code>mouse</code> (0-1 normalized position) automatically. No setup needed.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Can I use this for Shadertoy-style effects?</h4>
+          <p>Absolutely! The <code>mainImage(out vec4 O, vec2 C)</code> signature is Shadertoy-compatible. Just paste your shader code.</p>
+        </div>
+        <div class="faq-item">
+          <h4>How do I add mouse interaction?</h4>
+          <p>The <code>mouse</code> uniform is already there! It's a <code>vec2</code> with values 0-1. Use it in your shader for interactive effects.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Is mushu good for learning shaders?</h4>
+          <p>Yes! Compare the boilerplate examples (200+ lines) to the <code>glsl()</code> versions (10 lines) to see how much easier it is to focus on the actual shader code.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
   <footer>
-    <p>Made with 🍡 &mdash; <a href="../README.md">Read the docs</a></p>
+    <p>Made with 🍡 by <a href="https://github.com/ConflictingTheories">ConflictingTheories</a> &mdash; <a href="https://github.com/ConflictingTheories/mushu">View on GitHub</a></p>
   </footer>
+
+  <script>
+    function showTab(tab) {
+      // Update tabs
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('.tab.' + tab).classList.add('active');
+      
+      // Update panels
+      document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + tab).classList.add('active');
+    }
+  </script>
 </body>
 </html>

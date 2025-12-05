@@ -179,8 +179,8 @@
     }
     .tab.active.glsl { color: var(--accent); border-color: var(--accent); }
     .tab.active.gpu { color: var(--accent2); border-color: var(--accent2); }
-    .tab.active.yo { color: var(--accent3); border-color: var(--accent3); }
-    .tab.active.yogpu { color: var(--accent4); border-color: var(--accent4); }
+    .tab.active.flow { color: var(--accent3); border-color: var(--accent3); }
+    .tab.active.gpuFlow { color: var(--accent4); border-color: var(--accent4); }
     
     .code-panels {
       background: var(--code-bg);
@@ -220,8 +220,8 @@
     }
     .code-label.glsl { background: rgba(255,107,157,0.2); color: var(--accent); }
     .code-label.gpu { background: rgba(0,212,170,0.2); color: var(--accent2); }
-    .code-label.yo { background: rgba(255,170,0,0.2); color: var(--accent3); }
-    .code-label.yogpu { background: rgba(168,85,247,0.2); color: var(--accent4); }
+    .code-label.flow { background: rgba(255,170,0,0.2); color: var(--accent3); }
+    .code-label.gpuFlow { background: rgba(168,85,247,0.2); color: var(--accent4); }
     
     /* ═══════════════════════════════════════════════════════════════════════
        DEMO SECTIONS
@@ -263,8 +263,8 @@
     .method-legend .dot.boilerplate { background: var(--accent5); }
     .method-legend .dot.glsl { background: var(--accent); }
     .method-legend .dot.gpu { background: var(--accent2); }
-    .method-legend .dot.yo { background: var(--accent3); }
-    .method-legend .dot.yogpu { background: var(--accent4); }
+    .method-legend .dot.flow { background: var(--accent3); }
+    .method-legend .dot.gpuFlow { background: var(--accent4); }
     
     .compare-section {
       background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(0,212,170,0.1));
@@ -307,8 +307,8 @@
     .section h3.boilerplate { color: var(--accent5); }
     .section h3.glsl { color: var(--accent); }
     .section h3.gpu { color: var(--accent2); }
-    .section h3.yo { color: var(--accent3); }
-    .section h3.yogpu { color: var(--accent4); }
+    .section h3.flow { color: var(--accent3); }
+    .section h3.gpuFlow { color: var(--accent4); }
     .section h3 code {
       background: rgba(255,255,255,0.1);
       padding: 4px 12px;
@@ -365,8 +365,8 @@
     .card.boilerplate a { background: linear-gradient(135deg, var(--accent5), #60a5fa); }
     .card.glsl a { background: linear-gradient(135deg, var(--accent), #ff8fab); }
     .card.gpu a { background: linear-gradient(135deg, var(--accent2), #34d399); }
-    .card.yo a { background: linear-gradient(135deg, var(--accent3), #fbbf24); }
-    .card.yogpu a { background: linear-gradient(135deg, var(--accent4), #c084fc); }
+    .card.flow a { background: linear-gradient(135deg, var(--accent3), #fbbf24); }
+    .card.gpuFlow a { background: linear-gradient(135deg, var(--accent4), #c084fc); }
     
     /* ═══════════════════════════════════════════════════════════════════════
        FAQ SECTION
@@ -464,7 +464,7 @@
       </div>
       <div class="about-card">
         <h3>🎯 Pick Your Style</h3>
-        <p>Quick sketch? Use <code>glsl()</code>. Need plugins? Try <code>yo()</code>. Want compute shaders? Go <code>gpu()</code>.</p>
+        <p>Quick sketch? Use <code>mushu().glsl()</code>. Need plugins? Try <code>mushu().flow()</code>. Want compute shaders? Go <code>mushu().gpu()</code>.</p>
       </div>
       <div class="about-card">
         <h3>🔥 Batteries Included</h3>
@@ -483,20 +483,20 @@
       <h2>Four Ways to <span>Ship</span></h2>
       
       <div class="tabs">
-        <button class="tab glsl active" onclick="showTab('glsl')">glsl()</button>
-        <button class="tab gpu" onclick="showTab('gpu')">gpu()</button>
-        <button class="tab yo" onclick="showTab('yo')">yo()</button>
-        <button class="tab yogpu" onclick="showTab('yogpu')">yoGPU()</button>
+        <button class="tab glsl active" onclick="showTab('glsl')">mushu().glsl()</button>
+        <button class="tab gpu" onclick="showTab('gpu')">mushu().gpu()</button>
+        <button class="tab flow" onclick="showTab('flow')">mushu().flow()</button>
+        <button class="tab gpuFlow" onclick="showTab('gpuFlow')">mushu().gpu().flow()</button>
       </div>
       
       <div class="code-panels">
         <!-- GLSL Tab -->
         <div class="code-panel active" id="panel-glsl">
           <span class="code-label glsl">WebGL2 • One-liner</span>
-          <pre><code><span class="keyword">import</span> { glsl } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+          <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
 <span class="comment">// That's it. Seriously. One line.</span>
-<span class="function">glsl</span>(<span class="string">`
+<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">glsl</span>(<span class="string">`
   void mainImage(out vec4 O, vec2 C) {
     vec2 uv = C / resolution;
     float t = time * 0.5;
@@ -506,16 +506,16 @@
     
     O = vec4(col, 1.0);
   }
-`</span>, canvas);</code></pre>
+`</span>);</code></pre>
         </div>
         
         <!-- GPU Tab -->
         <div class="code-panel" id="panel-gpu">
           <span class="code-label gpu">WebGPU • Compute + Render</span>
-          <pre><code><span class="keyword">import</span> { gpu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+          <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
 <span class="comment">// WebGPU with optional compute shader</span>
-<span class="function">gpu</span>(
+<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gpu</span>(
   <span class="comment">// Compute shader (or null for render-only)</span>
   <span class="string">`@compute fn main(@builtin(global_invocation_id) id: vec3u) {
       // Parallel computation here
@@ -524,19 +524,17 @@
   <span class="comment">// Render shader</span>
   <span class="string">`fn render(data: vec4f, uv: vec2f) -> vec4f {
       return vec4f(uv, sin(u.time), 1.0);
-  }`</span>,
-  
-  { canvas }
+  }`</span>
 );</code></pre>
         </div>
         
-        <!-- YO Tab -->
-        <div class="code-panel" id="panel-yo">
-          <span class="code-label yo">WebGL2 • Fluent Builder</span>
-          <pre><code><span class="keyword">import</span> { yo, shader, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+        <!-- Flow Tab -->
+        <div class="code-panel" id="panel-flow">
+          <span class="code-label flow">WebGL2 • Fluent Builder</span>
+          <pre><code><span class="keyword">import</span> { mushu, shader, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
 <span class="comment">// Chainable, pluggable, beautiful</span>
-<span class="function">yo</span>(canvas)
+<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">flow</span>()
   .<span class="function">use</span>(<span class="function">shader</span>(<span class="string">`
     void mainImage(out vec4 O, vec2 C) {
       vec2 uv = C / resolution;
@@ -547,13 +545,13 @@
   .<span class="function">go</span>();      <span class="comment">// Start the render loop</span></code></pre>
         </div>
         
-        <!-- YOGPU Tab -->
-        <div class="code-panel" id="panel-yogpu">
-          <span class="code-label yogpu">WebGPU • Fluent Builder</span>
-          <pre><code><span class="keyword">import</span> { yoGPU } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+        <!-- GPU Flow Tab -->
+        <div class="code-panel" id="panel-gpuFlow">
+          <span class="code-label gpuFlow">WebGPU • Fluent Builder</span>
+          <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
 <span class="comment">// WebGPU with fluent API</span>
-<span class="function">yoGPU</span>(canvas)
+<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gpu</span>().<span class="function">flow</span>()
   .<span class="function">compute</span>(<span class="string">`
     @compute fn main(@builtin(global_invocation_id) id: vec3u) {
       // Physics simulation
@@ -580,10 +578,10 @@
       
       <div class="method-legend">
         <div class="item"><span class="dot boilerplate"></span> Boilerplate (Vanilla)</div>
-        <div class="item"><span class="dot glsl"></span> glsl()</div>
-        <div class="item"><span class="dot gpu"></span> gpu()</div>
-        <div class="item"><span class="dot yo"></span> yo()</div>
-        <div class="item"><span class="dot yogpu"></span> yoGPU()</div>
+        <div class="item"><span class="dot glsl"></span> mushu().glsl()</div>
+        <div class="item"><span class="dot gpu"></span> mushu().gpu()</div>
+        <div class="item"><span class="dot flow"></span> mushu().flow()</div>
+        <div class="item"><span class="dot gpuFlow"></span> mushu().gpu().flow()</div>
       </div>
 
       <div class="compare-section">
@@ -595,7 +593,7 @@
 
       <!-- GLSL Section -->
       <div class="section">
-        <h3 class="glsl">🎨 GLSL Examples <code>glsl(shaderCode, canvas)</code></h3>
+        <h3 class="glsl">🎨 GLSL Examples <code>mushu('#c').glsl(shaderCode)</code></h3>
         <div class="grid">
           <div class="card glsl"><h4>🔥 Fire</h4><p>Procedural flames with blackbody colors</p><a href="fire.html">Demo →</a></div>
           <div class="card glsl"><h4>💨 Smoke</h4><p>Volumetric smoke with turbulence</p><a href="smoke.html">Demo →</a></div>
@@ -606,7 +604,7 @@
 
       <!-- GPU Section -->
       <div class="section">
-        <h3 class="gpu">⚡ GPU Examples <code>gpu(compute, render, opts)</code></h3>
+        <h3 class="gpu">⚡ GPU Examples <code>mushu('#c').gpu(compute, render)</code></h3>
         <div class="grid">
           <div class="card gpu"><h4>🔥 Fire</h4><p>Candle flame following mouse</p><a href="gpu-fire.html">Demo →</a></div>
           <div class="card gpu"><h4>💨 Smoke</h4><p>Match smoke from cursor</p><a href="gpu-smoke.html">Demo →</a></div>
@@ -615,25 +613,25 @@
         </div>
       </div>
 
-      <!-- YO Section -->
+      <!-- Flow Section -->
       <div class="section">
-        <h3 class="yo">🎯 YO Examples <code>yo().use(shader()).go()</code></h3>
+        <h3 class="flow">🎯 Flow Examples <code>mushu('#c').flow().use(shader()).go()</code></h3>
         <div class="grid">
-          <div class="card yo"><h4>🔥 Fire</h4><p>Plugin-based fire with FPS</p><a href="yo-fire.html">Demo →</a></div>
-          <div class="card yo"><h4>💨 Smoke</h4><p>Fluent smoke simulation</p><a href="yo-smoke.html">Demo →</a></div>
-          <div class="card yo"><h4>🌊 Water</h4><p>Chainable water with Fresnel</p><a href="yo-water.html">Demo →</a></div>
-          <div class="card yo"><h4>🌈 Plasma</h4><p>Interactive plasma effect</p><a href="yo-plasma.html">Demo →</a></div>
+          <div class="card flow"><h4>🔥 Fire</h4><p>Plugin-based fire with FPS</p><a href="yo-fire.html">Demo →</a></div>
+          <div class="card flow"><h4>💨 Smoke</h4><p>Fluent smoke simulation</p><a href="yo-smoke.html">Demo →</a></div>
+          <div class="card flow"><h4>🌊 Water</h4><p>Chainable water with Fresnel</p><a href="yo-water.html">Demo →</a></div>
+          <div class="card flow"><h4>🌈 Plasma</h4><p>Interactive plasma effect</p><a href="yo-plasma.html">Demo →</a></div>
         </div>
       </div>
 
-      <!-- YOGPU Section -->
+      <!-- GPU Flow Section -->
       <div class="section">
-        <h3 class="yogpu">🚀 YO-GPU Examples <code>yoGPU().display().go()</code></h3>
+        <h3 class="gpuFlow">🚀 GPU Flow Examples <code>mushu('#c').gpu().flow().display().go()</code></h3>
         <div class="grid">
-          <div class="card yogpu"><h4>🔥 Fire</h4><p>WebGPU candle flame</p><a href="yogpu-fire.html">Demo →</a></div>
-          <div class="card yogpu"><h4>💨 Smoke</h4><p>WebGPU match smoke</p><a href="yogpu-smoke.html">Demo →</a></div>
-          <div class="card yogpu"><h4>🌊 Water</h4><p>Compute shader waves</p><a href="yogpu-water.html">Demo →</a></div>
-          <div class="card yogpu"><h4>🌈 Plasma</h4><p>GPU-accelerated plasma</p><a href="yogpu-plasma.html">Demo →</a></div>
+          <div class="card gpuFlow"><h4>🔥 Fire</h4><p>WebGPU candle flame</p><a href="yogpu-fire.html">Demo →</a></div>
+          <div class="card gpuFlow"><h4>💨 Smoke</h4><p>WebGPU match smoke</p><a href="yogpu-smoke.html">Demo →</a></div>
+          <div class="card gpuFlow"><h4>🌊 Water</h4><p>Compute shader waves</p><a href="yogpu-water.html">Demo →</a></div>
+          <div class="card gpuFlow"><h4>🌈 Plasma</h4><p>GPU-accelerated plasma</p><a href="yogpu-plasma.html">Demo →</a></div>
         </div>
       </div>
 
@@ -656,12 +654,12 @@
       <h2>❓ Frequently Asked Questions</h2>
       <div class="faq-grid">
         <div class="faq-item">
-          <h4>What's the difference between glsl() and yo()?</h4>
-          <p><code>glsl()</code> is a one-liner for quick shader sketches. <code>yo()</code> is a fluent builder that supports plugins like FPS counters, simulations, and post-processing chains.</p>
+          <h4>What's the difference between glsl() and flow()?</h4>
+          <p><code>mushu().glsl()</code> is a one-liner for quick shader sketches. <code>mushu().flow()</code> is a fluent builder that supports plugins like FPS counters, simulations, and post-processing chains.</p>
         </div>
         <div class="faq-item">
           <h4>Do I need WebGPU support?</h4>
-          <p>No! The <code>glsl()</code> and <code>yo()</code> APIs use WebGL2, which works everywhere. WebGPU (<code>gpu()</code> and <code>yoGPU()</code>) is optional for when you need compute shaders.</p>
+          <p>No! The <code>mushu().glsl()</code> and <code>mushu().flow()</code> APIs use WebGL2, which works everywhere. WebGPU (<code>mushu().gpu()</code> and <code>mushu().gpu().flow()</code>) is optional for when you need compute shaders.</p>
         </div>
         <div class="faq-item">
           <h4>What uniforms are available?</h4>
@@ -677,7 +675,7 @@
         </div>
         <div class="faq-item">
           <h4>Is mushu good for learning shaders?</h4>
-          <p>Yes! Compare the boilerplate examples (200+ lines) to the <code>glsl()</code> versions (10 lines) to see how much easier it is to focus on the actual shader code.</p>
+          <p>Yes! Compare the boilerplate examples (200+ lines) to the <code>mushu().glsl()</code> versions (10 lines) to see how much easier it is to focus on the actual shader code.</p>
         </div>
       </div>
     </section>

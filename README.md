@@ -16,9 +16,9 @@ A delightfully simple WebGL2 & WebGPU creative coding library with a hookable pl
 ```html
 <canvas id="c"></canvas>
 <script type="module">
-import { yo, shader, fps } from './mushu/src/index.js';
+import { mushu, shader, fps } from './mushu/src/index.js';
 
-yo(document.getElementById('c'))
+mushu('#c').flow()
   .use(shader(`
     void mainImage(out vec4 O, vec2 C) {
       vec2 uv = C / resolution;
@@ -35,20 +35,20 @@ yo(document.getElementById('c'))
 Just copy the `src` folder into your project, or use ES modules directly:
 
 ```javascript
-import { yo, shader, simulation, fps } from './mushu/src/index.js';
+import { mushu, shader, simulation, fps } from './mushu/src/index.js';
 ```
 
 ### Module Imports
 
 ```javascript
 // Everything
-import { yo, shader, simulation, fps, yoGPU, GLSL } from './mushu/src/index.js';
+import { mushu, shader, simulation, fps, GLSL } from './mushu/src/index.js';
 
-// Just WebGL2
-import { yo, shader, simulation, fps } from './mushu/src/core/yo.js';
+// Just WebGL2 flow builder
+import { flow, shader, simulation, fps } from './mushu/src/core/flow.js';
 
-// Just WebGPU
-import { yoGPU } from './mushu/src/gpu/yoGPU.js';
+// Just WebGPU flow builder
+import { gpuFlow } from './mushu/src/gpu/gpuFlow.js';
 
 // Just GLSL utilities
 import { GLSL, PRESET_SHADERS } from './mushu/src/glsl/shaders.js';
@@ -56,16 +56,46 @@ import { GLSL, PRESET_SHADERS } from './mushu/src/glsl/shaders.js';
 
 ## API
 
-### WebGL2 — `yo(canvas, options?)`
+### Unified Entry Point — `mushu(canvasOrSelector)`
 
-Creates a WebGL2 context and render loop.
+All APIs start with `mushu()`. It accepts a canvas element or CSS selector.
 
 ```javascript
-const y = yo(canvas, {
+import { mushu } from './mushu/src/index.js';
+
+// One-liner for quick shader sketches
+mushu('#c').glsl(`
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    O = vec4(uv, 0.5, 1.0);
+  }
+`);
+
+// Fluent WebGL2 builder with plugins
+mushu('#c').flow()
+  .use(shader(...))
+  .use(fps())
+  .go();
+
+// WebGPU with compute and render shaders
+mushu('#c').gpu(computeShader, renderShader);
+
+// Fluent WebGPU builder
+mushu('#c').gpu().flow()
+  .display(...)
+  .go();
+```
+
+### WebGL2 Flow — `mushu(canvas).flow(options?)`
+
+Creates a WebGL2 context and render loop with plugin support.
+
+```javascript
+const f = mushu('#c').flow({
   pixelRatio: window.devicePixelRatio, // Resolution multiplier
 });
 
-y.use(plugin)  // Add a plugin
+f.use(plugin)  // Add a plugin
  .go()         // Start the render loop
 ```
 
@@ -111,29 +141,49 @@ The shader receives an additional `sample(uv)` function to read the previous fra
 #### `fps()`
 Display an FPS counter in the top-left corner.
 
-### WebGPU — `yoGPU(canvas, config)`
+### WebGPU — `mushu(canvas).gpu(computeShader?, renderShader?)`
 
-Creates a WebGPU context with compute shader simulation.
+Creates a WebGPU context with optional compute shader simulation.
 
 ```javascript
-yoGPU(canvas, {
-  simulate: `
+mushu('#c').gpu(
+  // Compute shader (or null for render-only)
+  `@compute @workgroup_size(8, 8)
+   fn main(@builtin(global_invocation_id) id: vec3u) {
+     // Simulation logic
+     let state = textureLoad(stateIn, id.xy);
+     textureStore(stateOut, id.xy, state);
+   }`,
+  
+  // Render shader
+  `@fragment
+   fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+     let coord = vec2u(uv * vec2f(textureDimensions(state)));
+     let state = textureLoad(state, coord);
+     return vec4f(state.rgb, 1.0);
+   }`
+);
+```
+
+### WebGPU Flow — `mushu(canvas).gpu().flow()`
+
+Fluent WebGPU builder with method chaining.
+
+```javascript
+mushu('#c').gpu().flow()
+  .compute(`
     @compute @workgroup_size(8, 8)
     fn main(@builtin(global_invocation_id) id: vec3u) {
       // Simulation logic
-      let state = textureLoad(stateIn, id.xy);
-      textureStore(stateOut, id.xy, state);
     }
-  `,
-  display: `
+  `)
+  .display(`
     @fragment
     fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
-      let coord = vec2u(uv * vec2f(textureDimensions(state)));
-      let state = textureLoad(state, coord);
-      return vec4f(state.rgb, 1.0);
+      return vec4f(uv, sin(u.time), 1.0);
     }
-  `,
-}).go();
+  `)
+  .go();
 ```
 
 #### Available in WGSL:

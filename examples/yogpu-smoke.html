@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>mushu — YOGPU Smoke Demo</title>
+  <title>mushu — GPU Flow Smoke Demo</title>
   <style>
     * { margin: 0; padding: 0; }
     body { background: #000; overflow: hidden; }
@@ -12,10 +12,10 @@
   </style>
 </head>
 <body>
-<div class="info">💨 <code>yoGPU().display().go()</code> Match Smoke | Move mouse - smoke trails from cursor</div>
+<div class="info">💨 <code>mushu().gpu().flow()</code> Match Smoke | Move mouse - smoke trails from cursor</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { yoGPU } from '../src/gpu/yoGPU.js';
+import { mushu } from '../src/index.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // YOGPU Match Smoke - Smoke emits from mouse cursor like a match
@@ -28,7 +28,7 @@ import { yoGPU } from '../src/gpu/yoGPU.js';
 //   • Glowing ember at source
 // ═══════════════════════════════════════════════════════════════════════════
 
-yoGPU(document.getElementById('c'))
+mushu('#c').gpu().flow()
   .display(`
     fn hash(p: vec2<f32>) -> f32 {
       var p3 = fract(vec3<f32>(p.xyx) * 0.1031);

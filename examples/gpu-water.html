@@ -12,10 +12,10 @@
   </style>
 </head>
 <body>
-<div class="info">🌊 <code>gpu(compute, render)</code> Water | WebGPU Function API</div>
+<div class="info">🌊 <code>mushu().gpu(compute, render)</code> Water | WebGPU Function API</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { gpu } from '../src/gpu/yoGPU.js';
+import { mushu } from '../src/index.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // WebGPU Advanced Water Ripple Simulation
@@ -31,7 +31,7 @@ import { gpu } from '../src/gpu/yoGPU.js';
 // Click and drag to create ripples!
 // ═══════════════════════════════════════════════════════════════════════════
 
-gpu(
+mushu('#c').gpu(
   // Compute shader - Advanced wave physics
   /* wgsl */`
     fn hash(p: vec2<f32>) -> f32 {

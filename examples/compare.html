@@ -206,9 +206,9 @@
   <p>
     Traditional graphics APIs force you to learn everything upfront — context creation, shader compilation, 
     buffer management, uniform binding, render loops... <strong>mushu flips this completely</strong>.
-    Start with <code>yo(canvas).use(shader(`...`)).go()</code> and you have a working shader in 3 lines.
+    Start with <code>mushu(canvas).flow().use(shader(`...`)).go()</code> and you have a working shader in 3 lines.
     Need ping-pong FBOs for simulation? Add <code>.use(simulation())</code>. 
-    Need WebGPU compute? Use <code>gpu(computeCode, renderCode)</code>.
+    Need WebGPU compute? Use <code>mushu().gpu(computeCode, renderCode)</code>.
     Each hook is chainable, each default is overridable, and hot-reloading is built-in.
   </p>
 </div>
@@ -356,9 +356,9 @@ gl.<span class="function">linkProgram</span>(program);
         <span class="panel-title after">✅ mushu (~35 lines)</span>
         <span class="line-count reduced">82% reduction</span>
       </div>
-      <pre><code><span class="keyword">import</span> { yo, shader, fps } <span class="keyword">from</span> <span class="string">'./mushu/src/index.js'</span>;
+      <pre><code><span class="keyword">import</span> { mushu, shader, fps } <span class="keyword">from</span> <span class="string">'./mushu/src/index.js'</span>;
 
-<span class="function">yo</span>(document.<span class="function">getElementById</span>(<span class="string">'c'</span>))
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">flow</span>()
   .<span class="function">use</span>(<span class="function">shader</span>(<span class="string">`
     void mainImage(out vec4 O, vec2 C) {
       vec2 uv = C / resolution;
@@ -523,7 +523,7 @@ void main() {
         <span class="panel-title after">✅ mushu (~95 lines)</span>
         <span class="line-count reduced">66% reduction</span>
       </div>
-      <pre><code><span class="keyword">import</span> { yo, simulation, fps } <span class="keyword">from</span> <span class="string">'./mushu/src/index.js'</span>;
+      <pre><code><span class="keyword">import</span> { mushu, simulation, fps } <span class="keyword">from</span> <span class="string">'./mushu/src/index.js'</span>;
 
 <span class="keyword">const</span> sim = <span class="function">simulation</span>({ scale: <span class="number">0.5</span>, iterations: <span class="number">2</span> });
 
@@ -601,7 +601,7 @@ sim.<span class="function">display</span>(<span class="string">`
   }
 `</span>);
 
-<span class="function">yo</span>(document.<span class="function">getElementById</span>(<span class="string">'c'</span>))
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">flow</span>()
   .<span class="function">use</span>(sim)
   .<span class="function">use</span>(<span class="function">fps</span>())
   .<span class="function">go</span>();

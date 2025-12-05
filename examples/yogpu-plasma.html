@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>mushu — YOGPU Plasma Demo</title>
+  <title>mushu — GPU Flow Plasma Demo</title>
   <style>
     * { margin: 0; padding: 0; }
     body { background: #000; overflow: hidden; }
@@ -12,10 +12,10 @@
   </style>
 </head>
 <body>
-<div class="info">⚡ <code>yoGPU().display().go()</code> Plasma | WebGPU Fluent API</div>
+<div class="info">⚡ <code>mushu().gpu().flow()</code> Plasma | WebGPU Fluent API</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { yoGPU } from '../src/gpu/yoGPU.js';
+import { mushu } from '../src/index.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // YOGPU Advanced Plasma Effect (WebGPU Fluent API)
@@ -31,7 +31,7 @@ import { yoGPU } from '../src/gpu/yoGPU.js';
 // Move mouse to influence the plasma! Click for energy burst!
 // ═══════════════════════════════════════════════════════════════════════════
 
-yoGPU(document.getElementById('c'))
+mushu('#c').gpu().flow()
   .scale(1.0)
   .simulate(`
     fn hash(p: vec2<f32>) -> f32 {

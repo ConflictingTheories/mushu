@@ -97,7 +97,7 @@
       background: #58a6ff;
     }
 
-    .legend-color.yo {
+    .legend-color.flow {
       background: #3fb950;
     }
 
@@ -105,7 +105,7 @@
       background: #a371f7;
     }
 
-    .legend-color.yogpu {
+    .legend-color.gpuflow {
       background: #f778ba;
     }
 
@@ -191,7 +191,7 @@
       color: #58a6ff;
     }
 
-    .item-tag.yo {
+    .item-tag.flow {
       background: #1a3d2e;
       color: #3fb950;
     }
@@ -201,7 +201,7 @@
       color: #a371f7;
     }
 
-    .item-tag.yogpu {
+    .item-tag.gpuflow {
       background: #4a1a3d;
       color: #f778ba;
     }
@@ -280,19 +280,19 @@
   <div class="legend">
     <div class="legend-item">
       <div class="legend-color glsl"></div>
-      <span>glsl() Helper</span>
+      <span>mushu().glsl()</span>
     </div>
     <div class="legend-item">
-      <div class="legend-color yo"></div>
-      <span>YO (WebGL2)</span>
+      <div class="legend-color flow"></div>
+      <span>mushu().flow() (WebGL2)</span>
     </div>
     <div class="legend-item">
       <div class="legend-color gpu"></div>
-      <span>gpu() (WebGPU)</span>
+      <span>mushu().gpu() (WebGPU)</span>
     </div>
     <div class="legend-item">
-      <div class="legend-color yogpu"></div>
-      <span>yoGPU() (WebGPU)</span>
+      <div class="legend-color gpuflow"></div>
+      <span>mushu().gpu().flow() (WebGPU)</span>
     </div>
   </div>
 
@@ -302,7 +302,7 @@
     <div class="comparison-grid">
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">glsl() Fire</span>
+          <span class="item-title">GLSL Fire</span>
           <span class="item-tag glsl">glsl()</span>
         </div>
         <iframe class="item-frame" src="fire.html"></iframe>
@@ -313,8 +313,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YO Fire</span>
-          <span class="item-tag yo">YO</span>
+          <span class="item-title">Flow Fire</span>
+          <span class="item-tag flow">flow()</span>
         </div>
         <iframe class="item-frame" src="yo-fire.html"></iframe>
         <div class="item-footer">
@@ -335,8 +335,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YOGPU Fire</span>
-          <span class="item-tag yogpu">yoGPU()</span>
+          <span class="item-title">GPU Flow Fire</span>
+          <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
         <iframe class="item-frame" src="yogpu-fire.html"></iframe>
         <div class="item-footer">
@@ -353,7 +353,7 @@
     <div class="comparison-grid">
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">glsl() Smoke</span>
+          <span class="item-title">GLSL Smoke</span>
           <span class="item-tag glsl">glsl()</span>
         </div>
         <iframe class="item-frame" src="smoke.html"></iframe>
@@ -364,8 +364,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YO Smoke</span>
-          <span class="item-tag yo">YO</span>
+          <span class="item-title">Flow Smoke</span>
+          <span class="item-tag flow">flow()</span>
         </div>
         <iframe class="item-frame" src="yo-smoke.html"></iframe>
         <div class="item-footer">
@@ -386,8 +386,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YOGPU Smoke</span>
-          <span class="item-tag yogpu">yoGPU()</span>
+          <span class="item-title">GPU Flow Smoke</span>
+          <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
         <iframe class="item-frame" src="yogpu-smoke.html"></iframe>
         <div class="item-footer">
@@ -404,7 +404,7 @@
     <div class="comparison-grid">
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">glsl() Water</span>
+          <span class="item-title">GLSL Water</span>
           <span class="item-tag glsl">glsl()</span>
         </div>
         <iframe class="item-frame" src="water.html"></iframe>
@@ -415,8 +415,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YO Water</span>
-          <span class="item-tag yo">YO</span>
+          <span class="item-title">Flow Water</span>
+          <span class="item-tag flow">flow()</span>
         </div>
         <iframe class="item-frame" src="yo-water.html"></iframe>
         <div class="item-footer">
@@ -437,8 +437,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YOGPU Water</span>
-          <span class="item-tag yogpu">yoGPU()</span>
+          <span class="item-title">GPU Flow Water</span>
+          <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
         <iframe class="item-frame" src="yogpu-water.html"></iframe>
         <div class="item-footer">
@@ -455,7 +455,7 @@
     <div class="comparison-grid">
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">glsl() Plasma</span>
+          <span class="item-title">GLSL Plasma</span>
           <span class="item-tag glsl">glsl()</span>
         </div>
         <iframe class="item-frame" src="plasma.html"></iframe>
@@ -466,8 +466,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YO Plasma</span>
-          <span class="item-tag yo">YO</span>
+          <span class="item-title">Flow Plasma</span>
+          <span class="item-tag flow">flow()</span>
         </div>
         <iframe class="item-frame" src="yo-plasma.html"></iframe>
         <div class="item-footer">
@@ -488,8 +488,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YOGPU Plasma</span>
-          <span class="item-tag yogpu">yoGPU()</span>
+          <span class="item-title">GPU Flow Plasma</span>
+          <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
         <iframe class="item-frame" src="yogpu-plasma.html"></iframe>
         <div class="item-footer">
@@ -515,8 +515,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YO</span>
-          <span class="item-tag yo">YO</span>
+          <span class="item-title">flow()</span>
+          <span class="item-tag flow">flow()</span>
         </div>
         <iframe class="item-frame" src="yo-fire.html" style="height: 150px;"></iframe>
       </div>
@@ -529,8 +529,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">yoGPU()</span>
-          <span class="item-tag yogpu">yoGPU()</span>
+          <span class="item-title">gpu().flow()</span>
+          <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
         <iframe class="item-frame" src="yogpu-fire.html" style="height: 150px;"></iframe>
       </div>
@@ -547,8 +547,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YO</span>
-          <span class="item-tag yo">YO</span>
+          <span class="item-title">flow()</span>
+          <span class="item-tag flow">flow()</span>
         </div>
         <iframe class="item-frame" src="yo-smoke.html" style="height: 150px;"></iframe>
       </div>
@@ -561,8 +561,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">yoGPU()</span>
-          <span class="item-tag yogpu">yoGPU()</span>
+          <span class="item-title">gpu().flow()</span>
+          <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
         <iframe class="item-frame" src="yogpu-smoke.html" style="height: 150px;"></iframe>
       </div>
@@ -579,8 +579,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YO</span>
-          <span class="item-tag yo">YO</span>
+          <span class="item-title">flow()</span>
+          <span class="item-tag flow">flow()</span>
         </div>
         <iframe class="item-frame" src="yo-water.html" style="height: 150px;"></iframe>
       </div>
@@ -593,8 +593,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">yoGPU()</span>
-          <span class="item-tag yogpu">yoGPU()</span>
+          <span class="item-title">gpu().flow()</span>
+          <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
         <iframe class="item-frame" src="yogpu-water.html" style="height: 150px;"></iframe>
       </div>
@@ -611,8 +611,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">YO</span>
-          <span class="item-tag yo">YO</span>
+          <span class="item-title">flow()</span>
+          <span class="item-tag flow">flow()</span>
         </div>
         <iframe class="item-frame" src="yo-plasma.html" style="height: 150px;"></iframe>
       </div>
@@ -625,8 +625,8 @@
       </div>
       <div class="comparison-item">
         <div class="item-header">
-          <span class="item-title">yoGPU()</span>
-          <span class="item-tag yogpu">yoGPU()</span>
+          <span class="item-title">gpu().flow()</span>
+          <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
         <iframe class="item-frame" src="yogpu-plasma.html" style="height: 150px;"></iframe>
       </div>

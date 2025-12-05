@@ -2,33 +2,37 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>mushu — Flow Smoke Demo</title>
+  <title>mushu — Flow Fire Demo</title>
   <style>
     * { margin: 0; padding: 0; }
     body { background: #000; overflow: hidden; }
     .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
             background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
-    .info code { color: #aabbcc; }
+    .info code { color: #ff6622; }
+    .home-link { position: fixed; bottom: 1rem; right: 1rem; background: linear-gradient(135deg, #ff6b6b, #feca57); 
+                 color: #000; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; 
+                 font-weight: bold; font-size: 0.85rem; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); 
+                 transition: all 0.2s; z-index: 100; font-family: monospace; }
+    .home-link:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4); }
   </style>
 </head>
 <body>
-<div class="info">💨 <code>mushu().flow()</code> Smoke | Move mouse to interact</div>
+<div class="info">🔥 <code>mushu().flow()</code> Fire | Move mouse to interact</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
 import { mushu, shader, fps } from '../src/index.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// YO Smoke - Procedural Volumetric Smoke (WebGL2)
+// mushu Flow Fire - Procedural Flames (WebGL2)
 // 
 // Features:
-//   • Multi-octave FBM noise for realistic billowing
-//   • Beer-Lambert volumetric absorption
-//   • Multiple smoke columns with turbulent motion
-//   • Mouse-interactive smoke dispersal
-//   • Volumetric lighting from above
-//   • Subtle glow at smoke source
+//   • Multi-octave FBM noise for realistic flames
+//   • Blackbody radiation color ramp
+//   • Mouse-interactive fire intensity
+//   • Rising wisps and turbulent motion
+//   • Flickering animation
 // 
-// Move mouse to disperse smoke!
+// Move mouse to intensify flames!
 // ═══════════════════════════════════════════════════════════════════════════
 
 mushu('#c').flow()
@@ -57,11 +61,10 @@ mushu('#c').flow()
     float fbm(vec2 p, int octaves) {
       float f = 0.0;
       float amp = 0.5;
-      mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
       for (int i = 0; i < 8; i++) {
         if (i >= octaves) break;
         f += amp * noise(p);
-        p = rot * p * 2.0;
+        p *= 2.0;
         amp *= 0.5;
       }
       return f;
@@ -70,45 +73,35 @@ mushu('#c').flow()
     void mainImage(out vec4 O, vec2 C) {
       vec2 uv = C / resolution;
       vec2 p = (C - resolution * 0.5) / resolution.y;
-      float t = time * 0.4;
       
       // ─────────────────────────────────────────────────────────────────
-      // Multiple Smoke Columns
+      // Fire Base Shape
       // ─────────────────────────────────────────────────────────────────
       
-      float smoke = 0.0;
-      
-      for (int i = 0; i < 5; i++) {
-        float fi = float(i);
-        float xOffset = sin(fi * 1.3) * 0.3;
-        vec2 smokePos = vec2(p.x - xOffset, p.y + 0.4);
-        
-        // Rising motion with turbulence
-        float rise = fbm(vec2(smokePos.x * 2.0, t + fi), 4);
-        smokePos.y += rise * 0.3;
-        smokePos.x += sin(smokePos.y * 3.0 + t + fi) * 0.08;
-        
-        // Turbulent distortion
-        float turb = fbm(smokePos * 4.0 + t * 0.5 + fi, 5);
-        smokePos += (turb - 0.5) * 0.15;
-        
-        // Smoke density falloff
-        float dist = length(smokePos * vec2(3.0, 1.0));
-        float column = exp(-dist * 2.5);
-        
-        // Add wispy tendrils
-        float tendrils = fbm(smokePos * 8.0 - vec2(0, t), 3);
-        column *= (0.5 + tendrils * 0.8);
-        
-        smoke += column * (0.3 + 0.2 * sin(fi));
-      }
+      float fireShape = 1.0 - uv.y;
+      fireShape *= smoothstep(0.5, 0.0, abs(p.x) - 0.15 + uv.y * 0.3);
       
       // ─────────────────────────────────────────────────────────────────
-      // Swirling Vortices
+      // Animated Turbulence
       // ─────────────────────────────────────────────────────────────────
       
-      float swirl = fbm(p * 3.0 + t * 0.3, 4);
-      smoke += swirl * 0.2 * (1.0 - uv.y);
+      float t = time;
+      vec2 turbUV = vec2(p.x * 3.0, p.y * 2.0 - t * 1.5);
+      float turb = fbm(turbUV * 4.0, 5);
+      float turb2 = fbm(turbUV * 8.0 + vec2(100.0), 4);
+      
+      // Distort the fire shape
+      float distortedShape = fireShape;
+      distortedShape += (turb - 0.5) * 0.8 * fireShape;
+      distortedShape += (turb2 - 0.5) * 0.3 * fireShape;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Rising Wisps
+      // ─────────────────────────────────────────────────────────────────
+      
+      float wisps = noise(vec2(p.x * 20.0, p.y * 5.0 - t * 3.0));
+      wisps *= smoothstep(0.3, 0.0, abs(p.x));
+      distortedShape += wisps * 0.3 * (1.0 - uv.y);
       
       // ─────────────────────────────────────────────────────────────────
       // Mouse Interaction
@@ -117,51 +110,41 @@ mushu('#c').flow()
       vec2 mouseP = mouse - 0.5;
       mouseP.x *= resolution.x / resolution.y;
       float mouseDist = length(p - mouseP);
-      float mouseInfluence = exp(-mouseDist * 6.0);
-      smoke += mouseInfluence * 0.5;
-      smoke *= 1.0 - mouseInfluence * 0.4; // Dispersal effect
+      float mouseInfluence = exp(-mouseDist * 5.0) * 0.5;
+      distortedShape += mouseInfluence;
       
       // ─────────────────────────────────────────────────────────────────
-      // Volumetric Lighting
+      // Blackbody Color Ramp
       // ─────────────────────────────────────────────────────────────────
       
-      vec3 smokeColorLight = vec3(0.65, 0.68, 0.72);
-      vec3 smokeColorDark = vec3(0.15, 0.15, 0.18);
+      float intensity = clamp(distortedShape, 0.0, 1.0);
       
-      // Light from above
-      float topLight = uv.y * 0.3;
-      vec3 smokeColor = mix(smokeColorDark, smokeColorLight, topLight + smoke * 0.3);
+      vec3 col = vec3(0.0);
       
-      // Rim lighting
-      float rim = pow(smoke, 0.5) * 0.3;
-      smokeColor += vec3(0.2, 0.22, 0.25) * rim;
-      
-      // ─────────────────────────────────────────────────────────────────
-      // Beer-Lambert Absorption
-      // ─────────────────────────────────────────────────────────────────
-      
-      float density = clamp(smoke, 0.0, 1.0);
-      float transmittance = exp(-density * 2.0);
-      
-      // Background gradient
-      vec3 bgColor = mix(vec3(0.02, 0.02, 0.04), vec3(0.08, 0.08, 0.12), uv.y);
-      
-      // Composite smoke over background
-      vec3 col = mix(smokeColor, bgColor, transmittance);
+      // White-hot core
+      col += vec3(1.0, 1.0, 0.95) * pow(intensity, 4.0) * 3.0;
+      // Bright yellow
+      col += vec3(1.0, 0.9, 0.5) * pow(intensity, 2.5) * 2.0;
+      // Orange
+      col += vec3(1.0, 0.5, 0.1) * pow(intensity, 1.5) * 1.5;
+      // Red
+      col += vec3(0.9, 0.2, 0.05) * pow(intensity, 0.8) * 1.0;
+      // Deep red edges
+      col += vec3(0.4, 0.05, 0.0) * pow(intensity, 0.4) * 0.5;
       
       // ─────────────────────────────────────────────────────────────────
-      // Source Glow & Final Touches
+      // Flickering & Final Touches
       // ─────────────────────────────────────────────────────────────────
       
-      float sourceGlow = exp(-length(p + vec2(0, 0.5)) * 3.0) * 0.5;
-      col += vec3(1.0, 0.6, 0.3) * sourceGlow * (1.0 - transmittance);
+      float flicker = noise(vec2(t * 10.0, 0.0)) * 0.1 + 0.95;
+      col *= flicker;
       
-      // Film grain
-      float grain = (hash(C + time) - 0.5) * 0.03;
-      col += grain;
+      // Tone mapping
+      col = 1.0 - exp(-col * 0.8);
+      col = pow(col, vec3(0.9));
       
-      // Vignette
-      float vignette = 1.0 - length(uv - 0.5) * 0.4;
+      // Subtle vignette
+      float vignette = 1.0 - length(uv - 0.5) * 0.3;
       col *= vignette;
       
       O = vec4(col, 1.0);
@@ -170,8 +153,9 @@ mushu('#c').flow()
   .use(fps())
   .go();
 
-console.log('%c 💨 mushu Flow Smoke Ready ', 'background: linear-gradient(90deg, #556, #889); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Move mouse to disperse smoke!');
+console.log('%c 🔥 mushu Flow Fire Ready ', 'background: linear-gradient(90deg, #ff4500, #ff8c00); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Move mouse to intensify flames!');
 </script>
+<a href="index.html" class="home-link">← Back to Index</a>
 </body>
 </html>

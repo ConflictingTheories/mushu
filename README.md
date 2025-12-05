@@ -223,12 +223,11 @@ Check out the `examples/` folder:
 | `fire.html` | Multi-octave fire simulation |
 | `smoke.html` | Volumetric smoke with turbulence |
 | `water.html` | Pure water ripples (wave equation) |
-| `caustics.html` | Underwater light caustics |
 | `plasma.html` | Classic plasma effect |
-| `gpu-fire.html` | WebGPU fire |
-| `gpu-water.html` | WebGPU water simulation |
-| `gpu-plasma.html` | WebGPU plasma |
-| `gpu-smoke.html` | WebGPU volumetric smoke |
+| `gpu/fire.html` | WebGPU fire |
+| `gpu/water.html` | WebGPU water simulation |
+| `gpu/plasma.html` | WebGPU plasma |
+| `gpu/smoke.html` | WebGPU volumetric smoke |
 | `compare.html` | Before/after code comparison |
 
 ## Tips

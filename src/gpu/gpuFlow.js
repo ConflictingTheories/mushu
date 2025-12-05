@@ -85,6 +85,9 @@ export function gpuFlow(canvasOrSelector) {
         // Setup mouse events
         setupMouse();
         
+        // Set running flag so animation loops will start
+        running = true;
+        
         // Run the appropriate pipeline
         if (simulateCode) {
           await runComputePipeline();
@@ -92,7 +95,6 @@ export function gpuFlow(canvasOrSelector) {
           await runDisplayPipeline();
         }
         
-        running = true;
         return builder;
         
       } catch (err) {
@@ -152,6 +154,16 @@ export function gpuFlow(canvasOrSelector) {
     let width, height, simWidth, simHeight;
     let stateA, stateB;
     
+    // Configure context FIRST with initial canvas size
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    width = Math.floor(rect.width * dpr);
+    height = Math.floor(rect.height * dpr);
+    canvas.width = width;
+    canvas.height = height;
+    
+    context.configure({ device, format, alphaMode: 'premultiplied' });
+    
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -162,8 +174,6 @@ export function gpuFlow(canvasOrSelector) {
       
       simWidth = Math.floor(width * simScale);
       simHeight = Math.floor(height * simScale);
-      
-      context.configure({ device, format, alphaMode: 'premultiplied' });
       
       // Create simulation textures
       const createTex = () => device.createTexture({
@@ -362,7 +372,6 @@ export function gpuFlow(canvasOrSelector) {
       requestAnimationFrame(loop);
     };
     
-    running = true;
     requestAnimationFrame(loop);
   }
   
@@ -373,6 +382,15 @@ export function gpuFlow(canvasOrSelector) {
   async function runDisplayPipeline() {
     let width, height;
     
+    // Configure context FIRST with initial canvas size
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    width = Math.floor(rect.width * dpr);
+    height = Math.floor(rect.height * dpr);
+    canvas.width = width;
+    canvas.height = height;
+    context.configure({ device, format, alphaMode: 'premultiplied' });
+    
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -380,10 +398,8 @@ export function gpuFlow(canvasOrSelector) {
       height = Math.floor(rect.height * dpr);
       canvas.width = width;
       canvas.height = height;
-      context.configure({ device, format, alphaMode: 'premultiplied' });
     };
     
-    resize();
     window.addEventListener('resize', resize);
     
     // Create uniform buffers
@@ -462,7 +478,6 @@ export function gpuFlow(canvasOrSelector) {
       requestAnimationFrame(loop);
     };
     
-    running = true;
     requestAnimationFrame(loop);
   }
   

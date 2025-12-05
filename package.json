@@ -1,7 +1,7 @@
 {
   "name": "mushu",
   "version": "1.0.0",
-  "description": "The Hookable Fluent Pattern for Creative Coding - WebGL & WebGPU made simple",
+  "description": "The Fluent Pattern for Shader Coding - WebGL & WebGPU made simple",
   "type": "module",
   "main": "src/index.js",
   "module": "src/index.js",
@@ -16,8 +16,7 @@
     "README.md"
   ],
   "scripts": {
-    "dev": "npx http-server . -c-1 -o examples/index.html",
-    "start": "npx http-server . -c-1",
+    "start": "npx http-server . -c-1 -o examples/index.html",
     "build": "echo 'No build step needed - pure ES modules'"
   },
   "keywords": [

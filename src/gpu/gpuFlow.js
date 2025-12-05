@@ -507,6 +507,11 @@ export async function gpu(computeCode, renderCode, options = {}) {
     scale = 0.5
   } = options;
   
+  if (!renderCode) {
+    showGPUError('No render shader provided');
+    return null;
+  }
+  
   if (!navigator.gpu) {
     showGPUError();
     return null;
@@ -524,6 +529,8 @@ export async function gpu(computeCode, renderCode, options = {}) {
   
   let width, height;
   let stateA, stateB;
+  let computePipeline = null;
+  let computeBindGroupLayout = null;
   
   const createStateTexture = (w, h) => device.createTexture({
     size: [w, h],
@@ -540,9 +547,11 @@ export async function gpu(computeCode, renderCode, options = {}) {
     canvas.height = Math.floor(rect.height * dpr);
     context.configure({ device, format, alphaMode: 'premultiplied' });
     
-    // Recreate state textures on resize
-    stateA = createStateTexture(width, height);
-    stateB = createStateTexture(width, height);
+    // Recreate state textures on resize if compute shader is present
+    if (computeCode) {
+      stateA = createStateTexture(width, height);
+      stateB = createStateTexture(width, height);
+    }
   };
   
   resize();
@@ -585,65 +594,80 @@ export async function gpu(computeCode, renderCode, options = {}) {
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
   });
   
-  // Compute pipeline - wraps user code with compute() function call
-  const computeModule = device.createShaderModule({
-    code: /* wgsl */`
-      struct Uniforms {
-        time: f32,
-        _pad0: f32,
-        width: f32,
-        height: f32,
-        mouseX: f32,
-        mouseY: f32,
-        mouseDown: f32,
-        _pad1: f32,
-        prevMouseX: f32,
-        prevMouseY: f32,
-      }
-      
-      @group(0) @binding(0) var<uniform> u: Uniforms;
-      @group(0) @binding(1) var src: texture_storage_2d<rgba16float, read>;
-      @group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+  // Compute pipeline - only if compute code provided
+  if (computeCode) {
+    const computeModule = device.createShaderModule({
+      code: /* wgsl */`
+        struct Uniforms {
+          time: f32,
+          _pad0: f32,
+          width: f32,
+          height: f32,
+          mouseX: f32,
+          mouseY: f32,
+          mouseDown: f32,
+          _pad1: f32,
+          prevMouseX: f32,
+          prevMouseY: f32,
+        }
+        
+        @group(0) @binding(0) var<uniform> u: Uniforms;
+        @group(0) @binding(1) var src: texture_storage_2d<rgba16float, read>;
+        @group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
 
-      // Sample helper for storage texture
-      fn sample(C: vec2<i32>) -> vec4<f32> {
-        let dims = vec2<i32>(textureDimensions(src));
-        let p = clamp(C, vec2<i32>(0), dims - vec2<i32>(1));
-        return textureLoad(src, p);
-      }
-      
-      // Sample with offset helper
-      fn sampleOffset(C: vec2<i32>, offset: vec2<i32>) -> vec4<f32> {
-        let dims = vec2<i32>(textureDimensions(src));
-        let p = clamp(C + offset, vec2<i32>(0), dims - vec2<i32>(1));
-        return textureLoad(src, p);
-      }
+        // Sample helper for storage texture
+        fn sample(C: vec2<i32>) -> vec4<f32> {
+          let dims = vec2<i32>(textureDimensions(src));
+          let p = clamp(C, vec2<i32>(0), dims - vec2<i32>(1));
+          return textureLoad(src, p);
+        }
+        
+        // Sample with offset helper
+        fn sampleOffset(C: vec2<i32>, offset: vec2<i32>) -> vec4<f32> {
+          let dims = vec2<i32>(textureDimensions(src));
+          let p = clamp(C + offset, vec2<i32>(0), dims - vec2<i32>(1));
+          return textureLoad(src, p);
+        }
 
-      ${computeCode}
+        ${computeCode}
 
-      @compute @workgroup_size(8, 8)
-      fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-        let C = vec2<i32>(id.xy);
-        let dims = textureDimensions(src);
-        if (u32(C.x) >= dims.x || u32(C.y) >= dims.y) { return; }
-        let uv = vec2<f32>(C) / vec2<f32>(dims);
-        compute(C, uv);
-      }
-    `
-  });
+        @compute @workgroup_size(8, 8)
+        fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+          let C = vec2<i32>(id.xy);
+          let dims = textureDimensions(src);
+          if (u32(C.x) >= dims.x || u32(C.y) >= dims.y) { return; }
+          let uv = vec2<f32>(C) / vec2<f32>(dims);
+          compute(C, uv);
+        }
+      `
+    });
+    
+    computeBindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
+        { binding: 1, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'read-only', format: 'rgba16float' } },
+        { binding: 2, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba16float' } }
+      ]
+    });
+    
+    computePipeline = device.createComputePipeline({
+      layout: device.createPipelineLayout({ bindGroupLayouts: [computeBindGroupLayout] }),
+      compute: { module: computeModule, entryPoint: 'main' }
+    });
+  }
   
-  const computeBindGroupLayout = device.createBindGroupLayout({
-    entries: [
-      { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
-      { binding: 1, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'read-only', format: 'rgba16float' } },
-      { binding: 2, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba16float' } }
-    ]
-  });
-  
-  const computePipeline = device.createComputePipeline({
-    layout: device.createPipelineLayout({ bindGroupLayouts: [computeBindGroupLayout] }),
-    compute: { module: computeModule, entryPoint: 'main' }
-  });
+  // Create dummy texture for render binding if no compute shader
+  let dummyTexture = null;
+  if (!computeCode) {
+    dummyTexture = device.createTexture({
+      size: [1, 1],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.TEXTURE_BINDING,
+      mappedAtCreation: true
+    });
+    new Float32Array(dummyTexture.getMappedRange()).fill(1.0);
+    dummyTexture.unmap();
+  }
   
   // Render pipeline
   const renderModule = device.createShaderModule({
@@ -651,14 +675,11 @@ export async function gpu(computeCode, renderCode, options = {}) {
       struct Uniforms {
         time: f32,
         _pad0: f32,
-        width: f32,
-        height: f32,
-        mouseX: f32,
-        mouseY: f32,
+        resolution: vec2<f32>,
+        mouse: vec2<f32>,
         mouseDown: f32,
         _pad1: f32,
-        prevMouseX: f32,
-        prevMouseY: f32,
+        prevMouse: vec2<f32>,
       }
       
       struct VertexOutput {
@@ -712,18 +733,24 @@ export async function gpu(computeCode, renderCode, options = {}) {
   
   let running = true;
   const startTime = performance.now();
+  let canvasWidth, canvasHeight;
   
   const loop = () => {
     if (!running) return;
     
     const time = (performance.now() - startTime) * 0.001;
     
-    // Uniform buffer layout (matches yoGPU):
-    // time, pad, width, height, mouseX, mouseY, mouseDown, pad, prevMouseX, prevMouseY, pad, pad
-    // Mouse Y is flipped to match GL coordinate system (Y=0 at bottom)
+    // Get canvas dimensions
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvasWidth = Math.floor(rect.width * dpr);
+    canvasHeight = Math.floor(rect.height * dpr);
+    
+    // Uniform buffer layout:
+    // time(4) + pad(4) + resolution(8) + mouse(8) + mouseDown(4) + pad(4) + prevMouse(8)
     device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([
       time, 0,
-      width, height,
+      canvasWidth, canvasHeight,
       mouse.x, 1.0 - mouse.y,
       mouse.down ? 1 : 0, 0,
       mouse.px, 1.0 - mouse.py,
@@ -732,21 +759,24 @@ export async function gpu(computeCode, renderCode, options = {}) {
     
     const encoder = device.createCommandEncoder();
     
-    // Compute pass
-    const computePass = encoder.beginComputePass();
-    computePass.setPipeline(computePipeline);
-    computePass.setBindGroup(0, device.createBindGroup({
-      layout: computeBindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: uniformBuffer } },
-        { binding: 1, resource: stateA.createView() },
-        { binding: 2, resource: stateB.createView() }
-      ]
-    }));
-    computePass.dispatchWorkgroups(Math.ceil(width / 8), Math.ceil(height / 8));
-    computePass.end();
+    // Compute pass (only if compute shader provided)
+    if (computePipeline && stateA && stateB) {
+      const computePass = encoder.beginComputePass();
+      computePass.setPipeline(computePipeline);
+      computePass.setBindGroup(0, device.createBindGroup({
+        layout: computeBindGroupLayout,
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: stateA.createView() },
+          { binding: 2, resource: stateB.createView() }
+        ]
+      }));
+      computePass.dispatchWorkgroups(Math.ceil(width / 8), Math.ceil(height / 8));
+      computePass.end();
+    }
     
     // Render pass
+    const texToRender = computeCode ? stateB : dummyTexture;
     const renderPass = encoder.beginRenderPass({
       colorAttachments: [{
         view: context.getCurrentTexture().createView(),
@@ -760,7 +790,7 @@ export async function gpu(computeCode, renderCode, options = {}) {
       layout: renderBindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: uniformBuffer } },
-        { binding: 1, resource: stateB.createView() },
+        { binding: 1, resource: texToRender.createView() },
         { binding: 2, resource: sampler }
       ]
     }));
@@ -768,7 +798,11 @@ export async function gpu(computeCode, renderCode, options = {}) {
     renderPass.end();
     
     device.queue.submit([encoder.finish()]);
-    [stateA, stateB] = [stateB, stateA];
+    
+    // Swap textures if compute shader present
+    if (computePipeline && stateA && stateB) {
+      [stateA, stateB] = [stateB, stateA];
+    }
     
     requestAnimationFrame(loop);
   };

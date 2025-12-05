@@ -18,9 +18,12 @@
   "scripts": {
     "start": "npx http-server . -c-1 -o examples/index.html",
     "build": "echo 'No build step needed - pure ES modules'",
-    "test": "vitest"
+    "test": "vitest",
+    "lint": "eslint \"src/**/*.js\" \"test/**/*.js\"",
+    "lint:fix": "eslint --fix \"src/**/*.js\" \"test/**/*.js\""
   },
   "devDependencies": {
+    "eslint": "^8.57.1",
     "vitest": "^1.0.0"
   },
   "keywords": [

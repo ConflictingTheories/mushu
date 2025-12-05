@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>yo() — Simplified WebGPU Water Demo</title>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { yoGPU } from './yo.js?v=2';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WebGPU Water Caustics — Compute + Render in one simple API
+// ═══════════════════════════════════════════════════════════════════════════
+
+yoGPU(document.getElementById('c'))
+  .simulate(`
+    @group(0) @binding(0) var<uniform> time: f32;
+    @group(0) @binding(1) var<uniform> resolution: vec2f;
+    @group(0) @binding(2) var<uniform> mouse: vec2f;
+    @group(0) @binding(3) var<uniform> mouseDown: f32;
+    @group(0) @binding(4) var input: texture_2d<f32>;
+    @group(0) @binding(5) var output: texture_storage_2d<rgba16float, write>;
+    
+    fn sampleTex(coord: vec2i) -> vec4f {
+      let dims = vec2i(textureDimensions(input));
+      let c = clamp(coord, vec2i(0), dims - 1);
+      return textureLoad(input, c, 0);
+    }
+
+    @compute @workgroup_size(8, 8)
+    fn main(@builtin(global_invocation_id) id: vec3u) {
+      let dims = textureDimensions(input);
+      if (id.x >= dims.x || id.y >= dims.y) { return; }
+      
+      let ipos = vec2i(id.xy);
+      let uv = vec2f(id.xy) / vec2f(dims);
+      
+      var data = sampleTex(ipos);
+      var height = data.r;
+      var velocity = data.g;
+      
+      // Wave equation neighbors
+      let up = sampleTex(ipos + vec2i(0, 1)).r;
+      let down = sampleTex(ipos + vec2i(0, -1)).r;
+      let left = sampleTex(ipos + vec2i(-1, 0)).r;
+      let right = sampleTex(ipos + vec2i(1, 0)).r;
+      
+      // Wave propagation
+      let laplacian = (up + down + left + right) * 0.25 - height;
+      velocity += laplacian * 2.0;
+      velocity *= 0.995; // damping
+      height += velocity * 0.5;
+      
+      // Mouse ripples (flip mouse Y)
+      let mouseFlipped = vec2f(mouse.x, 1.0 - mouse.y);
+      let d = length(uv - mouseFlipped);
+      if (mouseDown > 0.5 && d < 0.05) {
+        velocity += (1.0 - d / 0.05) * 0.5;
+      }
+      
+      // Random raindrops
+      let dropSeed = fract(sin(dot(vec2f(time * 0.1, f32(id.x * 73 + id.y * 137)), vec2f(12.9898, 78.233))) * 43758.5453);
+      if (dropSeed > 0.9999) {
+        velocity += 0.8;
+      }
+      
+      textureStore(output, ipos, vec4f(height, velocity, 0.0, 1.0));
+    }
+  `)
+  .display(`
+    @fragment
+    fn main(@builtin(position) pos: vec4f) -> @location(0) vec4f {
+      let uv = pos.xy / resolution;
+      let flippedUV = vec2f(uv.x, 1.0 - uv.y);
+      
+      let px = 1.0 / resolution;
+      let h = textureSample(simTex, texSampler, flippedUV).r;
+      let hL = textureSample(simTex, texSampler, flippedUV - vec2f(px.x, 0.0)).r;
+      let hR = textureSample(simTex, texSampler, flippedUV + vec2f(px.x, 0.0)).r;
+      let hU = textureSample(simTex, texSampler, flippedUV + vec2f(0.0, px.y)).r;
+      let hD = textureSample(simTex, texSampler, flippedUV - vec2f(0.0, px.y)).r;
+      
+      // Surface normal from height gradient
+      let normal = normalize(vec3f(hL - hR, hD - hU, 0.1));
+      
+      // Caustics from light refraction
+      let lightDir = normalize(vec3f(0.3, 0.3, 1.0));
+      let caustic = pow(max(dot(normal, lightDir), 0.0), 8.0);
+      
+      // Water color
+      let deepBlue = vec3f(0.02, 0.08, 0.2);
+      let surfaceBlue = vec3f(0.2, 0.5, 0.8);
+      let foam = vec3f(0.8, 0.9, 1.0);
+      
+      var col = mix(deepBlue, surfaceBlue, 0.5 + h * 2.0);
+      col += foam * caustic * 2.0;
+      col += vec3f(0.3, 0.6, 1.0) * pow(caustic, 4.0);
+      
+      return vec4f(col, 1.0);
+    }
+  `)
+  .go();
+
+console.log('%c 🌊 yo() WebGPU Water Ready ', 'background: #00bfff; color: white; padding: 4px 8px; border-radius: 4px;');
+console.log('Click and drag to create ripples!');
+</script>
+</body>
+</html>

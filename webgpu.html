@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>gpu() — WebGPU Creative Coding Framework</title>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<script type="module">
+// ═══════════════════════════════════════════════════════════════════════════
+// gpu() — The Ultimate WebGPU Creative Coding Framework
+// One function. Zero boilerplate. The future of graphics.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const gpu = async (computeCode, renderCode) => {
+  // Check WebGPU support
+  if (!navigator.gpu) {
+    document.body.innerHTML = `
+      <div style="color:#fff;font-family:system-ui;padding:40px;text-align:center">
+        <h1>WebGPU Not Supported</h1>
+        <p>Please use Chrome 129+ or Edge with WebGPU enabled.</p>
+        <p>Or try the WebGL version: <a href="webgl.html" style="color:#6af">webgl.html</a></p>
+      </div>`;
+    return;
+  }
+
+  const adapter = await navigator.gpu.requestAdapter();
+  if (!adapter) {
+    alert('No GPU adapter found');
+    return;
+  }
+  const device = await adapter.requestDevice();
+
+  // Create canvas
+  const canvas = document.createElement('canvas');
+  document.body.appendChild(canvas);
+  canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
+
+  const context = canvas.getContext('webgpu');
+  const format = navigator.gpu.getPreferredCanvasFormat();
+
+  let width, height;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Resize handler
+  // ─────────────────────────────────────────────────────────────────────────
+  const resize = () => {
+    const d = devicePixelRatio;
+    width = Math.floor(innerWidth * d);
+    height = Math.floor(innerHeight * d);
+    canvas.width = width;
+    canvas.height = height;
+    context.configure({
+      device,
+      format,
+      alphaMode: 'premultiplied'
+    });
+  };
+  resize();
+  addEventListener('resize', resize);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Mouse tracking
+  // ─────────────────────────────────────────────────────────────────────────
+  const mouse = [0, 0, 0, 0]; // x, y, prevX, prevY
+  let mouseDown = false;
+  addEventListener('mousemove', e => {
+    mouse[2] = mouse[0];
+    mouse[3] = mouse[1];
+    mouse[0] = e.clientX / innerWidth;
+    mouse[1] = 1 - e.clientY / innerHeight;
+  });
+  addEventListener('mousedown', () => mouseDown = true);
+  addEventListener('mouseup', () => mouseDown = false);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Create ping-pong textures for state persistence
+  // ─────────────────────────────────────────────────────────────────────────
+  const createStateTexture = () => device.createTexture({
+    size: [width, height],
+    format: 'rgba16float',
+    usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+  });
+
+  let stateA = createStateTexture();
+  let stateB = createStateTexture();
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Uniform buffer (time, mouse, resolution, etc.)
+  // ─────────────────────────────────────────────────────────────────────────
+  const uniformBuffer = device.createBuffer({
+    size: 48, // 12 floats
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Compute Pipeline
+  // ─────────────────────────────────────────────────────────────────────────
+  const computeModule = device.createShaderModule({
+    code: /* wgsl */`
+      struct Uniforms {
+        time: f32,
+        mouseX: f32,
+        mouseY: f32,
+        mouseDown: f32,
+        prevMouseX: f32,
+        prevMouseY: f32,
+        width: f32,
+        height: f32,
+      }
+      
+      @group(0) @binding(0) var<uniform> u: Uniforms;
+      @group(0) @binding(1) var src: texture_storage_2d<rgba16float, read>;
+      @group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+
+      // Helper to sample with bounds check
+      fn sample(c: vec2<i32>) -> vec4<f32> {
+        let dims = vec2<i32>(textureDimensions(src));
+        let p = clamp(c, vec2<i32>(0), dims - vec2<i32>(1));
+        return textureLoad(src, p);
+      }
+
+      ${computeCode}
+
+      @compute @workgroup_size(16, 16)
+      fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+        let C = vec2<i32>(id.xy);
+        let dims = textureDimensions(src);
+        if (u32(C.x) >= dims.x || u32(C.y) >= dims.y) { return; }
+        
+        let uv = vec2<f32>(C) / vec2<f32>(dims);
+        compute(C, uv);
+      }
+    `
+  });
+
+  const computeBindGroupLayout = device.createBindGroupLayout({
+    entries: [
+      { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
+      { binding: 1, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'read-only', format: 'rgba16float' } },
+      { binding: 2, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba16float' } }
+    ]
+  });
+
+  const computePipeline = device.createComputePipeline({
+    layout: device.createPipelineLayout({ bindGroupLayouts: [computeBindGroupLayout] }),
+    compute: { module: computeModule, entryPoint: 'main' }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render Pipeline (displays the simulation texture)
+  // ─────────────────────────────────────────────────────────────────────────
+  const renderModule = device.createShaderModule({
+    code: /* wgsl */`
+      struct VertexOutput {
+        @builtin(position) position: vec4<f32>,
+        @location(0) uv: vec2<f32>,
+      }
+
+      @vertex
+      fn vs(@builtin(vertex_index) i: u32) -> VertexOutput {
+        var pos = array<vec2<f32>, 3>(
+          vec2<f32>(-1.0, -1.0),
+          vec2<f32>(3.0, -1.0),
+          vec2<f32>(-1.0, 3.0)
+        );
+        var output: VertexOutput;
+        output.position = vec4<f32>(pos[i], 0.0, 1.0);
+        output.uv = pos[i] * 0.5 + 0.5;
+        return output;
+      }
+
+      @group(0) @binding(0) var tex: texture_2d<f32>;
+      @group(0) @binding(1) var samp: sampler;
+
+      ${renderCode}
+
+      @fragment
+      fn fs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+        let data = textureSample(tex, samp, uv);
+        return render(data, uv);
+      }
+    `
+  });
+
+  const renderPipeline = device.createRenderPipeline({
+    layout: 'auto',
+    vertex: { module: renderModule, entryPoint: 'vs' },
+    fragment: {
+      module: renderModule,
+      entryPoint: 'fs',
+      targets: [{ format }]
+    },
+    primitive: { topology: 'triangle-list' }
+  });
+
+  const sampler = device.createSampler({
+    magFilter: 'linear',
+    minFilter: 'linear'
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Main render loop
+  // ─────────────────────────────────────────────────────────────────────────
+  let frame = 0;
+  const loop = () => {
+    const time = performance.now() * 0.001;
+
+    // Update uniforms
+    device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([
+      time,
+      mouse[0], mouse[1],
+      mouseDown ? 1.0 : 0.0,
+      mouse[2], mouse[3],
+      width, height
+    ]));
+
+    const encoder = device.createCommandEncoder();
+
+    // Compute pass
+    const computePass = encoder.beginComputePass();
+    computePass.setPipeline(computePipeline);
+    computePass.setBindGroup(0, device.createBindGroup({
+      layout: computeBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: uniformBuffer } },
+        { binding: 1, resource: stateA.createView() },
+        { binding: 2, resource: stateB.createView() }
+      ]
+    }));
+    computePass.dispatchWorkgroups(
+      Math.ceil(width / 16),
+      Math.ceil(height / 16)
+    );
+    computePass.end();
+
+    // Render pass
+    const renderPass = encoder.beginRenderPass({
+      colorAttachments: [{
+        view: context.getCurrentTexture().createView(),
+        clearValue: [0, 0, 0, 1],
+        loadOp: 'clear',
+        storeOp: 'store'
+      }]
+    });
+    renderPass.setPipeline(renderPipeline);
+    renderPass.setBindGroup(0, device.createBindGroup({
+      layout: renderPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: stateB.createView() },
+        { binding: 1, resource: sampler }
+      ]
+    }));
+    renderPass.draw(3);
+    renderPass.end();
+
+    device.queue.submit([encoder.finish()]);
+
+    // Swap state textures
+    [stateA, stateB] = [stateB, stateA];
+
+    frame++;
+    requestAnimationFrame(loop);
+  };
+  loop();
+
+  console.log('%c 🚀 WebGPU Ready ', 'background: #764abc; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DEMO: Interactive Plasma with WebGPU Compute
+// ═══════════════════════════════════════════════════════════════════════════
+
+gpu(
+  // Compute shader (simulation)
+  /* wgsl */`
+    fn hash(p: vec2<f32>) -> f32 {
+      return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    }
+
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+      );
+    }
+
+    fn compute(C: vec2<i32>, uv: vec2<f32>) {
+      let t = u.time;
+      let mouse = vec2<f32>(u.mouseX, u.mouseY);
+      
+      // Animated plasma
+      var p = uv * 4.0;
+      p += mouse * 0.5;
+      
+      var v = 0.0;
+      v += sin(p.x * 3.0 + t);
+      v += sin(p.y * 3.0 + t * 0.7);
+      v += sin((p.x + p.y) * 2.0 + t * 0.5);
+      v += noise(p * 3.0 + t * 0.3) * 2.0;
+      v *= 0.25;
+      
+      // Color palette
+      let col = 0.5 + 0.5 * cos(t + v * 3.0 + vec3<f32>(0.0, 2.0, 4.0) + p.xyx);
+      
+      // Mouse glow
+      let d = length(uv - mouse);
+      var glow = vec3<f32>(0.0);
+      if (u.mouseDown > 0.5) {
+        glow = vec3<f32>(1.0, 0.8, 0.5) * exp(-d * 10.0) * 3.0;
+      }
+      
+      textureStore(dst, C, vec4<f32>(col + glow, 1.0));
+    }
+  `,
+  
+  // Fragment shader (rendering)
+  /* wgsl */`
+    fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
+      var col = data.rgb;
+      
+      // Vignette
+      col *= 1.0 - 0.3 * length(uv - 0.5);
+      
+      // Slight tone mapping
+      col = col / (col + 1.0);
+      
+      return vec4<f32>(col, 1.0);
+    }
+  `
+);
+
+console.log('Move mouse to influence the plasma. Click for glow effect!');
+</script>
+</body>
+</html>

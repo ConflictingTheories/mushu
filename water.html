@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>glsl() — Water Caustics Demo</title>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<script type="module">
+// ═══════════════════════════════════════════════════════════════════════════
+// glsl() — The Ultimate WebGL Creative Coding Framework
+// ═══════════════════════════════════════════════════════════════════════════
+
+const glsl = (frag) => {
+  const canvas = document.createElement('canvas');
+  document.body.appendChild(canvas);
+  canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
+  const gl = canvas.getContext('webgl2');
+
+  if (!gl) { alert('WebGL2 not supported'); return; }
+
+  const resize = () => {
+    const d = devicePixelRatio;
+    canvas.width  = innerWidth  * d;
+    canvas.height = innerHeight * d;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  };
+  resize();
+  addEventListener('resize', resize);
+
+  const mouse = [0, 0];
+  let mouseDown = false;
+  addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    mouse[0] = (e.clientX - r.left) / r.width  * 2 - 1;
+    mouse[1] = 1 - (e.clientY - r.top) / r.height * 2;
+  });
+  addEventListener('mousedown', () => mouseDown = true);
+  addEventListener('mouseup', () => mouseDown = false);
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  const compile = (f) => {
+    const vs = `#version 300 es
+      void main() {
+        vec2 positions[3] = vec2[](vec2(-1,-1), vec2(3,-1), vec2(-1,3));
+        gl_Position = vec4(positions[gl_VertexID], 0, 1);
+      }`;
+    const fs = `#version 300 es
+      precision highp float;
+      out vec4 O;
+      uniform float time;
+      uniform vec2 resolution;
+      uniform vec2 mouse;
+      uniform float mouseDown;
+      ${f}
+      void main() { mainImage(O, gl_FragCoord.xy); }`;
+
+    const p = gl.createProgram();
+    const shaderTypes = [gl.VERTEX_SHADER, gl.FRAGMENT_SHADER];
+    [vs, fs].forEach((src, i) => {
+      const s = gl.createShader(shaderTypes[i]);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        console.error('Shader error:', gl.getShaderInfoLog(s));
+      }
+      gl.attachShader(p, s);
+    });
+    gl.linkProgram(p);
+    return p;
+  };
+
+  let program = compile(frag);
+
+  const loop = (t) => {
+    gl.useProgram(program);
+    gl.uniform1f(gl.getUniformLocation(program, 'time'), t * 0.001);
+    gl.uniform2f(gl.getUniformLocation(program, 'resolution'), canvas.width, canvas.height);
+    gl.uniform2f(gl.getUniformLocation(program, 'mouse'), mouse[0], mouse[1]);
+    gl.uniform1f(gl.getUniformLocation(program, 'mouseDown'), mouseDown ? 1.0 : 0.0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+
+  glsl.hot = (newFrag) => {
+    const newProgram = compile(newFrag);
+    if (newProgram) {
+      gl.deleteProgram(program);
+      program = newProgram;
+      console.log('✨ Shader reloaded');
+    }
+  };
+
+  return glsl;
+};
+
+window.glsl = glsl;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WATER CAUSTICS & RIPPLES — Move mouse to disturb the surface!
+// ═══════════════════════════════════════════════════════════════════════════
+
+glsl(`
+  // Constants
+  const vec3 SKY_COLOR = vec3(0.4, 0.6, 0.9);
+  const vec3 WATER_COLOR = vec3(0.02, 0.12, 0.22);
+  const vec3 DEEP_COLOR = vec3(0.01, 0.05, 0.1);
+
+  // 3D noise for water surface
+  float hash(vec3 p) {
+    p = fract(p * 0.3183099 + 0.1);
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+  }
+
+  float noise(vec3 x) {
+    vec3 i = floor(x);
+    vec3 f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    
+    return mix(
+      mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
+          mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+      mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+          mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+      f.z
+    );
+  }
+
+  // Fractal Brownian Motion for realistic waves
+  float fbm(vec3 p) {
+    float f = 0.0;
+    float amp = 0.5;
+    for (int i = 0; i < 5; i++) {
+      f += amp * noise(p);
+      p *= 2.03;
+      amp *= 0.49;
+    }
+    return f;
+  }
+
+  // Water height function
+  float waterHeight(vec2 p, float t) {
+    vec3 pos = vec3(p * 3.0, t * 0.4);
+    float h = fbm(pos);
+    
+    // Add faster small ripples
+    h += 0.3 * noise(vec3(p * 8.0, t * 1.5));
+    
+    // Mouse ripple disturbance
+    vec2 mouseWorld = mouse * 0.5;
+    float d = length(p - mouseWorld);
+    float ripple = sin(d * 25.0 - t * 8.0) * exp(-d * 4.0) * 0.15;
+    
+    // Extra ripple on click
+    if (mouseDown > 0.5) {
+      ripple *= 3.0;
+    }
+    
+    return h * 0.1 + ripple;
+  }
+
+  // Calculate water normal from height
+  vec3 waterNormal(vec2 p, float t) {
+    float eps = 0.01;
+    float h = waterHeight(p, t);
+    float hx = waterHeight(p + vec2(eps, 0), t);
+    float hz = waterHeight(p + vec2(0, eps), t);
+    return normalize(vec3(h - hx, eps * 8.0, h - hz));
+  }
+
+  // Caustics pattern
+  float caustics(vec2 p, float t) {
+    float c = 0.0;
+    vec2 uv = p * 6.0;
+    
+    for (int i = 1; i < 8; i++) {
+      float s = float(i);
+      vec2 q = uv * s + vec2(
+        sin(t * 0.3 * s) * 0.5,
+        cos(t * 0.2 * s) * 0.5
+      );
+      
+      float wave = sin(q.x + sin(q.y + t * s * 0.1));
+      wave += sin(q.y + cos(q.x - t * s * 0.15));
+      c += abs(wave) / s;
+    }
+    
+    return pow(c * 0.15, 2.5);
+  }
+
+  void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 uv = (fragCoord - resolution.xy * 0.5) / resolution.y;
+    float t = time;
+    
+    // Water surface
+    vec3 normal = waterNormal(uv, t);
+    float height = waterHeight(uv, t);
+    
+    // View and light directions
+    vec3 viewDir = normalize(vec3(uv, 1.5));
+    vec3 lightDir = normalize(vec3(0.5, 0.8, 0.5));
+    
+    // Reflection
+    vec3 refl = reflect(-viewDir, normal);
+    float fresnel = pow(1.0 - max(0.0, dot(viewDir, normal)), 4.0);
+    
+    // Sky reflection with gradient
+    vec3 skyRefl = SKY_COLOR + vec3(0.4, 0.3, 0.2) * pow(max(0.0, refl.y), 3.0);
+    skyRefl += vec3(1.0, 0.9, 0.7) * pow(max(0.0, dot(refl, lightDir)), 64.0); // sun highlight
+    
+    // Refraction (looking into water)
+    vec3 refr = WATER_COLOR;
+    float depth = 0.5 - uv.y + height;
+    refr = mix(refr, DEEP_COLOR, smoothstep(0.0, 1.0, depth));
+    
+    // Caustics on bottom
+    float caustic = caustics(uv + normal.xz * 0.1, t);
+    refr += vec3(0.8, 0.9, 1.0) * caustic * exp(-depth * 3.0);
+    
+    // Mix reflection and refraction based on fresnel
+    vec3 color = mix(refr, skyRefl, fresnel * 0.7);
+    
+    // Foam on wave crests
+    float foam = smoothstep(0.08, 0.12, height);
+    color = mix(color, vec3(0.95, 0.98, 1.0), foam * 0.6);
+    
+    // Specular highlight
+    float spec = pow(max(0.0, dot(normal, normalize(lightDir + viewDir))), 128.0);
+    color += vec3(1.0, 0.95, 0.9) * spec;
+    
+    // Tone mapping and gamma
+    color = color / (color + 1.0);
+    color = pow(color, vec3(0.85));
+    
+    fragColor = vec4(color, 1.0);
+  }
+`);
+
+console.log('%c 🌊 Water Caustics Demo ', 'background: #0077be; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
+console.log('Move mouse to create ripples. Click for stronger waves!');
+</script>
+</body>
+</html>

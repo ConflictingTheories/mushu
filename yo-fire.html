@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>yo() — Simplified Fire Demo</title>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { yo, simulation, quad, fps } from './yo.js?v=2';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Fire simulation with ping-pong FBOs
+// The simulation() plugin handles all the complexity
+// ═══════════════════════════════════════════════════════════════════════════
+
+const sim = simulation({ scale: 0.5 });
+
+sim.simulate(`
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    
+    vec4 data = sample(vec2(0));
+    float fuel = data.r;
+    float heat = data.g;
+    float smoke = data.b;
+    
+    // Sample neighbors
+    vec4 up = sample(vec2(0, 1));
+    vec4 down = sample(vec2(0, -1));
+    vec4 left = sample(vec2(-1, 0));
+    vec4 right = sample(vec2(1, 0));
+    
+    // Diffusion (heat spreads)
+    float diffusion = 0.12;
+    heat += diffusion * (up.g + down.g + left.g + right.g - 4.0 * heat);
+    
+    // Buoyancy (heat rises)
+    heat = mix(heat, down.g, 0.15);
+    
+    // Wind effect (slight drift right)
+    heat = mix(heat, left.g, 0.02);
+    
+    // Fuel diffuses slower
+    fuel += 0.05 * (up.r + down.r + left.r + right.r - 4.0 * fuel);
+    fuel = mix(fuel, down.r, 0.08);
+    
+    // Decay
+    fuel *= 0.97;
+    heat *= 0.985;
+    smoke *= 0.99;
+    
+    // Mouse ignition
+    float d = length(uv - mouse);
+    if (mouseDown > 0.5 && d < 0.08) {
+      float intensity = (1.0 - d / 0.08) * 8.0;
+      fuel += intensity;
+      heat += intensity * 2.0;
+    }
+    
+    // Continuous fire source at bottom
+    if (uv.y < 0.08) {
+      float pattern = sin(uv.x * 30.0 + time * 3.0) * 0.5 + 0.5;
+      pattern *= sin(uv.x * 7.0 - time) * 0.5 + 0.5;
+      if (pattern > 0.4) {
+        fuel += 1.5 * (1.0 - uv.y / 0.08);
+        heat += 3.0 * (1.0 - uv.y / 0.08);
+      }
+    }
+    
+    // Combustion: heat consumes fuel, produces smoke
+    float burn = min(heat * 0.4, fuel);
+    heat += burn * 0.3;
+    fuel -= burn;
+    smoke += burn * 0.5;
+    
+    // Smoke rises
+    smoke = mix(smoke, down.b, 0.1);
+    
+    O = vec4(
+      clamp(fuel, 0.0, 15.0),
+      clamp(heat, 0.0, 15.0),
+      clamp(smoke, 0.0, 8.0),
+      1.0
+    );
+  }
+`);
+
+sim.display(`
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    vec4 data = texture(backbuffer, uv);
+    
+    float fuel = data.r;
+    float heat = data.g;
+    float smoke = data.b;
+    
+    vec3 color = vec3(0);
+    
+    // Core (white-yellow, very hot)
+    color += vec3(1.0, 0.95, 0.8) * pow(heat, 3.5) * 4.0;
+    
+    // Yellow flames
+    color += vec3(1.0, 0.8, 0.2) * pow(heat, 2.0) * 2.5;
+    
+    // Orange flames
+    color += vec3(1.0, 0.4, 0.05) * pow(heat, 1.2) * 1.5;
+    
+    // Red base
+    color += vec3(0.8, 0.1, 0.0) * pow(heat, 0.7) * 0.8;
+    
+    // Dark smoke overlay
+    color = mix(color, vec3(0.02), clamp(smoke * 0.25, 0.0, 0.8));
+    
+    // Embers (fuel without heat)
+    float embers = fuel * (1.0 - heat * 0.2);
+    color += vec3(1.0, 0.3, 0.0) * embers * 0.3;
+    
+    // Tone mapping
+    color = 1.0 - exp(-color * 0.8);
+    color = pow(color, vec3(0.9));
+    
+    O = vec4(color, 1.0);
+  }
+`);
+
+yo(document.getElementById('c'))
+  .use(sim)
+  .use(fps())
+  .go();
+
+console.log('%c 🔥 yo() Fire Ready ', 'background: #ff4500; color: white; padding: 4px 8px; border-radius: 4px;');
+</script>
+</body>
+</html>

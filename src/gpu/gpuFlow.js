@@ -675,11 +675,14 @@ export async function gpu(computeCode, renderCode, options = {}) {
       struct Uniforms {
         time: f32,
         _pad0: f32,
-        resolution: vec2<f32>,
-        mouse: vec2<f32>,
+        width: f32,
+        height: f32,
+        mouseX: f32,
+        mouseY: f32,
         mouseDown: f32,
         _pad1: f32,
-        prevMouse: vec2<f32>,
+        prevMouseX: f32,
+        prevMouseY: f32,
       }
       
       struct VertexOutput {
@@ -747,7 +750,7 @@ export async function gpu(computeCode, renderCode, options = {}) {
     canvasHeight = Math.floor(rect.height * dpr);
     
     // Uniform buffer layout:
-    // time(4) + pad(4) + resolution(8) + mouse(8) + mouseDown(4) + pad(4) + prevMouse(8)
+    // time(4) + pad(4) + width(4) + height(4) + mouseX(4) + mouseY(4) + mouseDown(4) + pad(4) + prevMouseX(4) + prevMouseY(4) + pad(8)
     device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([
       time, 0,
       canvasWidth, canvasHeight,

@@ -60,11 +60,11 @@ mushu('#c').gpu(
     }
 
     fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
-      let aspect = u.resolution.x / u.resolution.y;
+      let aspect = u.width / u.height;
       let t = u.time;
       
       // Mouse position is smoke source
-      var smokeSource = u.mouse;
+      var smokeSource = vec2<f32>(u.mouseX, u.mouseY);
       smokeSource.y = 1.0 - smokeSource.y; // Flip Y
       
       // Position relative to smoke source

@@ -59,11 +59,11 @@ mushu('#c').gpu(
     }
 
     fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
-      let aspect = u.resolution.x / u.resolution.y;
+      let aspect = u.width / u.height;
       let t = u.time;
       
       // Mouse position is the flame base
-      var flameBase = u.mouse;
+      var flameBase = vec2<f32>(u.mouseX, u.mouseY);
       flameBase.y = 1.0 - flameBase.y; // Flip Y
       
       // Position relative to flame base

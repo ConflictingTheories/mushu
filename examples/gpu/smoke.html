@@ -1,32 +1,37 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>mushu — WebGPU Smoke Demo</title>
   <link rel="stylesheet" href="../common.css">
   <style>
-    .info code { color: #aabbcc; }
+    .info code {
+      color: #aabbcc;
+    }
   </style>
 </head>
+
 <body>
-<div class="info">💨 <code>mushu().gpu(compute, render)</code> Match Smoke | Move mouse - smoke trails from cursor</div>
-<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
-<script type="module">
-import { mushu } from '../../src/index.js';
+  <div class="info">💨 <code>mushu().gpu(compute, render)</code> Match Smoke | Move mouse - smoke trails from cursor
+  </div>
+  <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+  <script type="module">
+    import { mushu } from '../../src/index.js';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// WebGPU Match Smoke - Smoke emits from mouse cursor like a match
-// 
-// Features:
-//   • Smoke emits from mouse position
-//   • Realistic rising and billowing
-//   • Turbulent swirls and wisps
-//   • Proper volumetric lighting
-//   • Smoke trail follows mouse movement
-// ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════
+    // WebGPU Match Smoke - Smoke emits from mouse cursor like a match
+    // 
+    // Features:
+    //   • Smoke emits from mouse position
+    //   • Realistic rising and billowing
+    //   • Turbulent swirls and wisps
+    //   • Proper volumetric lighting
+    //   • Smoke trail follows mouse movement
+    // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').gpu(
-  null,
+    mushu('#c').gpu(
+      null,
   /* wgsl */`
     fn hash(p: vec2<f32>) -> f32 {
       var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -210,46 +215,47 @@ mushu('#c').gpu(
       return vec4<f32>(col, 1.0);
     }
   `,
-  { canvas: document.getElementById('c') }
-);
+      { canvas: document.getElementById('c') }
+    );
 
-// FPS Counter
-(function() {
-  const fpsDiv = document.createElement('div');
-  fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
-  document.body.appendChild(fpsDiv);
-  let frames = 0, lastTime = performance.now();
-  function updateFPS() {
-    frames++;
-    const now = performance.now();
-    if (now - lastTime >= 500) {
-      fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
-      frames = 0; lastTime = now;
-    }
-    requestAnimationFrame(updateFPS);
-  }
-  updateFPS();
-})();
+    // FPS Counter
+    (function () {
+      const fpsDiv = document.createElement('div');
+      fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
+      document.body.appendChild(fpsDiv);
+      let frames = 0, lastTime = performance.now();
+      function updateFPS() {
+        frames++;
+        const now = performance.now();
+        if (now - lastTime >= 500) {
+          fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
+          frames = 0; lastTime = now;
+        }
+        requestAnimationFrame(updateFPS);
+      }
+      updateFPS();
+    })();
 
-console.log('%c 💨 WebGPU Match Smoke ', 'background: linear-gradient(90deg, #445, #778); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Move mouse - smoke trails from cursor like a match!');
-</script>
-<script>
-// Hide home-link if in iframe - run immediately and on load
-function hideIfIframe() {
-  if (window.self !== window.top) {
-    const link = document.querySelector('.home-link');
-    if (link) {
-      link.style.display = 'none';
+    console.log('%c 💨 WebGPU Match Smoke ', 'background: linear-gradient(90deg, #445, #778); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+    console.log('Move mouse - smoke trails from cursor like a match!');
+  </script>
+  <script>
+    // Hide home-link if in iframe - run immediately and on load
+    function hideIfIframe() {
+      if (window.self !== window.top) {
+        const link = document.querySelector('.home-link');
+        if (link) {
+          link.style.display = 'none';
+        }
+      }
     }
-  }
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', hideIfIframe);
-} else {
-  hideIfIframe();
-}
-</script>
-<a href="index.html" class="home-link">← Back to Index</a>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideIfIframe);
+    } else {
+      hideIfIframe();
+    }
+  </script>
+  <a href="index.html" class="home-link">← Back to Index</a>
 </body>
+
 </html>

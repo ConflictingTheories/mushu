@@ -4,278 +4,8 @@
 <head>
   <meta charset="utf-8">
   <title>mushu — Visual Comparison</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
-      background: #0a0a0f;
-      color: #e0e0e5;
-      min-height: 100vh;
-      padding: 1rem;
-    }
-
-    header {
-      text-align: center;
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-    }
-
-    h1 {
-      font-size: 2rem;
-      background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 0.5rem;
-    }
-
-    .subtitle {
-      color: #888;
-      font-size: 0.9rem;
-    }
-
-    nav {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin: 1rem 0;
-      flex-wrap: wrap;
-    }
-
-    nav button {
-      background: #1a1a25;
-      border: 1px solid #333;
-      color: #aaa;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-    }
-
-    nav button:hover {
-      background: #252530;
-      border-color: #555;
-      color: #fff;
-    }
-
-    nav button.active {
-      background: linear-gradient(135deg, #ff6b6b, #feca57);
-      border-color: transparent;
-      color: #000;
-      font-weight: bold;
-    }
-
-    .legend {
-      display: flex;
-      justify-content: center;
-      gap: 1.5rem;
-      margin: 1rem 0;
-      flex-wrap: wrap;
-      font-size: 0.75rem;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .legend-color {
-      width: 12px;
-      height: 12px;
-      border-radius: 3px;
-    }
-
-    .legend-color.glsl {
-      background: #58a6ff;
-    }
-
-    .legend-color.flow {
-      background: #3fb950;
-    }
-
-    .legend-color.gpu {
-      background: #a371f7;
-    }
-
-    .legend-color.gpuflow {
-      background: #f778ba;
-    }
-
-    .comparison-section {
-      display: none;
-      margin-top: 1rem;
-    }
-
-    .comparison-section.active {
-      display: block;
-    }
-
-    .comparison-title {
-      text-align: center;
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid #333;
-    }
-
-    .comparison-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem;
-    }
-
-    @media (max-width: 1400px) {
-      .comparison-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    @media (max-width: 900px) {
-      .comparison-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 600px) {
-      .comparison-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .comparison-item {
-      background: #12121a;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid #252530;
-      transition: all 0.3s;
-    }
-
-    .comparison-item:hover {
-      border-color: #444;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    }
-
-    .item-header {
-      padding: 0.6rem;
-      background: #1a1a25;
-      border-bottom: 1px solid #252530;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .item-title {
-      font-weight: bold;
-      font-size: 0.8rem;
-    }
-
-    .item-tag {
-      font-size: 0.65rem;
-      padding: 0.2rem 0.5rem;
-      border-radius: 10px;
-      text-transform: uppercase;
-      font-weight: bold;
-    }
-
-    .item-tag.glsl {
-      background: #1a3d5c;
-      color: #58a6ff;
-    }
-
-    .item-tag.flow {
-      background: #1a3d2e;
-      color: #3fb950;
-    }
-
-    .item-tag.gpu {
-      background: #2d1a4a;
-      color: #a371f7;
-    }
-
-    .item-tag.gpuflow {
-      background: #4a1a3d;
-      color: #f778ba;
-    }
-
-    .item-frame {
-      width: 100%;
-      height: 200px;
-      border: none;
-      display: block;
-    }
-
-    .item-footer {
-      padding: 0.5rem;
-      background: #1a1a25;
-      border-top: 1px solid #252530;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .item-link {
-      color: #58a6ff;
-      text-decoration: none;
-      font-size: 0.7rem;
-      transition: color 0.2s;
-    }
-
-    .item-link:hover {
-      color: #79c0ff;
-      text-decoration: underline;
-    }
-
-    .item-tech {
-      font-size: 0.65rem;
-      color: #666;
-    }
-
-    .home-link {
-      position: fixed;
-      bottom: 1rem;
-      right: 100px;
-      background: linear-gradient(135deg, #ff6b6b, #feca57);
-      color: #000;
-      padding: 0.75rem 1.5rem;
-      border-radius: 25px;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 0.85rem;
-      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-      transition: all 0.2s;
-      z-index: 100;
-    }
-
-    .home-link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-    }
-
-    footer {
-      text-align: center;
-      padding: 2rem;
-      border-top: 1px solid #252530;
-      color: #888;
-      font-size: 0.9rem;
-    }
-    footer a {
-      color: #58a6ff;
-      text-decoration: none;
-    }
-    footer a:hover {
-      text-decoration: underline;
-    }
-  </style>
-  <link rel="stylesheet" href="support.css">
+  <link rel="stylesheet" href="./visual-compare.css">
+  <link rel="stylesheet" href="./support.css">
 </head>
 
 <body>
@@ -321,9 +51,9 @@
           <span class="item-title">GL Fire</span>
           <span class="item-tag glsl">gl()</span>
         </div>
-        <iframe class="item-frame" src="glsl/fire.html"></iframe>
+        <iframe class="item-frame" src="./glsl/fire.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="glsl/fire.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./glsl/fire.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGL2</span>
         </div>
       </div>
@@ -332,9 +62,9 @@
           <span class="item-title">Flow Fire</span>
           <span class="item-tag flow">gl().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-glsl/fire.html"></iframe>
+        <iframe class="item-frame" src="./flow-glsl/fire.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="flow-glsl/fire.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./flow-glsl/fire.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGL2</span>
         </div>
       </div>
@@ -343,9 +73,9 @@
           <span class="item-title">GPU Fire</span>
           <span class="item-tag gpu">gpu()</span>
         </div>
-        <iframe class="item-frame" src="gpu/fire.html"></iframe>
+        <iframe class="item-frame" src="./gpu/fire.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="gpu/fire.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./gpu/fire.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGPU</span>
         </div>
       </div>
@@ -354,9 +84,9 @@
           <span class="item-title">GPU Flow Fire</span>
           <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-gpu/fire.html"></iframe>
+        <iframe class="item-frame" src="./flow-gpu/fire.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="flow-gpu/fire.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./flow-gpu/fire.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGPU</span>
         </div>
       </div>
@@ -372,9 +102,9 @@
           <span class="item-title">GL Smoke</span>
           <span class="item-tag glsl">gl()</span>
         </div>
-        <iframe class="item-frame" src="glsl/smoke.html"></iframe>
+        <iframe class="item-frame" src="./glsl/smoke.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="glsl/smoke.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./glsl/smoke.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGL2</span>
         </div>
       </div>
@@ -383,9 +113,9 @@
           <span class="item-title">Flow Smoke</span>
           <span class="item-tag flow">gl().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-glsl/smoke.html"></iframe>
+        <iframe class="item-frame" src="./flow-glsl/smoke.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="flow-glsl/smoke.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./flow-glsl/smoke.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGL2</span>
         </div>
       </div>
@@ -394,9 +124,9 @@
           <span class="item-title">GPU Smoke</span>
           <span class="item-tag gpu">gpu()</span>
         </div>
-        <iframe class="item-frame" src="gpu/smoke.html"></iframe>
+        <iframe class="item-frame" src="./gpu/smoke.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="gpu/smoke.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./gpu/smoke.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGPU</span>
         </div>
       </div>
@@ -405,9 +135,9 @@
           <span class="item-title">GPU Flow Smoke</span>
           <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-gpu/smoke.html"></iframe>
+        <iframe class="item-frame" src="./flow-gpu/smoke.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="flow-gpu/smoke.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./flow-gpu/smoke.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGPU</span>
         </div>
       </div>
@@ -423,9 +153,9 @@
           <span class="item-title">GL Water</span>
           <span class="item-tag glsl">gl()</span>
         </div>
-        <iframe class="item-frame" src="glsl/water.html"></iframe>
+        <iframe class="item-frame" src="./glsl/water.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="glsl/water.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./glsl/water.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGL2</span>
         </div>
       </div>
@@ -434,9 +164,9 @@
           <span class="item-title">Flow Water</span>
           <span class="item-tag flow">gl().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-glsl/water.html"></iframe>
+        <iframe class="item-frame" src="./flow-glsl/water.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="flow-glsl/water.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./flow-glsl/water.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGL2</span>
         </div>
       </div>
@@ -445,9 +175,9 @@
           <span class="item-title">GPU Water</span>
           <span class="item-tag gpu">gpu()</span>
         </div>
-        <iframe class="item-frame" src="gpu/water.html"></iframe>
+        <iframe class="item-frame" src="./gpu/water.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="gpu/water.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./gpu/water.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGPU</span>
         </div>
       </div>
@@ -456,9 +186,9 @@
           <span class="item-title">GPU Flow Water</span>
           <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-gpu/water.html"></iframe>
+        <iframe class="item-frame" src="./flow-gpu/water.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="flow-gpu/water.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./flow-gpu/water.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGPU</span>
         </div>
       </div>
@@ -474,9 +204,9 @@
           <span class="item-title">GL Plasma</span>
           <span class="item-tag glsl">gl()</span>
         </div>
-        <iframe class="item-frame" src="glsl/plasma.html"></iframe>
+        <iframe class="item-frame" src="./glsl/plasma.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="glsl/plasma.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./glsl/plasma.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGL2</span>
         </div>
       </div>
@@ -485,9 +215,9 @@
           <span class="item-title">Flow Plasma</span>
           <span class="item-tag flow">gl().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-glsl/plasma.html"></iframe>
+        <iframe class="item-frame" src="./flow-glsl/plasma.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="flow-glsl/plasma.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./flow-glsl/plasma.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGL2</span>
         </div>
       </div>
@@ -496,9 +226,9 @@
           <span class="item-title">GPU Plasma</span>
           <span class="item-tag gpu">gpu()</span>
         </div>
-        <iframe class="item-frame" src="gpu/plasma.html"></iframe>
+        <iframe class="item-frame" src="./gpu/plasma.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="gpu/plasma.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./gpu/plasma.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGPU</span>
         </div>
       </div>
@@ -507,9 +237,9 @@
           <span class="item-title">GPU Flow Plasma</span>
           <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-gpu/plasma.html"></iframe>
+        <iframe class="item-frame" src="./flow-gpu/plasma.html"></iframe>
         <div class="item-footer">
-          <a class="item-link" href="flow-gpu/plasma.html" target="_blank">Open Full →</a>
+          <a class="item-link" href="./flow-gpu/plasma.html" target="_blank">Open Full →</a>
           <span class="item-tech">WebGPU</span>
         </div>
       </div>
@@ -520,136 +250,136 @@
   <section id="all" class="comparison-section">
     <h2 class="comparison-title">All Effects Overview</h2>
 
-    <h3 style="text-align: center; margin: 1.5rem 0 0.75rem; color: #ff6b6b;">🔥 Fire</h3>
+    <h3 class="section-heading fire">🔥 Fire</h3>
     <div class="comparison-grid">
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gl()</span>
           <span class="item-tag glsl">gl()</span>
         </div>
-        <iframe class="item-frame" src="glsl/fire.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./glsl/fire.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gl().flow()</span>
           <span class="item-tag flow">gl().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-glsl/fire.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./flow-glsl/fire.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gpu()</span>
           <span class="item-tag gpu">gpu()</span>
         </div>
-        <iframe class="item-frame" src="gpu/fire.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./gpu/fire.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gpu().flow()</span>
           <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-gpu/fire.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./flow-gpu/fire.html"></iframe>
       </div>
     </div>
 
-    <h3 style="text-align: center; margin: 1.5rem 0 0.75rem; color: #888;">💨 Smoke</h3>
+    <h3 class="section-heading smoke">💨 Smoke</h3>
     <div class="comparison-grid">
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gl()</span>
           <span class="item-tag glsl">gl()</span>
         </div>
-        <iframe class="item-frame" src="glsl/smoke.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./glsl/smoke.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gl().flow()</span>
           <span class="item-tag flow">gl().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-glsl/smoke.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./flow-glsl/smoke.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gpu()</span>
           <span class="item-tag gpu">gpu()</span>
         </div>
-        <iframe class="item-frame" src="gpu/smoke.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./gpu/smoke.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gpu().flow()</span>
           <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-gpu/smoke.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./flow-gpu/smoke.html"></iframe>
       </div>
     </div>
 
-    <h3 style="text-align: center; margin: 1.5rem 0 0.75rem; color: #48dbfb;">🌊 Water</h3>
+    <h3 class="section-heading water">🌊 Water</h3>
     <div class="comparison-grid">
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gl()</span>
           <span class="item-tag glsl">gl()</span>
         </div>
-        <iframe class="item-frame" src="glsl/water.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./glsl/water.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gl().flow()</span>
           <span class="item-tag flow">gl().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-glsl/water.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./flow-glsl/water.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gpu()</span>
           <span class="item-tag gpu">gpu()</span>
         </div>
-        <iframe class="item-frame" src="gpu/water.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./gpu/water.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gpu().flow()</span>
           <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-gpu/water.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./flow-gpu/water.html"></iframe>
       </div>
     </div>
 
-    <h3 style="text-align: center; margin: 1.5rem 0 0.75rem; color: #ff9ff3;">🌈 Plasma</h3>
+    <h3 class="section-heading plasma">🌈 Plasma</h3>
     <div class="comparison-grid">
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gl()</span>
           <span class="item-tag glsl">gl()</span>
         </div>
-        <iframe class="item-frame" src="glsl/plasma.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./glsl/plasma.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gl().flow()</span>
           <span class="item-tag flow">gl().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-glsl/plasma.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./flow-glsl/plasma.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gpu()</span>
           <span class="item-tag gpu">gpu()</span>
         </div>
-        <iframe class="item-frame" src="gpu/plasma.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./gpu/plasma.html"></iframe>
       </div>
       <div class="comparison-item">
         <div class="item-header">
           <span class="item-title">gpu().flow()</span>
           <span class="item-tag gpuflow">gpu().flow()</span>
         </div>
-        <iframe class="item-frame" src="flow-gpu/plasma.html" style="height: 150px;"></iframe>
+        <iframe class="item-frame compact" src="./flow-gpu/plasma.html"></iframe>
       </div>
     </div>
   </section>
 
-  <a href="index.html" class="home-link">← Back to Index</a>
+  <a href="./index.html" class="home-link">← Back to Index</a>
 
   <footer>
     <p>Made with 🍡 by <a href="https://github.com/ConflictingTheories">ConflictingTheories</a> &mdash; <a href="https://github.com/ConflictingTheories/mushu">View on GitHub</a></p>
@@ -707,7 +437,7 @@
       event.target.classList.add('active');
     }
   </script>
-  <script src="support.js"></script>
+  <script src="./support.js"></script>
 
 </body>
 

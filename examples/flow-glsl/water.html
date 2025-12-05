@@ -1,48 +1,90 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>mushu — Flow Water Demo</title>
   <style>
-    * { margin: 0; padding: 0; }
-    body { background: #000; overflow: hidden; }
-    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
-            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
-    .info code { color: #00bbdd; }
-    .home-link { position: fixed; bottom: 1rem; right: 1rem; background: linear-gradient(135deg, #ff6b6b, #feca57); 
-                 color: #000; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; 
-                 font-weight: bold; font-size: 0.85rem; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); 
-                 transition: all 0.2s; z-index: 100; font-family: monospace; }
-    .home-link:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4); }
-    .home-link.hidden { display: none; }
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000;
+      overflow: hidden;
+    }
+
+    .info {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: #fff;
+      font: 14px monospace;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 16px;
+      border-radius: 6px;
+      z-index: 100;
+    }
+
+    .info code {
+      color: #00bbdd;
+    }
+
+    .home-link {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background: linear-gradient(135deg, #ff6b6b, #feca57);
+      color: #000;
+      padding: 0.75rem 1.5rem;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.85rem;
+      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+      transition: all 0.2s;
+      z-index: 100;
+      font-family: monospace;
+    }
+
+    .home-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    }
+
+    .home-link.hidden {
+      display: none;
+    }
   </style>
 </head>
+
 <body>
-<div class="info">🌊 <code>mushu().gl().flow()</code> Water | Move mouse to interact</div>
-<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
-<script type="module">
-import { mushu, shader, fps } from '../../src/index.js';
+  <div class="info">🌊 <code>mushu().gl().flow()</code> Water | Move mouse to interact</div>
+  <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+  <script type="module">
+    import { mushu, shader, fps } from '../../src/index.js';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// YO Water - Procedural Gerstner Waves (WebGL2)
-// 
-// Features:
-//   • Multiple Gerstner wave layers
-//   • FBM turbulent detail
-//   • Fresnel reflections with sky gradient
-//   • Sun specular highlights
-//   • Animated caustics pattern
-//   • Foam on wave crests
-//   • Subsurface scattering
-// 
-// Move mouse to create ripples!
-// ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════
+    // YO Water - Procedural Gerstner Waves (WebGL2)
+    // 
+    // Features:
+    //   • Multiple Gerstner wave layers
+    //   • FBM turbulent detail
+    //   • Fresnel reflections with sky gradient
+    //   • Sun specular highlights
+    //   • Animated caustics pattern
+    //   • Foam on wave crests
+    //   • Subsurface scattering
+    // 
+    // Move mouse to create ripples!
+    // ═══════════════════════════════════════════════════════════════════════════
 
-// Move mouse to disturb the water!
-// ═══════════════════════════════════════════════════════════════════════════
+    // Move mouse to disturb the water!
+    // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').gl()
-  .use(shader(`
+    mushu('#c').gl()
+      .use(shader(`
     // ─────────────────────────────────────────────────────────────────────
     // Noise Functions
     // ─────────────────────────────────────────────────────────────────────
@@ -198,28 +240,29 @@ mushu('#c').gl()
       O = vec4(col, 1.0);
     }
   `))
-  .use(fps())
-  .go();
+      .use(fps())
+      .go();
 
-console.log('%c 🌊 mushu Flow Water Ready ', 'background: linear-gradient(90deg, #0066aa, #00bbdd); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Move mouse to create ripples!');
-</script>
-<script>
-// Hide home-link if in iframe - run immediately and on load
-function hideIfIframe() {
-  if (window.self !== window.top) {
-    const link = document.querySelector('.home-link');
-    if (link) {
-      link.style.display = 'none';
+    console.log('%c 🌊 mushu Flow Water Ready ', 'background: linear-gradient(90deg, #0066aa, #00bbdd); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+    console.log('Move mouse to create ripples!');
+  </script>
+  <script>
+    // Hide home-link if in iframe - run immediately and on load
+    function hideIfIframe() {
+      if (window.self !== window.top) {
+        const link = document.querySelector('.home-link');
+        if (link) {
+          link.style.display = 'none';
+        }
+      }
     }
-  }
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', hideIfIframe);
-} else {
-  hideIfIframe();
-}
-</script>
-<a href="index.html" class="home-link">← Back to Index</a>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideIfIframe);
+    } else {
+      hideIfIframe();
+    }
+  </script>
+  <a href="index.html" class="home-link">← Back to Index</a>
 </body>
+
 </html>

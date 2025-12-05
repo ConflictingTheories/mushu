@@ -1,5 +1,5 @@
 {
-  "name": "mushu",
+  "name": "mushu-flow",
   "version": "1.0.0",
   "description": "The Fluent Pattern for Shader Coding - WebGL & WebGPU made simple",
   "type": "module",
@@ -33,10 +33,10 @@
     "water",
     "particles"
   ],
-  "author": "",
-  "license": "MIT",
   "repository": {
-    "type": "git",
-    "url": ""
-  }
+    "url": "https://github.com/ConflictingTheories/calliope-pixos.git",
+    "type": "git"
+  },
+  "author": "Kyle Derby MacInnis",
+  "license": "MIT"
 }

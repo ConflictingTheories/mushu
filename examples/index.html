@@ -3,541 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>🍡 mushu - Creative Coding Made Simple</title>
-  <style>
-    :root {
-      --bg: #0a0a0f;
-      --card: #12121a;
-      --border: #2a2a3a;
-      --text: #e0e0e0;
-      --accent: #ff6b9d;
-      --accent2: #00d4aa;
-      --accent3: #ffaa00;
-      --accent4: #a855f7;
-      --accent5: #3b82f6;
-      --code-bg: #1a1a24;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       HERO SECTION
-       ═══════════════════════════════════════════════════════════════════════ */
-    .hero {
-      text-align: center;
-      padding: 80px 40px 60px;
-      background: linear-gradient(180deg, rgba(255,107,157,0.08) 0%, transparent 100%);
-      border-bottom: 1px solid var(--border);
-    }
-    .hero h1 {
-      font-size: 4rem;
-      margin: 0 0 0.5rem;
-      background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .hero .tagline {
-      font-size: 1.4rem;
-      color: #aaa;
-      margin-bottom: 2rem;
-    }
-    .hero .description {
-      max-width: 700px;
-      margin: 0 auto 2rem;
-      font-size: 1.1rem;
-      color: #999;
-    }
-    .hero-buttons {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .hero-buttons a {
-      display: inline-block;
-      padding: 14px 28px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .hero-buttons a:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    }
-    .hero-buttons .primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-    }
-    .hero-buttons .secondary {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       CONTENT CONTAINER
-       ═══════════════════════════════════════════════════════════════════════ */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 60px 40px;
-    }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       PREFACE / ABOUT SECTION
-       ═══════════════════════════════════════════════════════════════════════ */
-    .about {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 24px;
-      margin-bottom: 60px;
-    }
-    @media (max-width: 700px) {
-      .about {
-        grid-template-columns: 1fr;
-      }
-    }
-    .about-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px;
-    }
-    .about-card h3 {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 0 0 12px;
-      font-size: 1.2rem;
-    }
-    .about-card p {
-      color: #888;
-      margin: 0;
-    }
-    .about-card code {
-      background: rgba(255,255,255,0.1);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-    }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       CODE TABS
-       ═══════════════════════════════════════════════════════════════════════ */
-    .code-section {
-      margin-bottom: 60px;
-    }
-    .code-section h2 {
-      text-align: center;
-      font-size: 2rem;
-      margin-bottom: 1.5rem;
-      color: var(--text);
-    }
-    .code-section h2 span {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .tabs {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 0;
-      flex-wrap: wrap;
-    }
-    .tab {
-      padding: 12px 24px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-bottom: none;
-      border-radius: 8px 8px 0 0;
-      cursor: pointer;
-      font-weight: 600;
-      color: #888;
-      transition: all 0.2s;
-      font-family: inherit;
-      font-size: 1rem;
-    }
-    .tab:hover {
-      color: var(--text);
-      background: #1a1a24;
-    }
-    .tab.active {
-      background: var(--code-bg);
-      color: var(--accent);
-      border-color: var(--accent);
-      border-bottom: 1px solid var(--code-bg);
-    }
-    .tab.active.glsl { color: var(--accent); border-color: var(--accent); }
-    .tab.active.gpu { color: var(--accent2); border-color: var(--accent2); }
-    .tab.active.flow { color: var(--accent3); border-color: var(--accent3); }
-    .tab.active.gpuFlow { color: var(--accent4); border-color: var(--accent4); }
-    
-    .code-panels {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 0 12px 12px 12px;
-      overflow: hidden;
-    }
-    .code-panel {
-      display: none;
-      padding: 24px;
-    }
-    .code-panel.active {
-      display: block;
-    }
-    .code-panel pre {
-      margin: 0;
-      overflow-x: auto;
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-      font-size: 0.9rem;
-      line-height: 1.5;
-    }
-    .code-panel code {
-      color: #ccc;
-    }
-    .code-panel .comment { color: #6a737d; }
-    .code-panel .keyword { color: #ff79c6; }
-    .code-panel .function { color: #50fa7b; }
-    .code-panel .string { color: #f1fa8c; }
-    .code-panel .number { color: #bd93f9; }
-    .code-label {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      margin-bottom: 16px;
-      font-weight: 600;
-    }
-    .code-label.glsl { background: rgba(255,107,157,0.2); color: var(--accent); }
-    .code-label.gpu { background: rgba(0,212,170,0.2); color: var(--accent2); }
-    .code-label.flow { background: rgba(255,170,0,0.2); color: var(--accent3); }
-    .code-label.gpuFlow { background: rgba(168,85,247,0.2); color: var(--accent4); }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       DEMO SECTIONS
-       ═══════════════════════════════════════════════════════════════════════ */
-    .demos-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    .demos-header h2 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-    }
-    .demos-header p {
-      color: #888;
-    }
-    
-    .method-legend {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-bottom: 3rem;
-      padding: 20px;
-      background: var(--card);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-    .method-legend .item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
-    }
-    .method-legend .dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-    .method-legend .dot.boilerplate { background: var(--accent5); }
-    .method-legend .dot.glsl { background: var(--accent); }
-    .method-legend .dot.gpu { background: var(--accent2); }
-    .method-legend .dot.flow { background: var(--accent3); }
-    .method-legend .dot.gpuFlow { background: var(--accent4); }
-    
-    .compare-section {
-      background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(0,212,170,0.1));
-      border: 2px solid var(--border);
-      border-radius: 16px;
-      padding: 30px;
-      margin-bottom: 3rem;
-      text-align: center;
-    }
-    .compare-section h3 {
-      margin: 0 0 0.5rem;
-      font-size: 1.5rem;
-    }
-    .compare-section p {
-      color: #aaa;
-      margin-bottom: 1.5rem;
-    }
-    .compare-section a {
-      display: inline-block;
-      background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3), var(--accent4));
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      margin: 0 6px;
-    }
-    
-    .section {
-      margin-bottom: 3rem;
-    }
-    .section h3 {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.5rem;
-      margin-bottom: 1.5rem;
-    }
-    .section h3.boilerplate { color: var(--accent5); }
-    .section h3.glsl { color: var(--accent); }
-    .section h3.gpu { color: var(--accent2); }
-    .section h3.flow { color: var(--accent3); }
-    .section h3.gpuFlow { color: var(--accent4); }
-    .section h3 code {
-      background: rgba(255,255,255,0.1);
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-    }
-    @media (max-width: 900px) {
-      .grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (max-width: 500px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-    }
-    .card h4 {
-      margin: 0 0 0.5rem;
-      font-size: 1.1rem;
-    }
-    .card p {
-      color: #888;
-      margin: 0 0 1rem;
-      font-size: 0.9rem;
-    }
-    .card a {
-      display: inline-block;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-      text-decoration: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.85rem;
-      transition: opacity 0.2s;
-    }
-    .card a:hover { opacity: 0.85; }
-    .card.boilerplate a { background: linear-gradient(135deg, var(--accent5), #60a5fa); }
-    .card.glsl a { background: linear-gradient(135deg, var(--accent), #ff8fab); }
-    .card.gpu a { background: linear-gradient(135deg, var(--accent2), #34d399); }
-    .card.flow a { background: linear-gradient(135deg, var(--accent3), #fbbf24); }
-    .card.gpuFlow a { background: linear-gradient(135deg, var(--accent4), #c084fc); }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       FAQ SECTION
-       ═══════════════════════════════════════════════════════════════════════ */
-    .faq {
-      margin-top: 60px;
-      padding-top: 40px;
-      border-top: 1px solid var(--border);
-    }
-    .faq h2 {
-      text-align: center;
-      font-size: 2rem;
-      margin-bottom: 2rem;
-    }
-    .faq-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 24px;
-    }
-    @media (max-width: 800px) {
-      .faq-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    .faq-item {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-    }
-    .faq-item h4 {
-      color: var(--accent);
-      margin: 0 0 12px;
-      font-size: 1.1rem;
-    }
-    .faq-item p {
-      color: #888;
-      margin: 0;
-      font-size: 0.95rem;
-    }
-    .faq-item code {
-      background: rgba(255,255,255,0.1);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-    }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       FOOTER
-       ═══════════════════════════════════════════════════════════════════════ */
-    footer {
-      text-align: center;
-      padding: 40px;
-      border-top: 1px solid var(--border);
-      color: #666;
-      font-size: 0.9rem;
-    }
-    footer a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    footer a:hover {
-      text-decoration: underline;
-    }
-
-    /* ═══════════════════════════════════════════════════════════════════════
-       FLOATING SUPPORT BUTTON & POPUP
-       ═══════════════════════════════════════════════════════════════════════ */
-    .support-fab {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 1000;
-    }
-    .support-fab-btn {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent4));
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      box-shadow: 0 4px 20px rgba(255,107,157,0.4);
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .support-fab-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 6px 28px rgba(255,107,157,0.5);
-    }
-    .support-fab-btn.active {
-      transform: rotate(45deg);
-    }
-    .support-popup {
-      position: absolute;
-      bottom: 70px;
-      right: 0;
-      width: 280px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(10px) scale(0.95);
-      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-    }
-    .support-popup.open {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0) scale(1);
-    }
-    .support-popup-header {
-      text-align: center;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    .support-popup-title {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-      background: linear-gradient(135deg, var(--accent), var(--accent4));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .support-popup-subtitle {
-      font-size: 0.8rem;
-      color: #888;
-    }
-    .support-links {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .support-link {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 14px;
-      border-radius: 10px;
-      text-decoration: none;
-      font-weight: 500;
-      font-size: 0.9rem;
-      color: var(--text);
-      background: rgba(255,255,255,0.05);
-      border: 1px solid transparent;
-      transition: all 0.2s;
-    }
-    .support-link:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: var(--border);
-      transform: translateX(4px);
-    }
-    .support-link-icon {
-      font-size: 1.1rem;
-      width: 24px;
-      text-align: center;
-    }
-    .support-link-label {
-      flex: 1;
-    }
-    .support-link-arrow {
-      color: #666;
-      font-size: 0.8rem;
-    }
-  </style>
+  <link rel="stylesheet" href="./index.css">
+  <link rel="stylesheet" href="./support.css">
 </head>
 <body>
 
@@ -640,7 +107,7 @@
           <pre><code><span class="keyword">import</span> { mushu, shader, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
 <span class="comment">// Chainable, pluggable, beautiful</span>
-<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gl</span>()
+<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gl</span>().<span class="function">flow</span>()
   .<span class="function">use</span>(<span class="function">shader</span>(<span class="string">`
     void mainImage(out vec4 O, vec2 C) {
       vec2 uv = C / resolution;
@@ -693,18 +160,18 @@
       <div class="compare-section">
         <h3>🔬 Side-by-Side Comparison</h3>
         <p>Compare all methods running the same effect simultaneously</p>
-        <a href="visual-compare.html">Visual Comparison →</a>
-        <a href="compare.html" style="background: linear-gradient(135deg, #555, #777);">Code Comparison →</a>
+        <a href="./visual-compare.html">Visual Comparison →</a>
+        <a href="./compare.html" class="secondary">Code Comparison →</a>
       </div>
 
       <!-- GLSL Section -->
       <div class="section">
         <h3 class="glsl">🎨 GLSL Examples <code>mushu('#c').gl(shaderCode)</code></h3>
         <div class="grid">
-          <div class="card glsl"><h4>🔥 Fire</h4><p>Procedural flames with blackbody colors</p><a href="glsl/fire.html">Demo →</a></div>
-          <div class="card glsl"><h4>💨 Smoke</h4><p>Volumetric smoke with turbulence</p><a href="glsl/smoke.html">Demo →</a></div>
-          <div class="card glsl"><h4>🌊 Water</h4><p>Gerstner waves with reflections</p><a href="glsl/water.html">Demo →</a></div>
-          <div class="card glsl"><h4>🌈 Plasma</h4><p>Classic plasma with rainbow colors</p><a href="glsl/plasma.html">Demo →</a></div>
+          <div class="card glsl"><h4>🔥 Fire</h4><p>Procedural flames with blackbody colors</p><a href="./glsl/fire.html">Demo →</a></div>
+          <div class="card glsl"><h4>💨 Smoke</h4><p>Volumetric smoke with turbulence</p><a href="./glsl/smoke.html">Demo →</a></div>
+          <div class="card glsl"><h4>🌊 Water</h4><p>Gerstner waves with reflections</p><a href="./glsl/water.html">Demo →</a></div>
+          <div class="card glsl"><h4>🌈 Plasma</h4><p>Classic plasma with rainbow colors</p><a href="./glsl/plasma.html">Demo →</a></div>
         </div>
       </div>
 
@@ -712,21 +179,21 @@
       <div class="section">
         <h3 class="gpu">⚡ GPU Examples <code>mushu('#c').gpu(compute, render)</code></h3>
         <div class="grid">
-          <div class="card gpu"><h4>🔥 Fire</h4><p>Candle flame following mouse</p><a href="gpu/fire.html">Demo →</a></div>
-          <div class="card gpu"><h4>💨 Smoke</h4><p>Match smoke from cursor</p><a href="gpu/smoke.html">Demo →</a></div>
-          <div class="card gpu"><h4>🌊 Water</h4><p>Wave equation compute shader</p><a href="gpu/water.html">Demo →</a></div>
-          <div class="card gpu"><h4>🌈 Plasma</h4><p>High-performance plasma</p><a href="gpu/plasma.html">Demo →</a></div>
+          <div class="card gpu"><h4>🔥 Fire</h4><p>Candle flame following mouse</p><a href="./gpu/fire.html">Demo →</a></div>
+          <div class="card gpu"><h4>💨 Smoke</h4><p>Match smoke from cursor</p><a href="./gpu/smoke.html">Demo →</a></div>
+          <div class="card gpu"><h4>🌊 Water</h4><p>Wave equation compute shader</p><a href="./gpu/water.html">Demo →</a></div>
+          <div class="card gpu"><h4>🌈 Plasma</h4><p>High-performance plasma</p><a href="./gpu/plasma.html">Demo →</a></div>
         </div>
       </div>
 
       <!-- Flow Section -->
       <div class="section">
-        <h3 class="flow">🎯 Flow Examples <code>mushu('#c').gl().use(shader()).go()</code></h3>
+        <h3 class="flow">🎯 Flow Examples <code>mushu('#c').gl().flow().use(shader()).go()</code></h3>
         <div class="grid">
-          <div class="card flow"><h4>🔥 Fire</h4><p>Plugin-based fire with FPS</p><a href="flow-glsl/fire.html">Demo →</a></div>
-          <div class="card flow"><h4>💨 Smoke</h4><p>Fluent smoke simulation</p><a href="flow-glsl/smoke.html">Demo →</a></div>
-          <div class="card flow"><h4>🌊 Water</h4><p>Chainable water with Fresnel</p><a href="flow-glsl/water.html">Demo →</a></div>
-          <div class="card flow"><h4>🌈 Plasma</h4><p>Interactive plasma effect</p><a href="flow-glsl/plasma.html">Demo →</a></div>
+          <div class="card flow"><h4>🔥 Fire</h4><p>Plugin-based fire with FPS</p><a href="./flow-glsl/fire.html">Demo →</a></div>
+          <div class="card flow"><h4>💨 Smoke</h4><p>Fluent smoke simulation</p><a href="./flow-glsl/smoke.html">Demo →</a></div>
+          <div class="card flow"><h4>🌊 Water</h4><p>Chainable water with Fresnel</p><a href="./flow-glsl/water.html">Demo →</a></div>
+          <div class="card flow"><h4>🌈 Plasma</h4><p>Interactive plasma effect</p><a href="./flow-glsl/plasma.html">Demo →</a></div>
         </div>
       </div>
 
@@ -734,10 +201,10 @@
       <div class="section">
         <h3 class="gpuFlow">🚀 GPU Flow Examples <code>mushu('#c').gpu().flow().display().go()</code></h3>
         <div class="grid">
-          <div class="card gpuFlow"><h4>🔥 Fire</h4><p>WebGPU candle flame</p><a href="flow-gpu/fire.html">Demo →</a></div>
-          <div class="card gpuFlow"><h4>💨 Smoke</h4><p>WebGPU match smoke</p><a href="flow-gpu/smoke.html">Demo →</a></div>
-          <div class="card gpuFlow"><h4>🌊 Water</h4><p>Compute shader waves</p><a href="flow-gpu/water.html">Demo →</a></div>
-          <div class="card gpuFlow"><h4>🌈 Plasma</h4><p>gpu/accelerated plasma</p><a href="flow-gpu/plasma.html">Demo →</a></div>
+          <div class="card gpuFlow"><h4>🔥 Fire</h4><p>WebGPU candle flame</p><a href="./flow-gpu/fire.html">Demo →</a></div>
+          <div class="card gpuFlow"><h4>💨 Smoke</h4><p>WebGPU match smoke</p><a href="./flow-gpu/smoke.html">Demo →</a></div>
+          <div class="card gpuFlow"><h4>🌊 Water</h4><p>Compute shader waves</p><a href="./flow-gpu/water.html">Demo →</a></div>
+          <div class="card gpuFlow"><h4>🌈 Plasma</h4><p>GPU-accelerated plasma</p><a href="./flow-gpu/plasma.html">Demo →</a></div>
         </div>
       </div>
 
@@ -745,10 +212,10 @@
       <div class="section">
         <h3 class="boilerplate">📝 Boilerplate Examples <code>Vanilla WebGL2</code></h3>
         <div class="grid">
-          <div class="card boilerplate"><h4>🔥 Fire</h4><p>Raw WebGL2 from scratch</p><a href="boilerplate/fire.html">Code →</a></div>
-          <div class="card boilerplate"><h4>💨 Smoke</h4><p>Manual WebGL2 setup</p><a href="boilerplate/smoke.html">Code →</a></div>
-          <div class="card boilerplate"><h4>🌊 Water</h4><p>Hand-coded water sim</p><a href="boilerplate/water.html">Code →</a></div>
-          <div class="card boilerplate"><h4>🌈 Plasma</h4><p>Classic plasma vanilla</p><a href="boilerplate/plasma.html">Code →</a></div>
+          <div class="card boilerplate"><h4>🔥 Fire</h4><p>Raw WebGL2 from scratch</p><a href="./boilerplate/fire.html">Code →</a></div>
+          <div class="card boilerplate"><h4>💨 Smoke</h4><p>Manual WebGL2 setup</p><a href="./boilerplate/smoke.html">Code →</a></div>
+          <div class="card boilerplate"><h4>🌊 Water</h4><p>Hand-coded water sim</p><a href="./boilerplate/water.html">Code →</a></div>
+          <div class="card boilerplate"><h4>🌈 Plasma</h4><p>Classic plasma vanilla</p><a href="./boilerplate/plasma.html">Code →</a></div>
         </div>
       </div>
     </section>
@@ -760,7 +227,7 @@
       <h2>❓ Frequently Asked Questions</h2>
       <div class="faq-grid">
         <div class="faq-item">
-          <h4>What's the difference between glsl() and flow()?</h4>
+          <h4>What's the difference between gl() and flow()?</h4>
           <p><code>mushu().gl()</code> is a one-liner for quick shader sketches. <code>mushu().gl().flow()</code> is a fluent builder that supports plugins like FPS counters, simulations, and post-processing chains.</p>
         </div>
         <div class="faq-item">

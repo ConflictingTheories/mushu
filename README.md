@@ -9,25 +9,44 @@ A delightfully simple WebGL2 & WebGPU creative coding library with a hookable pl
 - 🔌 **Plugin System** — Extensible through composable hooks
 - 🌊 **Simulation Support** — Built-in ping-pong FBO for fluid dynamics
 - 🎯 **Zero Dependencies** — Pure ES modules, no build required
-- 📦 **Tree Shakeable** — Import only what you need
+- 📦 **Tree-shakeable** — Import only what you need
 
 ## Quick Start
 
-```html
-<canvas id="c"></canvas>
-<script type="module">
-import { mushu, shader, fps } from './mushu/src/index.js';
+Create an `index.html` file in your project root:
 
-mushu('#c').flow()
-  .use(shader(`
-    void mainImage(out vec4 O, vec2 C) {
-      vec2 uv = C / resolution;
-      O = vec4(uv, 0.5 + 0.5 * sin(time), 1.0);
-    }
-  `))
-  .use(fps())
-  .go();
-</script>
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mushu Demo</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <script type="module">
+    import { mushu, shader, fps } from './mushu/src/index.js';
+
+    mushu('#c').flow()
+      .use(shader(`
+        void mainImage(out vec4 O, vec2 C) {
+          vec2 uv = C / resolution;
+          O = vec4(uv, 0.5 + 0.5 * sin(time), 1.0);
+        }
+      `))
+      .use(fps())
+      .go();
+  </script>
+</body>
+</html>
+```
+
+Then, serve your project with a local server (e.g., `npx http-server .`) and open `index.html` in your browser.
 ```
 
 ## Installation

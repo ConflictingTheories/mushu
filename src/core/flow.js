@@ -22,7 +22,7 @@
 export function flow(canvasOrGl) {
   // Accept either canvas element, selector, or WebGL context
   let canvas, gl;
-  
+
   if (typeof canvasOrGl === 'string') {
     canvas = document.querySelector(canvasOrGl);
   } else if (canvasOrGl.getContext) {
@@ -31,11 +31,11 @@ export function flow(canvasOrGl) {
     canvas = canvasOrGl.canvas;
     gl = canvasOrGl;
   }
-  
+
   if (!gl) {
     gl = canvas.getContext('webgl2');
   }
-  
+
   if (!gl) {
     console.error('WebGL2 not supported');
     return null;
@@ -47,7 +47,7 @@ export function flow(canvasOrGl) {
   const plugins = [];
   let running = false;
   let animationId = null;
-  
+
   // Shared context passed to all plugins
   const ctx = {
     gl,
@@ -80,7 +80,7 @@ export function flow(canvasOrGl) {
     ctx.height = canvas.height;
     ctx.aspect = canvas.width / canvas.height;
     gl.viewport(0, 0, canvas.width, canvas.height);
-    
+
     // Notify plugins of resize
     for (const plugin of plugins) {
       if (plugin.resize) plugin.resize(ctx);
@@ -95,18 +95,18 @@ export function flow(canvasOrGl) {
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    
+
     ctx.mouseVelocity[0] = x - lastMouse[0];
     ctx.mouseVelocity[1] = y - lastMouse[1];
     lastMouse[0] = x;
     lastMouse[1] = y;
-    
+
     ctx.mouse[0] = x;
     ctx.mouse[1] = y;
     ctx.mouseNDC[0] = x * 2 - 1;
     ctx.mouseNDC[1] = 1 - y * 2;
   };
-  
+
   const onTouchMove = (e) => {
     if (e.touches.length > 0) {
       const touch = e.touches[0];
@@ -117,7 +117,7 @@ export function flow(canvasOrGl) {
       ctx.mouseNDC[1] = 1 - ctx.mouse[1] * 2;
     }
   };
-  
+
   const onMouseDown = () => { ctx.mouseDown = true; };
   const onMouseUp = () => { ctx.mouseDown = false; };
   const onTouchStart = () => { ctx.mouseDown = true; };
@@ -141,7 +141,7 @@ export function flow(canvasOrGl) {
         plugin.render(ctx);
       }
     }
-    
+
     // Decay mouse velocity
     ctx.mouseVelocity[0] *= 0.9;
     ctx.mouseVelocity[1] *= 0.9;
@@ -231,7 +231,7 @@ export function flow(canvasOrGl) {
       plugins.length = 0;
       return api;
     },
-    
+
     // Cleanup everything
     destroy() {
       api.stop();
@@ -265,7 +265,7 @@ export function clear(colorOrFn = [0, 0, 0, 1]) {
 // Fullscreen quad (sets up VAO for drawing)
 export function quad() {
   let vao = null;
-  
+
   return {
     name: 'quad',
     init(ctx) {
@@ -283,24 +283,24 @@ export function quad() {
 export function shader(fragSource, options = {}) {
   let program = null;
   const customUniforms = options.uniforms || {};
-  
+
   const vertSource = `#version 300 es
     void main() {
       vec2 positions[3] = vec2[](vec2(-1,-1), vec2(3,-1), vec2(-1,3));
       gl_Position = vec4(positions[gl_VertexID], 0, 1);
     }`;
-  
+
   const compile = (ctx) => {
     const gl = ctx.gl;
     const vs = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vs, vertSource);
     gl.compileShader(vs);
-    
+
     if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
       console.error('Vertex shader error:', gl.getShaderInfoLog(vs));
       return null;
     }
-    
+
     const fs = gl.createShader(gl.FRAGMENT_SHADER);
     const fullFrag = `#version 300 es
       precision highp float;
@@ -316,26 +316,26 @@ export function shader(fragSource, options = {}) {
       void main() { mainImage(fragColor, gl_FragCoord.xy); }`;
     gl.shaderSource(fs, fullFrag);
     gl.compileShader(fs);
-    
+
     if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
       console.error('Fragment shader error:', gl.getShaderInfoLog(fs));
       console.error('Shader source:', fullFrag);
       return null;
     }
-    
+
     const p = gl.createProgram();
     gl.attachShader(p, vs);
     gl.attachShader(p, fs);
     gl.linkProgram(p);
-    
+
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
       console.error('Program link error:', gl.getProgramInfoLog(p));
       return null;
     }
-    
+
     return p;
   };
-  
+
   return {
     name: 'shader',
     init(ctx) {
@@ -347,7 +347,7 @@ export function shader(fragSource, options = {}) {
       const gl = ctx.gl;
       gl.useProgram(program);
       ctx.program = program;
-      
+
       // Auto-set built-in uniforms
       gl.uniform1f(gl.getUniformLocation(program, 'time'), ctx.time);
       gl.uniform1f(gl.getUniformLocation(program, 'delta'), ctx.delta);
@@ -357,7 +357,7 @@ export function shader(fragSource, options = {}) {
       gl.uniform2f(gl.getUniformLocation(program, 'mouse'), ctx.mouse[0], 1.0 - ctx.mouse[1]);
       gl.uniform2f(gl.getUniformLocation(program, 'mouseVelocity'), ctx.mouseVelocity[0], -ctx.mouseVelocity[1]);
       gl.uniform1f(gl.getUniformLocation(program, 'mouseDown'), ctx.mouseDown ? 1 : 0);
-      
+
       // Set custom uniforms
       for (const [name, valueFn] of Object.entries(customUniforms)) {
         const loc = gl.getUniformLocation(program, name);
@@ -373,7 +373,7 @@ export function shader(fragSource, options = {}) {
           gl.uniform4fv(loc, value);
         }
       }
-      
+
       // Draw fullscreen triangle
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
@@ -392,22 +392,22 @@ export function shader(fragSource, options = {}) {
 export function uniform(name, valueOrFn) {
   let location = null;
   let lastProgram = null;
-  
+
   return {
     name: `uniform:${name}`,
     render(ctx) {
       if (!ctx.program) return;
       const gl = ctx.gl;
-      
+
       // Cache location per program
       if (lastProgram !== ctx.program) {
         location = gl.getUniformLocation(ctx.program, name);
         lastProgram = ctx.program;
       }
       if (!location) return;
-      
+
       const value = typeof valueOrFn === 'function' ? valueOrFn(ctx) : valueOrFn;
-      
+
       if (typeof value === 'number') {
         gl.uniform1f(location, value);
       } else if (Array.isArray(value) || value instanceof Float32Array) {
@@ -429,7 +429,7 @@ export function fps() {
   let lastUpdate = 0;
   let frames = 0;
   let fps = 0;
-  
+
   return {
     name: 'fps',
     init() {
@@ -462,14 +462,14 @@ export function simulation(options = {}) {
     iterations = 1,   // Simulation iterations per frame
     format = 'RGBA16F',
   } = options;
-  
+
   let fboA, fboB, texA, texB;
   let simProgram = null;
   let renderProgram = null;
   let width, height;
   let simSrc = '';
   let renderSrc = '';
-  
+
   const createFBO = (gl, w, h) => {
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -478,14 +478,14 @@ export function simulation(options = {}) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    
+
     const fb = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-    
+
     return { fb, tex };
   };
-  
+
   const compileShader = (gl, fragSrc, includeBackbuffer = false, addHelpers = false) => {
     const vs = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vs, `#version 300 es
@@ -494,12 +494,12 @@ export function simulation(options = {}) {
         gl_Position = vec4(positions[gl_VertexID], 0, 1);
       }`);
     gl.compileShader(vs);
-    
+
     if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
       console.error('Vertex shader error:', gl.getShaderInfoLog(vs));
       return null;
     }
-    
+
     const fs = gl.createShader(gl.FRAGMENT_SHADER);
     const helpers = addHelpers ? `
       // Sample the simulation buffer with offset (in pixels)
@@ -515,7 +515,7 @@ export function simulation(options = {}) {
         return texture(backbuffer, uv);
       }
     ` : '';
-    
+
     const prefix = `#version 300 es
       precision highp float;
       out vec4 fragColor;
@@ -528,56 +528,56 @@ export function simulation(options = {}) {
       ${includeBackbuffer ? 'uniform sampler2D backbuffer;' : ''}
       ${helpers}
     `;
-    
+
     gl.shaderSource(fs, prefix + fragSrc + `\nvoid main() { mainImage(fragColor, gl_FragCoord.xy); }`);
     gl.compileShader(fs);
-    
+
     if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
       console.error('Fragment shader error:', gl.getShaderInfoLog(fs));
       console.error('Source:', prefix + fragSrc);
       return null;
     }
-    
+
     const p = gl.createProgram();
     gl.attachShader(p, vs);
     gl.attachShader(p, fs);
     gl.linkProgram(p);
-    
+
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
       console.error('Link error:', gl.getProgramInfoLog(p));
       return null;
     }
-    
+
     return p;
   };
-  
+
   const api = {
     name: 'simulation',
-    
+
     // Set simulation shader
     simulate(fragSrc) {
       simSrc = fragSrc;
       return api;
     },
-    
+
     // Set render/display shader
     display(fragSrc) {
       renderSrc = fragSrc;
       return api;
     },
-    
+
     init(ctx) {
       const gl = ctx.gl;
       gl.getExtension('EXT_color_buffer_float');
-      
+
       width = Math.floor(ctx.width * scale);
       height = Math.floor(ctx.height * scale);
-      
+
       const a = createFBO(gl, width, height);
       const b = createFBO(gl, width, height);
       fboA = a.fb; texA = a.tex;
       fboB = b.fb; texB = b.tex;
-      
+
       if (simSrc) {
         simProgram = compileShader(gl, simSrc, true, true);
       }
@@ -585,16 +585,16 @@ export function simulation(options = {}) {
         renderProgram = compileShader(gl, renderSrc, true, false);
       }
     },
-    
+
     resize(ctx) {
       const gl = ctx.gl;
       const newWidth = Math.floor(ctx.width * scale);
       const newHeight = Math.floor(ctx.height * scale);
-      
+
       if (newWidth !== width || newHeight !== height) {
         width = newWidth;
         height = newHeight;
-        
+
         // Recreate FBOs
         const a = createFBO(gl, width, height);
         const b = createFBO(gl, width, height);
@@ -602,54 +602,54 @@ export function simulation(options = {}) {
         fboB = b.fb; texB = b.tex;
       }
     },
-    
+
     render(ctx) {
       const gl = ctx.gl;
-      
+
       // Run simulation iterations
       for (let i = 0; i < iterations; i++) {
         if (simProgram) {
           gl.bindFramebuffer(gl.FRAMEBUFFER, fboB);
           gl.viewport(0, 0, width, height);
           gl.useProgram(simProgram);
-          
+
           gl.uniform1f(gl.getUniformLocation(simProgram, 'time'), ctx.time);
           gl.uniform1f(gl.getUniformLocation(simProgram, 'delta'), ctx.delta);
           gl.uniform2f(gl.getUniformLocation(simProgram, 'resolution'), width, height);
           gl.uniform2f(gl.getUniformLocation(simProgram, 'mouse'), ctx.mouse[0], 1.0 - ctx.mouse[1]);
           gl.uniform2f(gl.getUniformLocation(simProgram, 'mouseVelocity'), ctx.mouseVelocity[0], -ctx.mouseVelocity[1]);
           gl.uniform1f(gl.getUniformLocation(simProgram, 'mouseDown'), ctx.mouseDown ? 1 : 0);
-          
+
           gl.activeTexture(gl.TEXTURE0);
           gl.bindTexture(gl.TEXTURE_2D, texA);
           gl.uniform1i(gl.getUniformLocation(simProgram, 'backbuffer'), 0);
-          
+
           gl.drawArrays(gl.TRIANGLES, 0, 3);
-          
+
           // Swap buffers
           [fboA, fboB] = [fboB, fboA];
           [texA, texB] = [texB, texA];
         }
       }
-      
+
       // Render to screen
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, ctx.width, ctx.height);
-      
+
       if (renderProgram) {
         gl.useProgram(renderProgram);
         gl.uniform1f(gl.getUniformLocation(renderProgram, 'time'), ctx.time);
         gl.uniform2f(gl.getUniformLocation(renderProgram, 'resolution'), ctx.width, ctx.height);
-        
+
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texA);
         gl.uniform1i(gl.getUniformLocation(renderProgram, 'backbuffer'), 0);
-        
+
         gl.drawArrays(gl.TRIANGLES, 0, 3);
       }
     }
   };
-  
+
   return api;
 }
 
@@ -659,7 +659,7 @@ export function simulation(options = {}) {
 
 export function glsl(fragSource, canvasOrSelector) {
   let canvas;
-  
+
   if (!canvasOrSelector) {
     canvas = document.createElement('canvas');
     canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
@@ -669,7 +669,7 @@ export function glsl(fragSource, canvasOrSelector) {
   } else {
     canvas = canvasOrSelector;
   }
-  
+
   return flow(canvas)
     .use(shader(fragSource))
     .go();

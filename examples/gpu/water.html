@@ -1,31 +1,33 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>mushu — WebGPU Water Demo</title>
   <link rel="stylesheet" href="../common.css">
 </head>
+
 <body>
-<div class="info">🌊 <code>mushu().gpu(compute, render)</code> Water | WebGPU Function API</div>
-<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
-<script type="module">
-import { mushu } from '../../src/index.js';
+  <div class="info">🌊 <code>mushu().gpu(compute, render)</code> Water | WebGPU Function API</div>
+  <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+  <script type="module">
+    import { mushu } from '../../src/index.js';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// WebGPU Advanced Water Ripple Simulation
-// 
-// Features:
-//   • Improved wave equation with 8-neighbor sampling
-//   • Dynamic foam generation at wave peaks
-//   • Fresnel-based reflections
-//   • Animated caustics
-//   • Subsurface scattering approximation
-//   • Interactive ripples with momentum
-// 
-// Click and drag to create ripples!
-// ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════
+    // WebGPU Advanced Water Ripple Simulation
+    // 
+    // Features:
+    //   • Improved wave equation with 8-neighbor sampling
+    //   • Dynamic foam generation at wave peaks
+    //   • Fresnel-based reflections
+    //   • Animated caustics
+    //   • Subsurface scattering approximation
+    //   • Interactive ripples with momentum
+    // 
+    // Click and drag to create ripples!
+    // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').gpu(
+    mushu('#c').gpu(
   // Compute shader - Advanced wave physics
   /* wgsl */`
     fn hash(p: vec2<f32>) -> f32 {
@@ -148,7 +150,7 @@ mushu('#c').gpu(
       textureStore(dst, C, vec4<f32>(height, velocity, foam, age));
     }
   `,
-  
+
   // Render shader - Realistic water visualization
   /* wgsl */`
     fn noise(p: vec2<f32>) -> f32 {
@@ -256,46 +258,47 @@ mushu('#c').gpu(
       return vec4<f32>(col, 1.0);
     }
   `,
-  { canvas: document.getElementById('c'), scale: 0.5 }
-);
+      { canvas: document.getElementById('c'), scale: 0.5 }
+    );
 
-// FPS Counter
-(function() {
-  const fpsDiv = document.createElement('div');
-  fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
-  document.body.appendChild(fpsDiv);
-  let frames = 0, lastTime = performance.now();
-  function updateFPS() {
-    frames++;
-    const now = performance.now();
-    if (now - lastTime >= 500) {
-      fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
-      frames = 0; lastTime = now;
-    }
-    requestAnimationFrame(updateFPS);
-  }
-  updateFPS();
-})();
+    // FPS Counter
+    (function () {
+      const fpsDiv = document.createElement('div');
+      fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
+      document.body.appendChild(fpsDiv);
+      let frames = 0, lastTime = performance.now();
+      function updateFPS() {
+        frames++;
+        const now = performance.now();
+        if (now - lastTime >= 500) {
+          fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
+          frames = 0; lastTime = now;
+        }
+        requestAnimationFrame(updateFPS);
+      }
+      updateFPS();
+    })();
 
-console.log('%c 🌊 mushu WebGPU Water Ready ', 'background: linear-gradient(90deg, #0066aa, #00bbdd); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Click and drag to create ripples!');
-</script>
-<script>
-// Hide home-link if in iframe - run immediately and on load
-function hideIfIframe() {
-  if (window.self !== window.top) {
-    const link = document.querySelector('.home-link');
-    if (link) {
-      link.style.display = 'none';
+    console.log('%c 🌊 mushu WebGPU Water Ready ', 'background: linear-gradient(90deg, #0066aa, #00bbdd); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+    console.log('Click and drag to create ripples!');
+  </script>
+  <script>
+    // Hide home-link if in iframe - run immediately and on load
+    function hideIfIframe() {
+      if (window.self !== window.top) {
+        const link = document.querySelector('.home-link');
+        if (link) {
+          link.style.display = 'none';
+        }
+      }
     }
-  }
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', hideIfIframe);
-} else {
-  hideIfIframe();
-}
-</script>
-<a href="index.html" class="home-link">← Back to Index</a>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideIfIframe);
+    } else {
+      hideIfIframe();
+    }
+  </script>
+  <a href="index.html" class="home-link">← Back to Index</a>
 </body>
+
 </html>

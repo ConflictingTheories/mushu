@@ -38,7 +38,7 @@ import { gpuFlow, gpu as gpuSimple } from './gpu/index.js';
 
 export function mushu(canvasOrSelector) {
   let canvas;
-  
+
   if (!canvasOrSelector) {
     canvas = document.createElement('canvas');
     canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
@@ -48,7 +48,7 @@ export function mushu(canvasOrSelector) {
   } else {
     canvas = canvasOrSelector;
   }
-  
+
   return {
     // Quick shader helper - auto starts if code provided, otherwise returns flow builder
     gl(fragSource) {
@@ -61,7 +61,7 @@ export function mushu(canvasOrSelector) {
       // Otherwise return flow builder for chaining
       return flow(canvas);
     },
-    
+
     glsl(fragSource) {
       // If called with shader code, auto-start
       if (fragSource !== undefined) {
@@ -72,36 +72,36 @@ export function mushu(canvasOrSelector) {
       // Otherwise return flow builder for chaining
       return flow(canvas);
     },
-    
+
     // WebGL2 fluent runtime with plugin system
     flow() {
       return flow(canvas);
     },
-    
+
     // WebGPU API
     gpu(computeCode, renderCode, options) {
       // If called with arguments, use the simple gpu() helper
       if (computeCode !== undefined || renderCode !== undefined) {
         return gpuSimple(computeCode, renderCode, { canvas, ...options });
       }
-      
+
       // Otherwise return chainable GPU builder
       return {
         // WebGL2 fluent runtime with plugin system (new syntax)
         gl() {
           return flow(canvas);
         },
-        
+
         // WebGPU fluent runtime with simulation
         flow() {
           return gpuFlow(canvas);
         },
-        
+
         // WebGPU simple display/compute
         display(code) {
           return gpuFlow(canvas).display(code);
         },
-        
+
         simulate(code) {
           return gpuFlow(canvas).simulate(code);
         }

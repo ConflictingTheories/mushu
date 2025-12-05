@@ -26,13 +26,13 @@ export function hasWebGPU() {
 
 export function gpuFlow(canvasOrSelector) {
   let canvas;
-  
+
   if (typeof canvasOrSelector === 'string') {
     canvas = document.querySelector(canvasOrSelector);
   } else {
     canvas = canvasOrSelector;
   }
-  
+
   // Internal state
   let displayCode = null;
   let simulateCode = null;
@@ -41,82 +41,82 @@ export function gpuFlow(canvasOrSelector) {
   let context = null;
   let format = null;
   let simScale = 1.0;
-  
+
   // Mouse state
   const mouse = { x: 0.5, y: 0.5, px: 0.5, py: 0.5, down: false };
-  
+
   const builder = {
     // Set display/fragment shader
     display(code) {
       displayCode = code;
       return builder;
     },
-    
+
     // Set simulation/compute shader
     simulate(code) {
       simulateCode = code;
       return builder;
     },
-    
+
     // Set simulation texture scale (0.5 = half res)
     scale(s) {
       simScale = s;
       return builder;
     },
-    
+
     // Start the GPU pipeline
     async go() {
       if (!navigator.gpu) {
         showError('WebGPU Not Supported', 'Use Chrome 113+ or Edge 113+ with WebGPU enabled.');
         return null;
       }
-      
+
       try {
         const adapter = await navigator.gpu.requestAdapter();
         if (!adapter) {
           showError('No GPU Adapter', 'Could not find a suitable GPU adapter.');
           return null;
         }
-        
+
         device = await adapter.requestDevice();
         context = canvas.getContext('webgpu');
         format = navigator.gpu.getPreferredCanvasFormat();
-        
+
         // Setup mouse events
         setupMouse();
-        
+
         // Set running flag so animation loops will start
         running = true;
-        
+
         // Run the appropriate pipeline
         if (simulateCode) {
           await runComputePipeline();
         } else if (displayCode) {
           await runDisplayPipeline();
         }
-        
+
         return builder;
-        
+
       } catch (err) {
         showError('WebGPU Error', err.message);
         console.error(err);
         return null;
       }
     },
-    
+
     stop() {
       running = false;
       return builder;
     }
   };
-  
+
   function showError(title, message) {
     const div = document.createElement('div');
     div.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#111;color:#fff;font-family:system-ui;text-align:center;padding:40px;';
     div.innerHTML = `<div><h1 style="color:#f66">${title}</h1><p style="color:#aaa;max-width:400px">${message}</p></div>`;
     document.body.appendChild(div);
   }
-  
+
   function setupMouse() {
     const updateMouse = (x, y) => {
       const rect = canvas.getBoundingClientRect();
@@ -125,12 +125,12 @@ export function gpuFlow(canvasOrSelector) {
       mouse.x = (x - rect.left) / rect.width;
       mouse.y = (y - rect.top) / rect.height;  // No flip - shaders flip when needed
     };
-    
+
     canvas.addEventListener('mousemove', e => updateMouse(e.clientX, e.clientY));
     canvas.addEventListener('mousedown', () => mouse.down = true);
     canvas.addEventListener('mouseup', () => mouse.down = false);
     canvas.addEventListener('mouseleave', () => mouse.down = false);
-    
+
     canvas.addEventListener('touchmove', e => {
       e.preventDefault();
       if (e.touches.length > 0) {
@@ -145,15 +145,15 @@ export function gpuFlow(canvasOrSelector) {
     });
     canvas.addEventListener('touchend', () => mouse.down = false);
   }
-  
+
   // ─────────────────────────────────────────────────────────────────────────
   // Compute Pipeline (simulation with ping-pong textures)
   // ─────────────────────────────────────────────────────────────────────────
-  
+
   async function runComputePipeline() {
     let width, height, simWidth, simHeight;
     let stateA, stateB;
-    
+
     // Configure context FIRST with initial canvas size
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -161,9 +161,9 @@ export function gpuFlow(canvasOrSelector) {
     height = Math.floor(rect.height * dpr);
     canvas.width = width;
     canvas.height = height;
-    
+
     context.configure({ device, format, alphaMode: 'premultiplied' });
-    
+
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -171,31 +171,31 @@ export function gpuFlow(canvasOrSelector) {
       height = Math.floor(rect.height * dpr);
       canvas.width = width;
       canvas.height = height;
-      
+
       simWidth = Math.floor(width * simScale);
       simHeight = Math.floor(height * simScale);
-      
+
       // Create simulation textures
       const createTex = () => device.createTexture({
         size: [simWidth, simHeight],
         format: 'rgba16float',
         usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
       });
-      
+
       stateA = createTex();
       stateB = createTex();
     };
-    
+
     resize();
     window.addEventListener('resize', resize);
-    
+
     // Create unified uniform buffer (padded to 16-byte alignment)
     // Layout: time(4) + pad(4) + width(4) + height(4) + mouseX(4) + mouseY(4) + mouseDown(4) + pad(4) + prevMouseX(4) + prevMouseY(4) + pad(8) = 48 bytes
-    const uniformBuffer = device.createBuffer({ 
-      size: 48, 
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST 
+    const uniformBuffer = device.createBuffer({
+      size: 48,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    
+
     // Compute shader - prepend uniforms to user code
     // User code should define fn main(@builtin(global_invocation_id) id: vec3<u32>) with @compute @workgroup_size
     const computeShaderCode = /* wgsl */`
@@ -238,9 +238,9 @@ export function gpuFlow(canvasOrSelector) {
       
       ${simulateCode}
     `;
-    
+
     const computeModule = device.createShaderModule({ code: computeShaderCode });
-    
+
     const computeBindGroupLayout = device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
@@ -248,12 +248,12 @@ export function gpuFlow(canvasOrSelector) {
         { binding: 2, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba16float' } }
       ]
     });
-    
+
     const computePipeline = device.createComputePipeline({
       layout: device.createPipelineLayout({ bindGroupLayouts: [computeBindGroupLayout] }),
       compute: { module: computeModule, entryPoint: 'main' }
     });
-    
+
     // Render shader with proper vertex shader
     const renderModule = device.createShaderModule({
       code: `
@@ -294,23 +294,23 @@ export function gpuFlow(canvasOrSelector) {
         ${displayCode}
       `
     });
-    
+
     const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
-    
+
     const renderPipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: { module: renderModule, entryPoint: 'vs' },
       fragment: { module: renderModule, entryPoint: 'main', targets: [{ format }] },
       primitive: { topology: 'triangle-list' }
     });
-    
+
     const startTime = performance.now();
-    
+
     const loop = () => {
       if (!running) return;
-      
+
       const time = (performance.now() - startTime) * 0.001;
-      
+
       // Update unified uniform buffer
       // Layout: time, pad, width, height, mouseX, mouseY, mouseDown, pad, prevMouseX, prevMouseY, pad, pad
       // Note: Mouse Y is flipped to match GL coordinate system (Y=0 at bottom)
@@ -322,9 +322,9 @@ export function gpuFlow(canvasOrSelector) {
         mouse.px, 1.0 - mouse.py,
         0, 0
       ]));
-      
+
       const encoder = device.createCommandEncoder();
-      
+
       // Compute pass
       const computeBindGroup = device.createBindGroup({
         layout: computeBindGroupLayout,
@@ -334,13 +334,13 @@ export function gpuFlow(canvasOrSelector) {
           { binding: 2, resource: stateB.createView() }
         ]
       });
-      
+
       const computePass = encoder.beginComputePass();
       computePass.setPipeline(computePipeline);
       computePass.setBindGroup(0, computeBindGroup);
       computePass.dispatchWorkgroups(Math.ceil(simWidth / 8), Math.ceil(simHeight / 8));
       computePass.end();
-      
+
       // Render pass
       const renderBindGroup = device.createBindGroup({
         layout: renderPipeline.getBindGroupLayout(0),
@@ -350,7 +350,7 @@ export function gpuFlow(canvasOrSelector) {
           { binding: 2, resource: sampler }
         ]
       });
-      
+
       const renderPass = encoder.beginRenderPass({
         colorAttachments: [{
           view: context.getCurrentTexture().createView(),
@@ -363,25 +363,25 @@ export function gpuFlow(canvasOrSelector) {
       renderPass.setBindGroup(0, renderBindGroup);
       renderPass.draw(3);
       renderPass.end();
-      
+
       device.queue.submit([encoder.finish()]);
-      
+
       // Swap textures
       [stateA, stateB] = [stateB, stateA];
-      
+
       requestAnimationFrame(loop);
     };
-    
+
     requestAnimationFrame(loop);
   }
-  
+
   // ─────────────────────────────────────────────────────────────────────────
   // Display-only Pipeline (no compute, just fragment shader)
   // ─────────────────────────────────────────────────────────────────────────
-  
+
   async function runDisplayPipeline() {
     let width, height;
-    
+
     // Configure context FIRST with initial canvas size
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -390,7 +390,7 @@ export function gpuFlow(canvasOrSelector) {
     canvas.width = width;
     canvas.height = height;
     context.configure({ device, format, alphaMode: 'premultiplied' });
-    
+
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -399,15 +399,15 @@ export function gpuFlow(canvasOrSelector) {
       canvas.width = width;
       canvas.height = height;
     };
-    
+
     window.addEventListener('resize', resize);
-    
+
     // Create uniform buffers
     const timeBuffer = device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     const resBuffer = device.createBuffer({ size: 8, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     const mouseBuffer = device.createBuffer({ size: 8, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     const mouseDownBuffer = device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    
+
     const shaderModule = device.createShaderModule({
       code: `
         struct VertexOutput {
@@ -431,26 +431,26 @@ export function gpuFlow(canvasOrSelector) {
         ${displayCode}
       `
     });
-    
+
     const pipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: { module: shaderModule, entryPoint: 'vs' },
       fragment: { module: shaderModule, entryPoint: 'main', targets: [{ format }] },
       primitive: { topology: 'triangle-list' }
     });
-    
+
     const startTime = performance.now();
-    
+
     const loop = () => {
       if (!running) return;
-      
+
       const time = (performance.now() - startTime) * 0.001;
-      
+
       device.queue.writeBuffer(timeBuffer, 0, new Float32Array([time]));
       device.queue.writeBuffer(resBuffer, 0, new Float32Array([width, height]));
       device.queue.writeBuffer(mouseBuffer, 0, new Float32Array([mouse.x, mouse.y]));
       device.queue.writeBuffer(mouseDownBuffer, 0, new Float32Array([mouse.down ? 1 : 0]));
-      
+
       const encoder = device.createCommandEncoder();
       const pass = encoder.beginRenderPass({
         colorAttachments: [{
@@ -460,7 +460,7 @@ export function gpuFlow(canvasOrSelector) {
           storeOp: 'store'
         }]
       });
-      
+
       pass.setPipeline(pipeline);
       pass.setBindGroup(0, device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
@@ -473,14 +473,14 @@ export function gpuFlow(canvasOrSelector) {
       }));
       pass.draw(3);
       pass.end();
-      
+
       device.queue.submit([encoder.finish()]);
       requestAnimationFrame(loop);
     };
-    
+
     requestAnimationFrame(loop);
   }
-  
+
   return builder;
 }
 
@@ -506,38 +506,38 @@ export async function gpu(computeCode, renderCode, options = {}) {
     canvas = createFullscreenCanvas(),
     scale = 0.5
   } = options;
-  
+
   if (!renderCode) {
     showGPUError('No render shader provided');
     return null;
   }
-  
+
   if (!navigator.gpu) {
     showGPUError();
     return null;
   }
-  
+
   const adapter = await navigator.gpu.requestAdapter();
   if (!adapter) {
     showGPUError('No GPU adapter found');
     return null;
   }
-  
+
   const device = await adapter.requestDevice();
   const context = canvas.getContext('webgpu');
   const format = navigator.gpu.getPreferredCanvasFormat();
-  
+
   let width, height;
   let stateA, stateB;
   let computePipeline = null;
   let computeBindGroupLayout = null;
-  
+
   const createStateTexture = (w, h) => device.createTexture({
     size: [w, h],
     format: 'rgba16float',
     usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
   });
-  
+
   const resize = () => {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -546,20 +546,20 @@ export async function gpu(computeCode, renderCode, options = {}) {
     canvas.width = Math.floor(rect.width * dpr);
     canvas.height = Math.floor(rect.height * dpr);
     context.configure({ device, format, alphaMode: 'premultiplied' });
-    
+
     // Recreate state textures on resize if compute shader is present
     if (computeCode) {
       stateA = createStateTexture(width, height);
       stateB = createStateTexture(width, height);
     }
   };
-  
+
   resize();
   window.addEventListener('resize', resize);
-  
+
   // Mouse tracking (consistent with yoGPU)
   const mouse = { x: 0.5, y: 0.5, px: 0.5, py: 0.5, down: false };
-  
+
   const updateMouse = (x, y) => {
     const rect = canvas.getBoundingClientRect();
     mouse.px = mouse.x;
@@ -567,12 +567,12 @@ export async function gpu(computeCode, renderCode, options = {}) {
     mouse.x = (x - rect.left) / rect.width;
     mouse.y = (y - rect.top) / rect.height;
   };
-  
+
   canvas.addEventListener('mousemove', e => updateMouse(e.clientX, e.clientY));
   canvas.addEventListener('mousedown', () => mouse.down = true);
   canvas.addEventListener('mouseup', () => mouse.down = false);
   canvas.addEventListener('mouseleave', () => mouse.down = false);
-  
+
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
     if (e.touches.length > 0) {
@@ -586,14 +586,14 @@ export async function gpu(computeCode, renderCode, options = {}) {
     }
   });
   canvas.addEventListener('touchend', () => mouse.down = false);
-  
+
   // Uniform buffer (matches yoGPU layout - 48 bytes, 16-byte aligned)
   // Layout: time(4) + pad(4) + width(4) + height(4) + mouseX(4) + mouseY(4) + mouseDown(4) + pad(4) + prevMouseX(4) + prevMouseY(4) + pad(8)
   const uniformBuffer = device.createBuffer({
     size: 48,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
   });
-  
+
   // Compute pipeline - only if compute code provided
   if (computeCode) {
     const computeModule = device.createShaderModule({
@@ -641,7 +641,7 @@ export async function gpu(computeCode, renderCode, options = {}) {
         }
       `
     });
-    
+
     computeBindGroupLayout = device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
@@ -649,13 +649,13 @@ export async function gpu(computeCode, renderCode, options = {}) {
         { binding: 2, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba16float' } }
       ]
     });
-    
+
     computePipeline = device.createComputePipeline({
       layout: device.createPipelineLayout({ bindGroupLayouts: [computeBindGroupLayout] }),
       compute: { module: computeModule, entryPoint: 'main' }
     });
   }
-  
+
   // Create dummy texture for render binding if no compute shader
   let dummyTexture = null;
   if (!computeCode) {
@@ -668,7 +668,7 @@ export async function gpu(computeCode, renderCode, options = {}) {
     new Float32Array(dummyTexture.getMappedRange()).fill(1.0);
     dummyTexture.unmap();
   }
-  
+
   // Render pipeline
   const renderModule = device.createShaderModule({
     code: /* wgsl */`
@@ -716,7 +716,7 @@ export async function gpu(computeCode, renderCode, options = {}) {
       }
     `
   });
-  
+
   const renderBindGroupLayout = device.createBindGroupLayout({
     entries: [
       { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
@@ -724,31 +724,31 @@ export async function gpu(computeCode, renderCode, options = {}) {
       { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } }
     ]
   });
-  
+
   const renderPipeline = device.createRenderPipeline({
     layout: device.createPipelineLayout({ bindGroupLayouts: [renderBindGroupLayout] }),
     vertex: { module: renderModule, entryPoint: 'vs' },
     fragment: { module: renderModule, entryPoint: 'fs', targets: [{ format }] },
     primitive: { topology: 'triangle-list' }
   });
-  
+
   const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
-  
+
   let running = true;
   const startTime = performance.now();
   let canvasWidth, canvasHeight;
-  
+
   const loop = () => {
     if (!running) return;
-    
+
     const time = (performance.now() - startTime) * 0.001;
-    
+
     // Get canvas dimensions
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvasWidth = Math.floor(rect.width * dpr);
     canvasHeight = Math.floor(rect.height * dpr);
-    
+
     // Uniform buffer layout:
     // time(4) + pad(4) + width(4) + height(4) + mouseX(4) + mouseY(4) + mouseDown(4) + pad(4) + prevMouseX(4) + prevMouseY(4) + pad(8)
     device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([
@@ -759,9 +759,9 @@ export async function gpu(computeCode, renderCode, options = {}) {
       mouse.px, 1.0 - mouse.py,
       0, 0
     ]));
-    
+
     const encoder = device.createCommandEncoder();
-    
+
     // Compute pass (only if compute shader provided)
     if (computePipeline && stateA && stateB) {
       const computePass = encoder.beginComputePass();
@@ -777,7 +777,7 @@ export async function gpu(computeCode, renderCode, options = {}) {
       computePass.dispatchWorkgroups(Math.ceil(width / 8), Math.ceil(height / 8));
       computePass.end();
     }
-    
+
     // Render pass
     const texToRender = computeCode ? stateB : dummyTexture;
     const renderPass = encoder.beginRenderPass({
@@ -799,19 +799,19 @@ export async function gpu(computeCode, renderCode, options = {}) {
     }));
     renderPass.draw(3);
     renderPass.end();
-    
+
     device.queue.submit([encoder.finish()]);
-    
+
     // Swap textures if compute shader present
     if (computePipeline && stateA && stateB) {
       [stateA, stateB] = [stateB, stateA];
     }
-    
+
     requestAnimationFrame(loop);
   };
-  
+
   requestAnimationFrame(loop);
-  
+
   return {
     stop: () => { running = false; },
     canvas,
@@ -852,7 +852,7 @@ export const wgsl = {
       return fract(sin(q) * 43758.5453);
     }
   `,
-  
+
   // Noise functions
   noise: /* wgsl */`
     fn noise(p: vec2<f32>) -> f32 {
@@ -868,7 +868,7 @@ export const wgsl = {
       return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
     }
   `,
-  
+
   // FBM
   fbm: /* wgsl */`
     fn fbm(p: vec2<f32>) -> f32 {

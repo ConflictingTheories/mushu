@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>mushu — glsl() Plasma Demo</title>
   <link rel="stylesheet" href="../common.css">
   <style>
-    .info code { color: #ff6b9d; }
+    .info code {
+      color: #ff6b9d;
+    }
   </style>
 </head>
+
 <body>
-<div class="info">🎨 <code>mushu().gl()</code> Plasma | Move mouse to interact</div>
-<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
-<script type="module">
-import { mushu } from '../../src/index.js';
+  <div class="info">🎨 <code>mushu().gl()</code> Plasma | Move mouse to interact</div>
+  <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+  <script type="module">
+    import { mushu } from '../../src/index.js';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// GLSL Helper - Classic Plasma Effect with Enhanced Visuals
-// ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GLSL Helper - Classic Plasma Effect with Enhanced Visuals
+    // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').gl(`
+    mushu('#c').gl(`
   // Better color palette function
   vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
     return a + b * cos(6.28318 * (c * t + d));
@@ -109,43 +113,44 @@ mushu('#c').gl(`
   }
 `);
 
-// FPS Counter
-(function() {
-  const fpsDiv = document.createElement('div');
-  fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
-  document.body.appendChild(fpsDiv);
-  let frames = 0, lastTime = performance.now();
-  function updateFPS() {
-    frames++;
-    const now = performance.now();
-    if (now - lastTime >= 500) {
-      fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
-      frames = 0; lastTime = now;
-    }
-    requestAnimationFrame(updateFPS);
-  }
-  updateFPS();
-})();
+    // FPS Counter
+    (function () {
+      const fpsDiv = document.createElement('div');
+      fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
+      document.body.appendChild(fpsDiv);
+      let frames = 0, lastTime = performance.now();
+      function updateFPS() {
+        frames++;
+        const now = performance.now();
+        if (now - lastTime >= 500) {
+          fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
+          frames = 0; lastTime = now;
+        }
+        requestAnimationFrame(updateFPS);
+      }
+      updateFPS();
+    })();
 
-console.log('%c 🌈 gl() Plasma ', 'background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Classic plasma effect using the gl() one-liner helper');
-</script>
-<script>
-// Hide home-link if in iframe - run immediately and on load
-function hideIfIframe() {
-  if (window.self !== window.top) {
-    const link = document.querySelector('.home-link');
-    if (link) {
-      link.style.display = 'none';
+    console.log('%c 🌈 gl() Plasma ', 'background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+    console.log('Classic plasma effect using the gl() one-liner helper');
+  </script>
+  <script>
+    // Hide home-link if in iframe - run immediately and on load
+    function hideIfIframe() {
+      if (window.self !== window.top) {
+        const link = document.querySelector('.home-link');
+        if (link) {
+          link.style.display = 'none';
+        }
+      }
     }
-  }
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', hideIfIframe);
-} else {
-  hideIfIframe();
-}
-</script>
-<a href="index.html" class="home-link">← Back to Index</a>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideIfIframe);
+    } else {
+      hideIfIframe();
+    }
+  </script>
+  <a href="index.html" class="home-link">← Back to Index</a>
 </body>
+
 </html>

@@ -1,45 +1,87 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>mushu — GPU Flow Plasma Demo</title>
   <style>
-    * { margin: 0; padding: 0; }
-    body { background: #000; overflow: hidden; }
-    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
-            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
-    .info code { color: #ff44ff; }
-    .home-link { position: fixed; bottom: 1rem; right: 1rem; background: linear-gradient(135deg, #ff6b6b, #feca57); 
-                 color: #000; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; 
-                 font-weight: bold; font-size: 0.85rem; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); 
-                 transition: all 0.2s; z-index: 100; font-family: monospace; }
-    .home-link:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4); }
-    .home-link.hidden { display: none; }
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000;
+      overflow: hidden;
+    }
+
+    .info {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: #fff;
+      font: 14px monospace;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 16px;
+      border-radius: 6px;
+      z-index: 100;
+    }
+
+    .info code {
+      color: #ff44ff;
+    }
+
+    .home-link {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background: linear-gradient(135deg, #ff6b6b, #feca57);
+      color: #000;
+      padding: 0.75rem 1.5rem;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.85rem;
+      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+      transition: all 0.2s;
+      z-index: 100;
+      font-family: monospace;
+    }
+
+    .home-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    }
+
+    .home-link.hidden {
+      display: none;
+    }
   </style>
 </head>
+
 <body>
-<div class="info">⚡ <code>mushu().gpu().flow()</code> Plasma | WebGPU Fluent API</div>
-<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
-<script type="module">
-import { mushu } from '../../src/index.js';
+  <div class="info">⚡ <code>mushu().gpu().flow()</code> Plasma | WebGPU Fluent API</div>
+  <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+  <script type="module">
+    import { mushu } from '../../src/index.js';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// YOGPU Advanced Plasma Effect (WebGPU Fluent API)
-// 
-// Uses the yoGPU() fluent builder for WebGPU compute+render pipeline
-// Features:
-//   • Multi-frequency wave interference
-//   • Noise-based distortion
-//   • Dynamic color palettes
-//   • Mouse-interactive energy waves
-//   • Bloom and glow effects
-// 
-// Move mouse to influence the plasma! Click for energy burst!
-// ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════
+    // YOGPU Advanced Plasma Effect (WebGPU Fluent API)
+    // 
+    // Uses the yoGPU() fluent builder for WebGPU compute+render pipeline
+    // Features:
+    //   • Multi-frequency wave interference
+    //   • Noise-based distortion
+    //   • Dynamic color palettes
+    //   • Mouse-interactive energy waves
+    //   • Bloom and glow effects
+    // 
+    // Move mouse to influence the plasma! Click for energy burst!
+    // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').gpu().flow()
-  .scale(1.0)
-  .simulate(`
+    mushu('#c').gpu().flow()
+      .scale(1.0)
+      .simulate(`
     fn hash(p: vec2<f32>) -> f32 {
       return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
     }
@@ -122,7 +164,7 @@ mushu('#c').gpu().flow()
       textureStore(dst, C, vec4<f32>(v, u.mouseX, u.mouseY, glow));
     }
   `)
-  .display(`
+      .display(`
     fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
       return a + b * cos(6.28318 * (c * t + d));
     }
@@ -174,45 +216,46 @@ mushu('#c').gpu().flow()
       return vec4<f32>(col, 1.0);
     }
   `)
-  .go();
+      .go();
 
-// FPS Counter
-(function() {
-  const fpsDiv = document.createElement('div');
-  fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
-  document.body.appendChild(fpsDiv);
-  let frames = 0, lastTime = performance.now();
-  function updateFPS() {
-    frames++;
-    const now = performance.now();
-    if (now - lastTime >= 500) {
-      fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
-      frames = 0; lastTime = now;
-    }
-    requestAnimationFrame(updateFPS);
-  }
-  updateFPS();
-})();
+    // FPS Counter
+    (function () {
+      const fpsDiv = document.createElement('div');
+      fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
+      document.body.appendChild(fpsDiv);
+      let frames = 0, lastTime = performance.now();
+      function updateFPS() {
+        frames++;
+        const now = performance.now();
+        if (now - lastTime >= 500) {
+          fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
+          frames = 0; lastTime = now;
+        }
+        requestAnimationFrame(updateFPS);
+      }
+      updateFPS();
+    })();
 
-console.log('%c 🌈 mushu YOGPU Plasma Ready ', 'background: linear-gradient(90deg, #ff00ff, #00ffff, #ff00ff); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Move mouse to influence plasma. Click for energy burst!');
-</script>
-<script>
-// Hide home-link if in iframe - run immediately and on load
-function hideIfIframe() {
-  if (window.self !== window.top) {
-    const link = document.querySelector('.home-link');
-    if (link) {
-      link.style.display = 'none';
+    console.log('%c 🌈 mushu YOGPU Plasma Ready ', 'background: linear-gradient(90deg, #ff00ff, #00ffff, #ff00ff); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+    console.log('Move mouse to influence plasma. Click for energy burst!');
+  </script>
+  <script>
+    // Hide home-link if in iframe - run immediately and on load
+    function hideIfIframe() {
+      if (window.self !== window.top) {
+        const link = document.querySelector('.home-link');
+        if (link) {
+          link.style.display = 'none';
+        }
+      }
     }
-  }
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', hideIfIframe);
-} else {
-  hideIfIframe();
-}
-</script>
-<a href="index.html" class="home-link">← Back to Index</a>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideIfIframe);
+    } else {
+      hideIfIframe();
+    }
+  </script>
+  <a href="index.html" class="home-link">← Back to Index</a>
 </body>
+
 </html>

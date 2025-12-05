@@ -3,325 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>mushu — Code Comparison</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: #0a0a0f;
-      color: #e0e0e0;
-      min-height: 100vh;
-      line-height: 1.6;
-    }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       HEADER
-       ═══════════════════════════════════════════════════════════════════════ */
-    header {
-      background: linear-gradient(180deg, rgba(255,107,157,0.12) 0%, transparent 100%);
-      padding: 3rem 2rem 2rem;
-      border-bottom: 1px solid #2a2a3a;
-      text-align: center;
-    }
-    h1 {
-      font-size: 2.8rem;
-      background: linear-gradient(135deg, #ff6b9d, #a855f7, #3b82f6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.02em;
-    }
-    .subtitle { 
-      color: #888; 
-      font-size: 1rem; 
-      margin-bottom: 1.5rem;
-    }
-    .stats-bar {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-top: 1.5rem;
-    }
-    .stat {
-      background: #12121a;
-      padding: 1rem 1.5rem;
-      border-radius: 8px;
-      border: 1px solid #2a2a3a;
-      text-align: center;
-    }
-    .stat-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #ff6b9d;
-    }
-    .stat-value.green { color: #10b981; }
-    .stat-value.purple { color: #a855f7; }
-    .stat-label { 
-      color: #777; 
-      font-size: 0.8rem; 
-      margin-top: 0.5rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       NAVIGATION
-       ═══════════════════════════════════════════════════════════════════════ */
-    nav {
-      max-width: 1200px;
-      margin: 2rem auto;
-      padding: 0 2rem;
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    nav a {
-      padding: 0.75rem 1.5rem;
-      background: #12121a;
-      color: #999;
-      text-decoration: none;
-      border-radius: 6px;
-      border: 1px solid #2a2a3a;
-      transition: all 0.2s;
-      font-weight: 500;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-    nav a:hover { 
-      background: #1a1a25;
-      color: #e0e0e0;
-      border-color: #3a3a4a;
-    }
-    nav a.active { 
-      background: linear-gradient(135deg, #ff6b9d, #a855f7);
-      color: white;
-      border-color: transparent;
-    }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       PHILOSOPHY BOX
-       ═══════════════════════════════════════════════════════════════════════ */
-    .philosophy {
-      max-width: 1200px;
-      margin: 2rem auto;
-      padding: 2rem;
-      background: linear-gradient(135deg, rgba(255,107,157,0.08) 0%, rgba(168,85,247,0.08) 100%);
-      border: 1px solid #2a2a3a;
-      border-left: 4px solid #ff6b9d;
-      border-radius: 8px;
-    }
-    .philosophy h3 { 
-      color: #ff6b9d;
-      margin-bottom: 0.75rem;
-      font-size: 1.1rem;
-    }
-    .philosophy p { 
-      color: #aaa; 
-      line-height: 1.7;
-      margin-bottom: 0.5rem;
-    }
-    .philosophy code { 
-      background: rgba(255,255,255,0.08); 
-      padding: 0.3rem 0.6rem; 
-      border-radius: 4px; 
-      color: #10b981;
-      font-size: 0.9em;
-      font-family: 'SF Mono', Consolas, monospace;
-    }
-    
-    /* ═══════════════════════════════════════════════════════════════════════
-       COMPARISON SECTION
-       ═══════════════════════════════════════════════════════════════════════ */
-    section {
-      max-width: 1400px;
-      margin: 3rem auto;
-      padding: 0 2rem;
-    }
-    section h2 {
-      font-size: 1.8rem;
-      margin-bottom: 1.5rem;
-      background: linear-gradient(135deg, #ff6b9d, #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #2a2a3a;
-    }
-    
-    .comparison-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    @media (max-width: 1100px) {
-      .comparison-grid { 
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-    }
-    
-    .code-panel {
-      background: #12121a;
-      border: 1px solid #2a2a3a;
-      border-radius: 10px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      transition: all 0.3s;
-    }
-    .code-panel:hover {
-      border-color: #3a3a4a;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
-    
-    .panel-header {
-      background: linear-gradient(135deg, #1a1a25 0%, #12121a 100%);
-      padding: 1rem;
-      border-bottom: 1px solid #2a2a3a;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-    }
-    .panel-title {
-      font-weight: 700;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .panel-title.before { 
-      color: #ff6b9d;
-    }
-    .panel-title.after { 
-      color: #10b981;
-    }
-    .line-count {
-      font-size: 0.8rem;
-      background: #1a1a25;
-      padding: 0.4rem 0.8rem;
-      border-radius: 12px;
-      color: #999;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .line-count.reduced {
-      background: rgba(16,185,129,0.2);
-      color: #10b981;
-    }
-    
-    pre {
-      padding: 1.5rem;
-      overflow: auto;
-      font-size: 0.85rem;
-      line-height: 1.6;
-      max-height: 600px;
-      flex: 1;
-      background: #0a0a0f;
-    }
-    pre::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    pre::-webkit-scrollbar-track {
-      background: #1a1a25;
-      border-radius: 4px;
-    }
-    pre::-webkit-scrollbar-thumb {
-      background: #3a3a4a;
-      border-radius: 4px;
-    }
-    pre::-webkit-scrollbar-thumb:hover {
-      background: #4a4a5a;
-    }
-    code { 
-      font-family: 'SF Mono', 'Monaco', 'Fira Code', Consolas, monospace;
-      color: #e0e0e0;
-    }
-    
-    /* Syntax highlighting */
-    .keyword { color: #ff79c6; font-weight: 600; }
-    .string { color: #f1fa8c; }
-    .number { color: #bd93f9; }
-    .comment { color: #6a737d; font-style: italic; }
-    .function { color: #50fa7b; }
-    .type { color: #8be9fd; }
-    
-    .demo-links {
-      margin: 2rem 0;
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .demo-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.8rem 1.8rem;
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
-    }
-    .demo-link:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(16,185,129,0.4);
-    }
-    .demo-link.gpu {
-      background: linear-gradient(135deg, #a855f7, #7c3aed);
-      box-shadow: 0 4px 12px rgba(168,85,247,0.3);
-    }
-    .demo-link.gpu:hover {
-      box-shadow: 0 8px 24px rgba(168,85,247,0.4);
-    }
-    
-    footer {
-      text-align: center;
-      padding: 2rem;
-      border-top: 1px solid #2a2a3a;
-      color: #888;
-      font-size: 0.9rem;
-    }
-    footer a {
-      color: #ff6b9d;
-      text-decoration: none;
-    }
-    footer a:hover {
-      text-decoration: underline;
-    }
-    
-    .home-link { 
-      position: fixed; 
-      bottom: 1rem; 
-      right: 100px; 
-      background: linear-gradient(135deg, #ff6b9d, #a855f7);
-      color: white; 
-      padding: 0.8rem 1.8rem; 
-      border-radius: 25px; 
-      text-decoration: none; 
-      font-weight: 700; 
-      font-size: 0.9rem; 
-      box-shadow: 0 8px 24px rgba(255,107,157,0.35);
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
-      z-index: 100;
-      border: none;
-      cursor: pointer;
-    }
-    .home-link:hover { 
-      transform: translateY(-3px);
-      box-shadow: 0 12px 32px rgba(255,107,157,0.45);
-    }
-  </style>
-  <link rel="stylesheet" href="support.css">
+  <link rel="stylesheet" href="./compare.css">
+  <link rel="stylesheet" href="./support.css">
 </head>
 <body>
 
@@ -373,8 +56,8 @@
   <h2>🌈 Plasma Effect — WebGL</h2>
   
   <div class="demo-links">
-    <a href="mushu/examples/plasma.html" class="demo-link">▶ Run mushu Plasma</a>
-    <a href="webgl.html" class="demo-link" style="background: #484f58;">▶ Run Original</a>
+    <a href="./glsl/plasma.html" class="demo-link">▶ Run mushu Plasma</a>
+    <a href="./boilerplate/plasma.html" class="demo-link secondary">▶ Run Original</a>
   </div>
   
   <div class="comparison-grid">
@@ -432,27 +115,7 @@ uniform vec2 mouse;
 uniform float mouseDown;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / resolution.xy;
-  vec2 p = (fragCoord - resolution.xy * 0.5) / resolution.y;
-  p += mouse * 0.3;
-  
-  float t = time;
-  float v = 0.0;
-  v += sin(p.x * 10.0 + t);
-  v += sin(p.y * 10.0 + t * 0.5);
-  v += sin((p.x + p.y) * 10.0 + t * 0.3);
-  v += sin(length(p) * 15.0 - t * 2.0);
-  v *= 0.25;
-  
-  vec3 col = 0.5 + 0.5 * cos(t + v * 3.0 + p.xyx * 2.0 + vec3(0, 2, 4));
-  
-  if (mouseDown > 0.5) {
-    float d = length(p - mouse * 0.3);
-    col += vec3(1.0, 0.8, 0.5) * exp(-d * 5.0) * 2.0;
-  }
-  
-  col *= 1.0 - 0.3 * length(uv - 0.5);
-  fragColor = vec4(col, 1.0);
+  // ... plasma logic ...
 }
 
 void main() { mainImage(O, gl_FragCoord.xy); }
@@ -508,9 +171,9 @@ gl.<span class="function">linkProgram</span>(program);
         <span class="panel-title after">✅ mushu (~35 lines)</span>
         <span class="line-count reduced">82% reduction</span>
       </div>
-      <pre><code><span class="keyword">import</span> { mushu, shader, fps } <span class="keyword">from</span> <span class="string">'./mushu/src/index.js'</span>;
+      <pre><code><span class="keyword">import</span> { mushu, shader, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
-<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">flow</span>()
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">gl</span>().<span class="function">flow</span>()
   .<span class="function">use</span>(<span class="function">shader</span>(<span class="string">`
     void mainImage(out vec4 O, vec2 C) {
       vec2 uv = C / resolution;
@@ -567,8 +230,8 @@ gl.<span class="function">linkProgram</span>(program);
   <h2>🔥 Fire Simulation — WebGL</h2>
   
   <div class="demo-links">
-    <a href="mushu/examples/fire.html" class="demo-link">▶ Run mushu Fire</a>
-    <a href="fire.html" class="demo-link" style="background: #484f58;">▶ Run Original</a>
+    <a href="./glsl/fire.html" class="demo-link">▶ Run mushu Fire</a>
+    <a href="./boilerplate/fire.html" class="demo-link secondary">▶ Run Original</a>
   </div>
   
   <div class="comparison-grid">
@@ -605,44 +268,10 @@ gl.<span class="function">getExtension</span>(<span class="string">'EXT_color_bu
 <span class="keyword">let</span> fboB = <span class="function">createFBO</span>(width, height);
 
 <span class="comment">// Simulation shader (reads from backbuffer)</span>
-<span class="keyword">const</span> simShader = <span class="string">`#version 300 es
-precision highp float;
-out vec4 O;
-uniform sampler2D backbuffer;
-uniform float time;
-uniform vec2 resolution;
-uniform vec2 mouse;
-uniform float mouseDown;
-
-vec4 sample(vec2 offset) {
-  vec2 uv = (gl_FragCoord.xy + offset) / resolution;
-  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) 
-    return vec4(0);
-  return texture(backbuffer, uv);
-}
-
-void main() {
-  // ... 80+ lines of fire physics ...
-  // Sample neighbors, diffusion, buoyancy, combustion
-  // Mouse interaction, fire source, smoke generation
-}
-`</span>;
+<span class="comment">// ... 80+ lines of fire physics ...</span>
 
 <span class="comment">// Display shader (colorizes the simulation)</span>
-<span class="keyword">const</span> displayShader = <span class="string">`#version 300 es
-precision highp float;
-out vec4 O;
-uniform sampler2D backbuffer;
-
-void main() {
-  // ... 40+ lines of fire coloring ...
-  // Heat to color mapping, smoke overlay, tone mapping
-}
-`</span>;
-
-<span class="comment">// Compile both programs...</span>
-<span class="keyword">const</span> simProgram = <span class="function">compileProgram</span>(vsSource, simShader);
-<span class="keyword">const</span> displayProgram = <span class="function">compileProgram</span>(vsSource, displayShader);
+<span class="comment">// ... 40+ lines of fire coloring ...</span>
 
 <span class="comment">// Render loop with FBO ping-pong</span>
 <span class="keyword">const</span> <span class="function">loop</span> = (t) => {
@@ -675,7 +304,7 @@ void main() {
         <span class="panel-title after">✅ mushu (~95 lines)</span>
         <span class="line-count reduced">66% reduction</span>
       </div>
-      <pre><code><span class="keyword">import</span> { mushu, simulation, fps } <span class="keyword">from</span> <span class="string">'./mushu/src/index.js'</span>;
+      <pre><code><span class="keyword">import</span> { mushu, simulation, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
 <span class="keyword">const</span> sim = <span class="function">simulation</span>({ scale: <span class="number">0.5</span>, iterations: <span class="number">2</span> });
 
@@ -695,39 +324,8 @@ sim.<span class="function">simulate</span>(<span class="string">`
     vec4 left = sample(vec2(-1, 0));
     vec4 right = sample(vec2(1, 0));
     
-    <span class="comment">// Heat diffusion</span>
-    float diffusion = 0.15;
-    heat += diffusion * (up.g + down.g + left.g + right.g - 4.0 * heat);
-    
-    <span class="comment">// Buoyancy - heat rises</span>
-    heat = mix(heat, down.g, 0.25);
-    
-    <span class="comment">// Combustion</span>
-    if (heat > 0.3 && fuel > 0.01) {
-      float burn = min(fuel, (heat - 0.3) * 0.8);
-      heat += burn * 1.2;
-      fuel -= burn;
-      smoke += burn * 0.6;
-    }
-    
-    <span class="comment">// Decay</span>
-    fuel *= 0.985; heat *= 0.975; smoke *= 0.995;
-    
-    <span class="comment">// Mouse ignition</span>
-    float d = length(uv - mouse);
-    if (mouseDown > 0.5 && d < 0.1) {
-      float i = pow(1.0 - d/0.1, 2.0) * 6.0;
-      fuel += i; heat += i * 3.0;
-    }
-    
-    <span class="comment">// Fire source at bottom</span>
-    if (uv.y < 0.12) {
-      float pattern = sin(uv.x*25.0+time*3.0) * sin(uv.x*8.0-time);
-      if (pattern > 0.0) {
-        float edge = 1.0 - uv.y/0.12;
-        fuel += edge * 1.5; heat += edge * 2.5;
-      }
-    }
+    <span class="comment">// Heat diffusion & combustion</span>
+    // ... physics logic ...
     
     O = vec4(clamp(fuel,0.,20.), clamp(heat,0.,20.), 
              clamp(smoke,0.,15.), 1.0);
@@ -753,7 +351,7 @@ sim.<span class="function">display</span>(<span class="string">`
   }
 `</span>);
 
-<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">flow</span>()
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">gl</span>().<span class="function">flow</span>()
   .<span class="function">use</span>(sim)
   .<span class="function">use</span>(<span class="function">fps</span>())
   .<span class="function">go</span>();
@@ -770,6 +368,260 @@ sim.<span class="function">display</span>(<span class="string">`
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- WATER COMPARISON -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section id="water">
+  <h2>🌊 Water Simulation — WebGL</h2>
+  
+  <div class="demo-links">
+    <a href="./glsl/water.html" class="demo-link">▶ Run mushu Water</a>
+    <a href="./boilerplate/water.html" class="demo-link secondary">▶ Run Original</a>
+  </div>
+  
+  <div class="comparison-grid">
+    <div class="code-panel">
+      <div class="panel-header">
+        <span class="panel-title before">❌ Traditional WebGL (~250 lines)</span>
+        <span class="line-count">Complex wave simulation</span>
+      </div>
+      <pre><code><span class="comment">// Same boilerplate as fire...</span>
+<span class="comment">// FBO setup, shader compilation, uniforms...</span>
+
+<span class="comment">// Wave equation solver</span>
+<span class="keyword">const</span> waveShader = <span class="string">`
+  // Previous height, current height, velocity
+  vec4 data = texture(backbuffer, uv);
+  
+  // Sample neighbors for Laplacian
+  float n = texture(backbuffer, uv + vec2(0, dy)).r;
+  float s = texture(backbuffer, uv - vec2(0, dy)).r;
+  float e = texture(backbuffer, uv + vec2(dx, 0)).r;
+  float w = texture(backbuffer, uv - vec2(dx, 0)).r;
+  
+  // Wave equation: d²h/dt² = c² * ∇²h
+  float laplacian = (n + s + e + w - 4.0 * data.r) / (dx * dx);
+  float acc = laplacian * c * c;
+  
+  // Verlet integration
+  float newHeight = 2.0 * data.r - data.g + acc * dt * dt;
+  
+  // Apply damping
+  newHeight *= 0.998;
+  
+  // Mouse ripples
+  if (mouseDown > 0.5) {
+    float d = length(uv - mouse);
+    newHeight += exp(-d * 50.0) * 0.5;
+  }
+`</span>;
+
+<span class="comment">// Rendering with normals & reflections</span>
+<span class="keyword">const</span> renderShader = <span class="string">`
+  // Calculate normals from height field
+  vec3 normal = normalize(vec3(
+    (e - w) / (2.0 * dx),
+    (n - s) / (2.0 * dy),
+    1.0
+  ));
+  
+  // Fresnel, reflections, caustics...
+`</span>;</code></pre>
+    </div>
+    
+    <div class="code-panel">
+      <div class="panel-header">
+        <span class="panel-title after">✅ mushu (~70 lines)</span>
+        <span class="line-count reduced">72% reduction</span>
+      </div>
+      <pre><code><span class="keyword">import</span> { mushu, simulation, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+
+<span class="keyword">const</span> water = <span class="function">simulation</span>({ scale: <span class="number">0.5</span> });
+
+water.<span class="function">simulate</span>(<span class="string">`
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    vec4 data = sample(vec2(0));
+    
+    // Wave equation with sample() helper
+    float n = sample(vec2(0, 1)).r;
+    float s = sample(vec2(0, -1)).r;
+    float e = sample(vec2(1, 0)).r;
+    float w = sample(vec2(-1, 0)).r;
+    
+    float laplacian = n + s + e + w - 4.0 * data.r;
+    float acc = laplacian * 0.25;
+    
+    float h = 2.0 * data.r - data.g + acc;
+    h *= 0.998;  // Damping
+    
+    // Mouse creates ripples
+    if (mouseDown > 0.5) {
+      float d = length(uv - mouse);
+      h += exp(-d * 50.0) * 0.3;
+    }
+    
+    O = vec4(h, data.r, 0, 1);
+  }
+`</span>);
+
+water.<span class="function">display</span>(<span class="string">`
+  void mainImage(out vec4 O, vec2 C) {
+    // Normal-based rendering with Fresnel
+    // ... clean rendering code ...
+  }
+`</span>);
+
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">gl</span>().<span class="function">flow</span>()
+  .<span class="function">use</span>(water)
+  .<span class="function">use</span>(<span class="function">fps</span>())
+  .<span class="function">go</span>();</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- WEBGPU PLASMA COMPARISON -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section id="gpu/plasma">
+  <h2>🌈 Plasma Effect — WebGPU</h2>
+  
+  <div class="demo-links">
+    <a href="./gpu/plasma.html" class="demo-link gpu">▶ Run mushu WebGPU Plasma</a>
+  </div>
+  
+  <div class="comparison-grid">
+    <div class="code-panel">
+      <div class="panel-header">
+        <span class="panel-title before">❌ Traditional WebGPU (~200 lines)</span>
+        <span class="line-count">Device, pipelines, bind groups...</span>
+      </div>
+      <pre><code><span class="comment">// Request adapter and device</span>
+<span class="keyword">const</span> adapter = <span class="keyword">await</span> navigator.gpu.<span class="function">requestAdapter</span>();
+<span class="keyword">const</span> device = <span class="keyword">await</span> adapter.<span class="function">requestDevice</span>();
+<span class="keyword">const</span> context = canvas.<span class="function">getContext</span>(<span class="string">'webgpu'</span>);
+<span class="keyword">const</span> format = navigator.gpu.<span class="function">getPreferredCanvasFormat</span>();
+context.<span class="function">configure</span>({ device, format, alphaMode: <span class="string">'premultiplied'</span> });
+
+<span class="comment">// Create uniform buffer</span>
+<span class="keyword">const</span> uniformBuffer = device.<span class="function">createBuffer</span>({
+  size: <span class="number">48</span>,
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+});
+
+<span class="comment">// Create shader module</span>
+<span class="keyword">const</span> shaderModule = device.<span class="function">createShaderModule</span>({
+  code: <span class="string">`
+    struct Uniforms { time: f32, ... }
+    @group(0) @binding(0) var<uniform> u: Uniforms;
+    
+    @vertex fn vs(...) -> ... { ... }
+    @fragment fn fs(...) -> ... { ... }
+  `</span>
+});
+
+<span class="comment">// Create bind group layout</span>
+<span class="keyword">const</span> bindGroupLayout = device.<span class="function">createBindGroupLayout</span>({
+  entries: [{
+    binding: <span class="number">0</span>,
+    visibility: GPUShaderStage.FRAGMENT,
+    buffer: { type: <span class="string">'uniform'</span> }
+  }]
+});
+
+<span class="comment">// Create render pipeline</span>
+<span class="keyword">const</span> pipeline = device.<span class="function">createRenderPipeline</span>({
+  layout: device.<span class="function">createPipelineLayout</span>({ 
+    bindGroupLayouts: [bindGroupLayout] 
+  }),
+  vertex: { module: shaderModule, entryPoint: <span class="string">'vs'</span> },
+  fragment: { 
+    module: shaderModule, 
+    entryPoint: <span class="string">'fs'</span>,
+    targets: [{ format }]
+  },
+  primitive: { topology: <span class="string">'triangle-list'</span> }
+});
+
+<span class="comment">// Create bind group</span>
+<span class="keyword">const</span> bindGroup = device.<span class="function">createBindGroup</span>({
+  layout: bindGroupLayout,
+  entries: [{
+    binding: <span class="number">0</span>,
+    resource: { buffer: uniformBuffer }
+  }]
+});
+
+<span class="comment">// Render loop</span>
+<span class="keyword">const</span> <span class="function">loop</span> = () => {
+  device.queue.<span class="function">writeBuffer</span>(uniformBuffer, <span class="number">0</span>, 
+    <span class="keyword">new</span> Float32Array([time, ...]));
+  
+  <span class="keyword">const</span> encoder = device.<span class="function">createCommandEncoder</span>();
+  <span class="keyword">const</span> pass = encoder.<span class="function">beginRenderPass</span>({
+    colorAttachments: [{
+      view: context.<span class="function">getCurrentTexture</span>().<span class="function">createView</span>(),
+      loadOp: <span class="string">'clear'</span>,
+      storeOp: <span class="string">'store'</span>
+    }]
+  });
+  pass.<span class="function">setPipeline</span>(pipeline);
+  pass.<span class="function">setBindGroup</span>(<span class="number">0</span>, bindGroup);
+  pass.<span class="function">draw</span>(<span class="number">6</span>);
+  pass.<span class="function">end</span>();
+  
+  device.queue.<span class="function">submit</span>([encoder.<span class="function">finish</span>()]);
+  <span class="function">requestAnimationFrame</span>(loop);
+};</code></pre>
+    </div>
+    
+    <div class="code-panel">
+      <div class="panel-header">
+        <span class="panel-title after">✅ mushu gpu() (~25 lines)</span>
+        <span class="line-count reduced">88% reduction</span>
+      </div>
+      <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">gpu</span>(
+  <span class="keyword">null</span>,  <span class="comment">// No compute shader needed</span>
+  
+  <span class="comment">// Just the render logic</span>
+  <span class="string">`
+    fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
+      let p = (uv - 0.5) * 2.0;
+      let t = u.time * 0.5;
+      
+      var v = 0.0;
+      v += sin(p.x * 10.0 + t);
+      v += sin(p.y * 10.0 + t * 0.5);
+      v += sin((p.x + p.y) * 10.0 + t * 0.3);
+      v += sin(length(p) * 15.0 - t * 2.0);
+      v *= 0.25;
+      
+      let col = 0.5 + 0.5 * cos(
+        t + v * 3.0 + vec3<f32>(p.x, p.y, p.x) * 2.0 + 
+        vec3<f32>(0.0, 2.0, 4.0)
+      );
+      
+      return vec4<f32>(col, 1.0);
+    }
+  `</span>
+);
+
+<span class="comment">// gpu() handles everything:</span>
+<span class="comment">// ✓ Adapter & device request</span>
+<span class="comment">// ✓ Canvas context configuration</span>
+<span class="comment">// ✓ Uniform buffer management</span>
+<span class="comment">// ✓ Pipeline creation</span>
+<span class="comment">// ✓ Bind group setup</span>
+<span class="comment">// ✓ Command encoding</span>
+<span class="comment">// ✓ Resize handling</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
 <!-- WEBGPU FIRE COMPARISON -->
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
 
@@ -777,8 +629,7 @@ sim.<span class="function">display</span>(<span class="string">`
   <h2>🔥 Fire Simulation — WebGPU</h2>
   
   <div class="demo-links">
-    <a href="mushu/examples/gpu/fire.html" class="demo-link gpu">▶ Run mushu WebGPU Fire</a>
-    <a href="webgpu/fire.html" class="demo-link" style="background: #484f58;">▶ Run Original</a>
+    <a href="./gpu/fire.html" class="demo-link gpu">▶ Run mushu WebGPU Fire</a>
   </div>
   
   <div class="comparison-grid">
@@ -790,9 +641,6 @@ sim.<span class="function">display</span>(<span class="string">`
       <pre><code><span class="comment">// Request adapter and device</span>
 <span class="keyword">const</span> adapter = <span class="keyword">await</span> navigator.gpu.<span class="function">requestAdapter</span>();
 <span class="keyword">const</span> device = <span class="keyword">await</span> adapter.<span class="function">requestDevice</span>();
-<span class="keyword">const</span> context = canvas.<span class="function">getContext</span>(<span class="string">'webgpu'</span>);
-<span class="keyword">const</span> format = navigator.gpu.<span class="function">getPreferredCanvasFormat</span>();
-context.<span class="function">configure</span>({ device, format, alphaMode: <span class="string">'premultiplied'</span> });
 
 <span class="comment">// Create ping-pong storage textures</span>
 <span class="keyword">const</span> <span class="function">createStateTexture</span> = () => device.<span class="function">createTexture</span>({
@@ -800,24 +648,13 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
   format: <span class="string">'rgba16float'</span>,
   usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
 });
-<span class="keyword">let</span> stateA = <span class="function">createStateTexture</span>();
-<span class="keyword">let</span> stateB = <span class="function">createStateTexture</span>();
-
-<span class="comment">// Create uniform buffer</span>
-<span class="keyword">const</span> uniformBuffer = device.<span class="function">createBuffer</span>({
-  size: <span class="number">48</span>,
-  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-});
 
 <span class="comment">// Create compute shader module</span>
 <span class="keyword">const</span> computeModule = device.<span class="function">createShaderModule</span>({
   code: <span class="string">`
-    struct Uniforms { time: f32, mouseX: f32, ... }
     @group(0) @binding(0) var<uniform> u: Uniforms;
     @group(0) @binding(1) var src: texture_storage_2d<rgba16float, read>;
     @group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
-    
-    fn sample(c: vec2<i32>) -> vec4<f32> { ... }
     
     @compute @workgroup_size(16, 16)
     fn main(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -846,40 +683,8 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
   compute: { module: computeModule, entryPoint: <span class="string">'main'</span> }
 });
 
-<span class="comment">// Create render shader, pipeline, sampler...</span>
-<span class="comment">// ... another 50+ lines ...</span>
-
-<span class="comment">// Render loop</span>
-<span class="keyword">const</span> <span class="function">loop</span> = () => {
-  device.queue.<span class="function">writeBuffer</span>(uniformBuffer, <span class="number">0</span>, 
-    <span class="keyword">new</span> Float32Array([time, mouse[<span class="number">0</span>], ...]));
-  
-  <span class="keyword">const</span> encoder = device.<span class="function">createCommandEncoder</span>();
-  
-  <span class="comment">// Compute pass</span>
-  <span class="keyword">const</span> computeBindGroup = device.<span class="function">createBindGroup</span>({
-    layout: computeBindGroupLayout,
-    entries: [
-      { binding: <span class="number">0</span>, resource: { buffer: uniformBuffer } },
-      { binding: <span class="number">1</span>, resource: stateA.<span class="function">createView</span>() },
-      { binding: <span class="number">2</span>, resource: stateB.<span class="function">createView</span>() }
-    ]
-  });
-  
-  <span class="keyword">const</span> computePass = encoder.<span class="function">beginComputePass</span>();
-  computePass.<span class="function">setPipeline</span>(computePipeline);
-  computePass.<span class="function">setBindGroup</span>(<span class="number">0</span>, computeBindGroup);
-  computePass.<span class="function">dispatchWorkgroups</span>(
-    Math.<span class="function">ceil</span>(width / <span class="number">16</span>), Math.<span class="function">ceil</span>(height / <span class="number">16</span>)
-  );
-  computePass.<span class="function">end</span>();
-  
-  <span class="comment">// ... render pass setup and execution ...</span>
-  
-  device.queue.<span class="function">submit</span>([encoder.<span class="function">finish</span>()]);
-  [stateA, stateB] = [stateB, stateA];
-  <span class="function">requestAnimationFrame</span>(loop);
-};</code></pre>
+<span class="comment">// ... render pipeline setup ...</span>
+<span class="comment">// ... another 50+ lines ...</span></code></pre>
     </div>
     
     <div class="code-panel">
@@ -887,9 +692,9 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
         <span class="panel-title after">✅ mushu gpu() (~75 lines)</span>
         <span class="line-count reduced">75% reduction</span>
       </div>
-      <pre><code><span class="keyword">import</span> { gpu } <span class="keyword">from</span> <span class="string">'./mushu/src/index.js'</span>;
+      <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
-<span class="function">gpu</span>(
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">gpu</span>(
   <span class="comment">// Compute shader - just the physics logic</span>
   <span class="string">`
     fn compute(C: vec2<i32>, uv: vec2<f32>) {
@@ -901,45 +706,15 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
       <span class="comment">// Sample neighbors</span>
       let up = sample(C + vec2<i32>(0, -1));
       let down = sample(C + vec2<i32>(0, 1));
-      let left = sample(C + vec2<i32>(-1, 0));
-      let right = sample(C + vec2<i32>(1, 0));
       
       <span class="comment">// Heat diffusion & buoyancy</span>
-      heat += 0.12 * (up.g + down.g + left.g + right.g - 4.0 * heat);
+      heat += 0.12 * (up.g + down.g - 2.0 * heat);
       heat = mix(heat, down.g, 0.2);
       
-      <span class="comment">// Combustion</span>
-      if (heat > 0.3 && fuel > 0.01) {
-        let burn = min(fuel, (heat - 0.3) * 0.6);
-        heat += burn; fuel -= burn; smoke += burn * 0.5;
-      }
+      <span class="comment">// Combustion & decay</span>
+      // ... physics ...
       
-      <span class="comment">// Decay</span>
-      fuel *= 0.985; heat *= 0.98; smoke *= 0.995;
-      
-      <span class="comment">// Mouse ignition</span>
-      let mouseUV = vec2<f32>(uv.x, 1.0 - uv.y);
-      let d = length(mouseUV - vec2<f32>(u.mouseX, u.mouseY));
-      if (u.mouseDown > 0.5 && d < 0.1) {
-        let i = pow(1.0 - d/0.1, 2.0) * 12.0;
-        fuel += i; heat += i * 2.0;
-      }
-      
-      <span class="comment">// Fire source at bottom</span>
-      if (uv.y > 0.9) {
-        let pattern = sin(uv.x * 25.0 + u.time * 4.0) * 
-                      sin(uv.x * 8.0 - u.time * 2.0);
-        if (pattern > 0.0) {
-          let edge = (uv.y - 0.9) / 0.1;
-          fuel += edge * 1.2; heat += edge * 2.5;
-        }
-      }
-      
-      textureStore(dst, C, vec4<f32>(
-        clamp(fuel, 0.0, 25.0),
-        clamp(heat, 0.0, 25.0),
-        clamp(smoke, 0.0, 15.0), 1.0
-      ));
+      textureStore(dst, C, vec4<f32>(fuel, heat, smoke, 1.0));
     }
   `</span>,
   
@@ -950,13 +725,8 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
       let smoke = data.b;
       
       var col = vec3<f32>(0.0);
-      col += vec3<f32>(1.0, 1.0, 0.95) * pow(heat, 4.0) * 4.0;
-      col += vec3<f32>(1.0, 0.6, 0.15) * pow(heat, 2.0) * 2.0;
-      col += vec3<f32>(0.7, 0.1, 0.0) * pow(heat, 0.7) * 0.8;
-      
-      let smokeAlpha = 1.0 - exp(-smoke * 0.25);
-      col = mix(col, vec3<f32>(0.02), smokeAlpha * 0.85);
-      col = 1.0 - exp(-col * 0.65);
+      col += vec3<f32>(1.0, 1.0, 0.95) * pow(heat, 4.0);
+      col += vec3<f32>(1.0, 0.6, 0.15) * pow(heat, 2.0);
       
       return vec4<f32>(col, 1.0);
     }
@@ -966,15 +736,12 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
 
 <span class="comment">// gpu() handles everything:</span>
 <span class="comment">// ✓ Adapter & device request</span>
-<span class="comment">// ✓ Canvas context configuration</span>
 <span class="comment">// ✓ Storage texture creation</span>
 <span class="comment">// ✓ Ping-pong buffer management</span>
-<span class="comment">// ✓ Uniform buffer setup</span>
 <span class="comment">// ✓ Compute pipeline creation</span>
 <span class="comment">// ✓ Render pipeline creation</span>
 <span class="comment">// ✓ Bind group management</span>
-<span class="comment">// ✓ Command encoding</span>
-<span class="comment">// ✓ Resize handling</span></code></pre>
+<span class="comment">// ✓ Command encoding</span></code></pre>
     </div>
   </div>
 </section>
@@ -990,7 +757,7 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
     });
   });
 </script>
-<script src="support.js"></script>
+<script src="./support.js"></script>
 
 <footer>
   <p>Made with 🍡 by <a href="https://github.com/ConflictingTheories">ConflictingTheories</a> &mdash; <a href="https://github.com/ConflictingTheories/mushu">View on GitHub</a></p>
@@ -1031,7 +798,7 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
   </button>
 </div>
 
-<a href="index.html" class="home-link">← Back to Index</a>
+<a href="./index.html" class="home-link">← Back to Index</a>
 
 </body>
 </html>

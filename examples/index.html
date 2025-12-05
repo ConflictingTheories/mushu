@@ -96,9 +96,14 @@
        ═══════════════════════════════════════════════════════════════════════ */
     .about {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 24px;
       margin-bottom: 60px;
+    }
+    @media (max-width: 700px) {
+      .about {
+        grid-template-columns: 1fr;
+      }
     }
     .about-card {
       background: var(--card);
@@ -312,8 +317,18 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 500px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
     .card {
       background: var(--card);
@@ -368,8 +383,13 @@
     }
     .faq-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 24px;
+    }
+    @media (max-width: 800px) {
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
     }
     .faq-item {
       background: var(--card);
@@ -420,13 +440,14 @@
        ═══════════════════════════════════════════════════════════════════════ -->
   <header class="hero">
     <h1>🍡 mushu</h1>
-    <p class="tagline">Creative Coding Made Stupid Simple</p>
+    <p class="tagline">Shader Graphics Without the Hassle</p>
     <p class="description">
-      A tiny WebGL2 & WebGPU library for shader art, simulations, and visual effects.
-      Go from zero to beautiful in one line of code. No boilerplate. No complexity. Just creativity.
+      A minimal WebGL2 & WebGPU library that gets out of your way.
+      <br/>
+      Write shaders, not boilerplate.
     </p>
     <div class="hero-buttons">
-      <a href="#demos" class="primary">View Demos ↓</a>
+      <a href="#demos" class="primary">See It In Action ↓</a>
       <a href="https://github.com/ConflictingTheories/mushu" class="secondary">GitHub →</a>
     </div>
   </header>
@@ -438,20 +459,20 @@
          ═══════════════════════════════════════════════════════════════════════ -->
     <section class="about">
       <div class="about-card">
-        <h3>⚡ Zero Boilerplate</h3>
-        <p>No more 200 lines of WebGL setup. Just write your shader code and go. mushu handles all the boring stuff.</p>
+        <h3>⚡ Skip the Setup</h3>
+        <p>WebGL normally takes 200+ lines before you draw anything. With mushu, you're rendering in one function call.</p>
       </div>
       <div class="about-card">
-        <h3>🎯 Multiple APIs</h3>
-        <p>Choose your style: one-liner <code>glsl()</code>, fluent <code>yo()</code> builder, or raw WebGPU <code>gpu()</code> power.</p>
+        <h3>🎯 Pick Your Style</h3>
+        <p>Quick sketch? Use <code>glsl()</code>. Need plugins? Try <code>yo()</code>. Want compute shaders? Go <code>gpu()</code>.</p>
       </div>
       <div class="about-card">
-        <h3>🔥 Built-in Uniforms</h3>
-        <p>Time, mouse position, and resolution are automatically provided. Focus on the creative part.</p>
+        <h3>🔥 Batteries Included</h3>
+        <p><code>time</code>, <code>mouse</code>, and <code>resolution</code> uniforms are wired up automatically. Just use them.</p>
       </div>
       <div class="about-card">
-        <h3>🚀 WebGPU Ready</h3>
-        <p>Full WebGPU support with compute shaders. Same simple API, next-gen GPU performance.</p>
+        <h3>🚀 WebGPU Support</h3>
+        <p>Same clean API for next-gen graphics. Compute shaders, parallel processing, modern GPU features.</p>
       </div>
     </section>
 
@@ -459,7 +480,7 @@
          CODE EXAMPLES WITH TABS
          ═══════════════════════════════════════════════════════════════════════ -->
     <section class="code-section">
-      <h2>Pick Your <span>Flavor</span></h2>
+      <h2>Four Ways to <span>Ship</span></h2>
       
       <div class="tabs">
         <button class="tab glsl active" onclick="showTab('glsl')">glsl()</button>
@@ -553,8 +574,8 @@
          ═══════════════════════════════════════════════════════════════════════ -->
     <section id="demos">
       <div class="demos-header">
-        <h2>🎨 Live Demos</h2>
-        <p>See mushu in action with these interactive examples</p>
+        <h2>🎨 Examples</h2>
+        <p>Every effect runs the same shader code across all four APIs</p>
       </div>
       
       <div class="method-legend">
@@ -580,7 +601,6 @@
           <div class="card glsl"><h4>💨 Smoke</h4><p>Volumetric smoke with turbulence</p><a href="smoke.html">Demo →</a></div>
           <div class="card glsl"><h4>🌊 Water</h4><p>Gerstner waves with reflections</p><a href="water.html">Demo →</a></div>
           <div class="card glsl"><h4>🌈 Plasma</h4><p>Classic plasma with rainbow colors</p><a href="plasma.html">Demo →</a></div>
-          <div class="card glsl"><h4>✨ Caustics</h4><p>Underwater light patterns</p><a href="caustics.html">Demo →</a></div>
         </div>
       </div>
 

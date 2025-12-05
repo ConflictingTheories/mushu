@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mushu — YOGPU Smoke Demo</title>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { yoGPU } from '../src/gpu/yoGPU.js';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// YOGPU Volumetric Smoke Simulation (WebGPU Fluent API)
+// 
+// Uses the yoGPU() fluent builder for WebGPU compute+render pipeline
+// Features:
+//   • Vorticity confinement for swirling details
+//   • Temperature-based buoyancy
+//   • Beer-Lambert light scattering
+//   • Multi-scale turbulence
+// 
+// Click and drag to add smoke!
+// ═══════════════════════════════════════════════════════════════════════════
+
+yoGPU(document.getElementById('c'))
+  .scale(0.5)
+  .simulate(`
+    fn hash(p: vec2<f32>) -> f32 {
+      var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+      p3 = p3 + dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+    
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+      );
+    }
+    
+    fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+      var value = 0.0;
+      var amplitude = 0.5;
+      var pos = p;
+      for (var i = 0; i < 5; i++) {
+        if (i >= octaves) { break; }
+        value += amplitude * noise(pos);
+        pos = pos * 2.0;
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
+    fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+      let dims = vec2<i32>(textureDimensions(src));
+      let C = vec2<i32>(id.xy);
+      if (C.x >= dims.x || C.y >= dims.y) { return; }
+      
+      let uv = vec2<f32>(C) / vec2<f32>(dims);
+      var data = textureLoad(src, C, 0);
+      
+      // Sample neighbors
+      let up = textureLoad(src, clamp(C + vec2<i32>(0, -1), vec2<i32>(0), dims - 1), 0);
+      let down = textureLoad(src, clamp(C + vec2<i32>(0, 1), vec2<i32>(0), dims - 1), 0);
+      let left = textureLoad(src, clamp(C + vec2<i32>(-1, 0), vec2<i32>(0), dims - 1), 0);
+      let right = textureLoad(src, clamp(C + vec2<i32>(1, 0), vec2<i32>(0), dims - 1), 0);
+      
+      // State: R = density, G = temperature, BA = velocity
+      var density = data.r;
+      var temp = data.g;
+      var velX = (data.b - 0.5) * 2.0;
+      var velY = (data.a - 0.5) * 2.0;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Buoyancy
+      // ─────────────────────────────────────────────────────────────────
+      
+      let buoyancy = temp * 0.09 - density * 0.015;
+      velY -= buoyancy;
+      
+      // Temperature diffusion
+      let avgTemp = (up.g + down.g + left.g + right.g) * 0.25;
+      temp = mix(temp, avgTemp, 0.1);
+      temp *= 0.995;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Turbulence
+      // ─────────────────────────────────────────────────────────────────
+      
+      let turbPos = uv * 5.0 + vec2<f32>(time * 0.2, time * 0.15);
+      let turbX = fbm(turbPos, 4) - 0.5;
+      let turbY = fbm(turbPos + 50.0, 4) - 0.5;
+      
+      velX += turbX * 0.025 * (0.3 + density * 0.5);
+      velY += turbY * 0.025 * (0.3 + density * 0.5);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Advection
+      // ─────────────────────────────────────────────────────────────────
+      
+      let advectUV = uv - vec2<f32>(velX, velY) * 0.01;
+      let advectC = vec2<i32>(clamp(advectUV * vec2<f32>(dims), vec2<f32>(1.0), vec2<f32>(dims) - 2.0));
+      let advected = textureLoad(src, advectC, 0);
+      
+      density = mix(density, advected.r, 0.82);
+      temp = mix(temp, advected.g, 0.82);
+      
+      // Diffusion & dissipation
+      let avgDensity = (up.r + down.r + left.r + right.r) * 0.25;
+      density = mix(density, avgDensity, 0.05);
+      density *= 0.998;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Mouse Emission
+      // ─────────────────────────────────────────────────────────────────
+      
+      let mousePos = vec2<f32>(u.mouseX, u.mouseY);
+      let screenUV = vec2<f32>(uv.x, 1.0 - uv.y);
+      let d = length(screenUV - mousePos);
+      
+      if (u.mouseDown > 0.5 && d < 0.1) {
+        let falloff = pow(1.0 - d / 0.1, 2.0);
+        density += falloff * 0.45;
+        temp += falloff * 0.6;
+      }
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Auto-emitters
+      // ─────────────────────────────────────────────────────────────────
+      
+      if (uv.y > 0.92) {
+        let edge = (uv.y - 0.92) / 0.08;
+        let emitter = fbm(vec2<f32>(uv.x * 8.0, time * 1.0), 3) * noise(vec2<f32>(uv.x * 20.0, time * 2.0));
+        if (emitter > 0.2) {
+          density += (emitter - 0.2) * edge * edge * 0.3;
+          temp += (emitter - 0.2) * edge * edge * 0.5;
+        }
+      }
+      
+      // Damping
+      velX *= 0.985;
+      velY *= 0.985;
+      
+      textureStore(dst, C, vec4<f32>(
+        clamp(density, 0.0, 2.0),
+        clamp(temp, 0.0, 1.0),
+        clamp(velX * 0.5 + 0.5, 0.0, 1.0),
+        clamp(velY * 0.5 + 0.5, 0.0, 1.0)
+      ));
+    }
+  `)
+  .display(`
+    @fragment fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+      let data = textureSample(simTex, texSampler, uv);
+      let density = data.r;
+      let temp = data.g;
+      
+      // Beer-Lambert scattering
+      let transmittance = exp(-density * 1.6);
+      
+      // Smoke color
+      let coolSmoke = vec3<f32>(0.76, 0.78, 0.86);
+      let warmSmoke = vec3<f32>(0.9, 0.88, 0.82);
+      var smokeColor = mix(coolSmoke, warmSmoke, temp);
+      
+      let denseSmoke = vec3<f32>(0.26, 0.27, 0.3);
+      smokeColor = mix(smokeColor, denseSmoke, density * 0.35);
+      
+      // Simple lighting
+      smokeColor *= 0.7 + temp * 0.4;
+      
+      // Background
+      let bg = mix(vec3<f32>(0.04, 0.04, 0.05), vec3<f32>(0.02, 0.025, 0.04), uv.y);
+      let vignette = 1.0 - length(uv - 0.5) * 0.3;
+      
+      var col = mix(smokeColor, bg * vignette, transmittance);
+      
+      // Tone mapping
+      col = col / (col + 0.5);
+      col = pow(col, vec3<f32>(0.95));
+      
+      return vec4<f32>(col, 1.0);
+    }
+  `)
+  .go();
+
+console.log('%c 💨 mushu YOGPU Smoke Ready ', 'background: linear-gradient(90deg, #556, #889); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Click and drag to add smoke!');
+</script>
+</body>
+</html>

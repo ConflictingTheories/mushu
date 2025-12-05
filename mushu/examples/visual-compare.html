@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mushu — Visual Comparison</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      background: #0a0a0f;
+      color: #e0e0e5;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    
+    header {
+      text-align: center;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    h1 {
+      font-size: 2rem;
+      background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    
+    .subtitle { color: #888; font-size: 0.9rem; }
+    
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    
+    nav button {
+      background: #1a1a25;
+      border: 1px solid #333;
+      color: #aaa;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    
+    nav button:hover {
+      background: #252530;
+      border-color: #555;
+      color: #fff;
+    }
+    
+    nav button.active {
+      background: linear-gradient(135deg, #ff6b6b, #feca57);
+      border-color: transparent;
+      color: #000;
+      font-weight: bold;
+    }
+    
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+      font-size: 0.75rem;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+    
+    .legend-color.boilerplate { background: #888; }
+    .legend-color.glsl { background: #58a6ff; }
+    .legend-color.yo { background: #3fb950; }
+    .legend-color.gpu { background: #a371f7; }
+    .legend-color.yogpu { background: #f778ba; }
+    
+    .comparison-section {
+      display: none;
+      margin-top: 1rem;
+    }
+    
+    .comparison-section.active {
+      display: block;
+    }
+    
+    .comparison-title {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #333;
+    }
+    
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem;
+    }
+    
+    @media (max-width: 1400px) {
+      .comparison-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    @media (max-width: 900px) {
+      .comparison-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (max-width: 600px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .comparison-item {
+      background: #12121a;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #252530;
+      transition: all 0.3s;
+    }
+    
+    .comparison-item:hover {
+      border-color: #444;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    
+    .item-header {
+      padding: 0.6rem;
+      background: #1a1a25;
+      border-bottom: 1px solid #252530;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .item-title {
+      font-weight: bold;
+      font-size: 0.8rem;
+    }
+    
+    .item-tag {
+      font-size: 0.65rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 10px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    
+    .item-tag.boilerplate { background: #333; color: #aaa; }
+    .item-tag.glsl { background: #1a3d5c; color: #58a6ff; }
+    .item-tag.yo { background: #1a3d2e; color: #3fb950; }
+    .item-tag.gpu { background: #2d1a4a; color: #a371f7; }
+    .item-tag.yogpu { background: #4a1a3d; color: #f778ba; }
+    
+    .item-frame {
+      width: 100%;
+      height: 200px;
+      border: none;
+      display: block;
+    }
+    
+    .item-footer {
+      padding: 0.5rem;
+      background: #1a1a25;
+      border-top: 1px solid #252530;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .item-link {
+      color: #58a6ff;
+      text-decoration: none;
+      font-size: 0.7rem;
+      transition: color 0.2s;
+    }
+    
+    .item-link:hover {
+      color: #79c0ff;
+      text-decoration: underline;
+    }
+    
+    .item-tech {
+      font-size: 0.65rem;
+      color: #666;
+    }
+    
+    .home-link {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background: linear-gradient(135deg, #ff6b6b, #feca57);
+      color: #000;
+      padding: 0.75rem 1.5rem;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.85rem;
+      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+      transition: all 0.2s;
+      z-index: 100;
+    }
+    
+    .home-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🔥 mushu Visual Comparison</h1>
+  <p class="subtitle">Compare all 5 implementation methods side-by-side</p>
+</header>
+
+<nav>
+  <button class="active" onclick="showSection('fire')">🔥 Fire</button>
+  <button onclick="showSection('smoke')">💨 Smoke</button>
+  <button onclick="showSection('water')">🌊 Water</button>
+  <button onclick="showSection('plasma')">🌈 Plasma</button>
+  <button onclick="showSection('all')">All Effects</button>
+</nav>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-color boilerplate"></div>
+    <span>Boilerplate (Vanilla)</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-color glsl"></div>
+    <span>glsl() Helper</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-color yo"></div>
+    <span>YO (WebGL2)</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-color gpu"></div>
+    <span>gpu() (WebGPU)</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-color yogpu"></div>
+    <span>yoGPU() (WebGPU)</span>
+  </div>
+</div>
+
+<!-- Fire Comparison -->
+<section id="fire" class="comparison-section active">
+  <h2 class="comparison-title">🔥 Fire Effect Comparison</h2>
+  <div class="comparison-grid">
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">Boilerplate Fire</span>
+        <span class="item-tag boilerplate">Vanilla</span>
+      </div>
+      <iframe class="item-frame" src="boilerplate-fire.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="boilerplate-fire.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">glsl() Fire</span>
+        <span class="item-tag glsl">glsl()</span>
+      </div>
+      <iframe class="item-frame" src="fire.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="fire.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YO Fire</span>
+        <span class="item-tag yo">YO</span>
+      </div>
+      <iframe class="item-frame" src="yo-fire.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="yo-fire.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">GPU Fire</span>
+        <span class="item-tag gpu">gpu()</span>
+      </div>
+      <iframe class="item-frame" src="gpu-fire.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="gpu-fire.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGPU</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YOGPU Fire</span>
+        <span class="item-tag yogpu">yoGPU()</span>
+      </div>
+      <iframe class="item-frame" src="yogpu-fire.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="yogpu-fire.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGPU</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Smoke Comparison -->
+<section id="smoke" class="comparison-section">
+  <h2 class="comparison-title">💨 Smoke Effect Comparison</h2>
+  <div class="comparison-grid">
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">Boilerplate Smoke</span>
+        <span class="item-tag boilerplate">Vanilla</span>
+      </div>
+      <iframe class="item-frame" src="boilerplate-smoke.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="boilerplate-smoke.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">glsl() Smoke</span>
+        <span class="item-tag glsl">glsl()</span>
+      </div>
+      <iframe class="item-frame" src="smoke.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="smoke.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YO Smoke</span>
+        <span class="item-tag yo">YO</span>
+      </div>
+      <iframe class="item-frame" src="yo-smoke.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="yo-smoke.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">GPU Smoke</span>
+        <span class="item-tag gpu">gpu()</span>
+      </div>
+      <iframe class="item-frame" src="gpu-smoke.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="gpu-smoke.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGPU</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YOGPU Smoke</span>
+        <span class="item-tag yogpu">yoGPU()</span>
+      </div>
+      <iframe class="item-frame" src="yogpu-smoke.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="yogpu-smoke.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGPU</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Water Comparison -->
+<section id="water" class="comparison-section">
+  <h2 class="comparison-title">🌊 Water Effect Comparison</h2>
+  <div class="comparison-grid">
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">Boilerplate Water</span>
+        <span class="item-tag boilerplate">Vanilla</span>
+      </div>
+      <iframe class="item-frame" src="boilerplate-water.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="boilerplate-water.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">glsl() Water</span>
+        <span class="item-tag glsl">glsl()</span>
+      </div>
+      <iframe class="item-frame" src="water.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="water.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YO Water</span>
+        <span class="item-tag yo">YO</span>
+      </div>
+      <iframe class="item-frame" src="yo-water.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="yo-water.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">GPU Water</span>
+        <span class="item-tag gpu">gpu()</span>
+      </div>
+      <iframe class="item-frame" src="gpu-water.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="gpu-water.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGPU</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YOGPU Water</span>
+        <span class="item-tag yogpu">yoGPU()</span>
+      </div>
+      <iframe class="item-frame" src="yogpu-water.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="yogpu-water.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGPU</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Plasma Comparison -->
+<section id="plasma" class="comparison-section">
+  <h2 class="comparison-title">🌈 Plasma Effect Comparison</h2>
+  <div class="comparison-grid">
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">Boilerplate Plasma</span>
+        <span class="item-tag boilerplate">Vanilla</span>
+      </div>
+      <iframe class="item-frame" src="boilerplate-plasma.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="boilerplate-plasma.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">glsl() Plasma</span>
+        <span class="item-tag glsl">glsl()</span>
+      </div>
+      <iframe class="item-frame" src="plasma.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="plasma.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YO Plasma</span>
+        <span class="item-tag yo">YO</span>
+      </div>
+      <iframe class="item-frame" src="yo-plasma.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="yo-plasma.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGL2</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">GPU Plasma</span>
+        <span class="item-tag gpu">gpu()</span>
+      </div>
+      <iframe class="item-frame" src="gpu-plasma.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="gpu-plasma.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGPU</span>
+      </div>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YOGPU Plasma</span>
+        <span class="item-tag yogpu">yoGPU()</span>
+      </div>
+      <iframe class="item-frame" src="yogpu-plasma.html"></iframe>
+      <div class="item-footer">
+        <a class="item-link" href="yogpu-plasma.html" target="_blank">Open Full →</a>
+        <span class="item-tech">WebGPU</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- All Effects -->
+<section id="all" class="comparison-section">
+  <h2 class="comparison-title">All Effects Overview</h2>
+  
+  <h3 style="text-align: center; margin: 1.5rem 0 0.75rem; color: #ff6b6b;">🔥 Fire</h3>
+  <div class="comparison-grid">
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">Boilerplate</span>
+        <span class="item-tag boilerplate">Vanilla</span>
+      </div>
+      <iframe class="item-frame" src="boilerplate-fire.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">glsl()</span>
+        <span class="item-tag glsl">glsl()</span>
+      </div>
+      <iframe class="item-frame" src="fire.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YO</span>
+        <span class="item-tag yo">YO</span>
+      </div>
+      <iframe class="item-frame" src="yo-fire.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">gpu()</span>
+        <span class="item-tag gpu">gpu()</span>
+      </div>
+      <iframe class="item-frame" src="gpu-fire.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">yoGPU()</span>
+        <span class="item-tag yogpu">yoGPU()</span>
+      </div>
+      <iframe class="item-frame" src="yogpu-fire.html" style="height: 150px;"></iframe>
+    </div>
+  </div>
+  
+  <h3 style="text-align: center; margin: 1.5rem 0 0.75rem; color: #888;">💨 Smoke</h3>
+  <div class="comparison-grid">
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">Boilerplate</span>
+        <span class="item-tag boilerplate">Vanilla</span>
+      </div>
+      <iframe class="item-frame" src="boilerplate-smoke.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">glsl()</span>
+        <span class="item-tag glsl">glsl()</span>
+      </div>
+      <iframe class="item-frame" src="smoke.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YO</span>
+        <span class="item-tag yo">YO</span>
+      </div>
+      <iframe class="item-frame" src="yo-smoke.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">gpu()</span>
+        <span class="item-tag gpu">gpu()</span>
+      </div>
+      <iframe class="item-frame" src="gpu-smoke.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">yoGPU()</span>
+        <span class="item-tag yogpu">yoGPU()</span>
+      </div>
+      <iframe class="item-frame" src="yogpu-smoke.html" style="height: 150px;"></iframe>
+    </div>
+  </div>
+  
+  <h3 style="text-align: center; margin: 1.5rem 0 0.75rem; color: #48dbfb;">🌊 Water</h3>
+  <div class="comparison-grid">
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">Boilerplate</span>
+        <span class="item-tag boilerplate">Vanilla</span>
+      </div>
+      <iframe class="item-frame" src="boilerplate-water.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">glsl()</span>
+        <span class="item-tag glsl">glsl()</span>
+      </div>
+      <iframe class="item-frame" src="water.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YO</span>
+        <span class="item-tag yo">YO</span>
+      </div>
+      <iframe class="item-frame" src="yo-water.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">gpu()</span>
+        <span class="item-tag gpu">gpu()</span>
+      </div>
+      <iframe class="item-frame" src="gpu-water.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">yoGPU()</span>
+        <span class="item-tag yogpu">yoGPU()</span>
+      </div>
+      <iframe class="item-frame" src="yogpu-water.html" style="height: 150px;"></iframe>
+    </div>
+  </div>
+  
+  <h3 style="text-align: center; margin: 1.5rem 0 0.75rem; color: #ff9ff3;">🌈 Plasma</h3>
+  <div class="comparison-grid">
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">Boilerplate</span>
+        <span class="item-tag boilerplate">Vanilla</span>
+      </div>
+      <iframe class="item-frame" src="boilerplate-plasma.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">glsl()</span>
+        <span class="item-tag glsl">glsl()</span>
+      </div>
+      <iframe class="item-frame" src="plasma.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">YO</span>
+        <span class="item-tag yo">YO</span>
+      </div>
+      <iframe class="item-frame" src="yo-plasma.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">gpu()</span>
+        <span class="item-tag gpu">gpu()</span>
+      </div>
+      <iframe class="item-frame" src="gpu-plasma.html" style="height: 150px;"></iframe>
+    </div>
+    <div class="comparison-item">
+      <div class="item-header">
+        <span class="item-title">yoGPU()</span>
+        <span class="item-tag yogpu">yoGPU()</span>
+      </div>
+      <iframe class="item-frame" src="yogpu-plasma.html" style="height: 150px;"></iframe>
+    </div>
+  </div>
+</section>
+
+<a href="index.html" class="home-link">← Back to Index</a>
+
+<script>
+  function showSection(id) {
+    // Hide all sections
+    document.querySelectorAll('.comparison-section').forEach(s => {
+      s.classList.remove('active');
+    });
+    
+    // Show selected section
+    document.getElementById(id).classList.add('active');
+    
+    // Update button states
+    document.querySelectorAll('nav button').forEach(b => {
+      b.classList.remove('active');
+    });
+    event.target.classList.add('active');
+  }
+</script>
+
+</body>
+</html>

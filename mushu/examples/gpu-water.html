@@ -11,96 +11,247 @@
 import { gpu } from '../src/gpu/yoGPU.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// WebGPU Water Ripple Simulation
-// Wave equation with damping on GPU compute shaders
+// WebGPU Advanced Water Ripple Simulation
+// 
+// Features:
+//   • Improved wave equation with 8-neighbor sampling
+//   • Dynamic foam generation at wave peaks
+//   • Fresnel-based reflections
+//   • Animated caustics
+//   • Subsurface scattering approximation
+//   • Interactive ripples with momentum
+// 
 // Click and drag to create ripples!
 // ═══════════════════════════════════════════════════════════════════════════
 
 gpu(
-  // Compute shader - Wave equation physics
+  // Compute shader - Advanced wave physics
   /* wgsl */`
     fn hash(p: vec2<f32>) -> f32 {
       return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+    }
+    
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+      );
     }
 
     fn compute(C: vec2<i32>, uv: vec2<f32>) {
       var data = sample(C);
       
-      // Sample neighbors
+      // Extended 8-neighbor sampling for smoother waves
       let up = sample(C + vec2<i32>(0, 1));
       let down = sample(C + vec2<i32>(0, -1));
       let left = sample(C + vec2<i32>(-1, 0));
       let right = sample(C + vec2<i32>(1, 0));
+      let upLeft = sample(C + vec2<i32>(-1, 1));
+      let upRight = sample(C + vec2<i32>(1, 1));
+      let downLeft = sample(C + vec2<i32>(-1, -1));
+      let downRight = sample(C + vec2<i32>(1, -1));
       
-      // R = height, G = velocity
+      // State: R = height, G = velocity, B = foam, A = age
       var height = data.r;
       var velocity = data.g;
+      var foam = data.b;
+      var age = data.a;
       
-      // Wave equation with neighbors
-      let laplacian = (up.r + down.r + left.r + right.r) * 0.25 - height;
-      velocity += laplacian * 0.4;
+      // ─────────────────────────────────────────────────────────────────
+      // Improved Wave Equation (8-neighbor Laplacian)
+      // ─────────────────────────────────────────────────────────────────
       
-      // Damping
-      velocity *= 0.995;
+      let laplacian = (
+        up.r + down.r + left.r + right.r +
+        (upLeft.r + upRight.r + downLeft.r + downRight.r) * 0.5
+      ) / 6.0 - height;
+      
+      // Wave speed with slight depth variation
+      let waveSpeed = 0.48;
+      velocity += laplacian * waveSpeed;
+      
+      // Non-linear damping (faster for small ripples)
+      let dampingFactor = 0.996 - abs(height) * 0.008;
+      velocity *= clamp(dampingFactor, 0.985, 0.998);
+      
       height += velocity;
       
-      // Mouse interaction - flip Y to match screen
+      // ─────────────────────────────────────────────────────────────────
+      // Foam Generation
+      // ─────────────────────────────────────────────────────────────────
+      
+      let waveCurvature = abs(laplacian);
+      let waveHeight = abs(height);
+      if (waveCurvature > 0.02 && waveHeight > 0.04) {
+        foam += waveCurvature * 0.12;
+      }
+      
+      // Foam spreads and decays
+      let neighborFoam = (up.b + down.b + left.b + right.b) * 0.25;
+      foam = mix(foam, neighborFoam, 0.08);
+      foam *= 0.985;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Mouse Interaction
+      // ─────────────────────────────────────────────────────────────────
+      
       let mousePos = vec2<f32>(u.mouseX, u.mouseY);
       let screenUV = vec2<f32>(uv.x, 1.0 - uv.y);
-      let distToMouse = length(screenUV - mousePos);
+      let d = length(screenUV - mousePos);
       
-      if (u.mouseDown > 0.5 && distToMouse < 0.05) {
-        let intensity = (1.0 - distToMouse / 0.05) * 0.4;
-        height += intensity;
+      if (u.mouseDown > 0.5 && d < 0.06) {
+        let falloff = pow(1.0 - d / 0.06, 2.0);
+        height += falloff * 0.5;
+        
+        // Transfer mouse velocity to water
+        let mouseDelta = vec2<f32>(u.mouseX - u.mousePrevX, u.mouseY - u.mousePrevY);
+        let pushStrength = length(mouseDelta) * falloff * 5.0;
+        velocity += pushStrength;
+        
+        foam += falloff * 0.25;
       }
       
-      // Random raindrops
+      // ─────────────────────────────────────────────────────────────────
+      // Random Raindrops
+      // ─────────────────────────────────────────────────────────────────
+      
       let dropChance = hash(vec2<f32>(f32(C.x) + u.time * 100.0, f32(C.y) + u.time * 73.0));
-      if (dropChance > 0.9999) {
-        height += 0.25;
+      if (dropChance > 0.9998) {
+        let dropSize = 0.2 + hash(vec2<f32>(f32(C.x), u.time)) * 0.3;
+        height += dropSize;
+        foam += 0.12;
       }
       
-      textureStore(dst, C, vec4<f32>(height, velocity, 0.0, 1.0));
+      // ─────────────────────────────────────────────────────────────────
+      // Ambient Wind Ripples
+      // ─────────────────────────────────────────────────────────────────
+      
+      let windNoise = noise(uv * 15.0 + vec2<f32>(u.time * 0.4, u.time * 0.25)) - 0.5;
+      height += windNoise * 0.002;
+      
+      // Edge reflection
+      if (uv.x < 0.02 || uv.x > 0.98 || uv.y < 0.02 || uv.y > 0.98) {
+        velocity *= -0.5;
+        height *= 0.9;
+      }
+      
+      // Clamp
+      height = clamp(height, -1.5, 1.5);
+      velocity = clamp(velocity, -0.8, 0.8);
+      foam = clamp(foam, 0.0, 1.0);
+      age = min(age + 0.01, 1.0);
+      
+      textureStore(dst, C, vec4<f32>(height, velocity, foam, age));
     }
   `,
   
-  // Render shader - Water visualization
+  // Render shader - Realistic water visualization
   /* wgsl */`
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * (3.0 - 2.0 * f);
+      let a = fract(sin(dot(i, vec2<f32>(127.1, 311.7))) * 43758.5453);
+      let b = fract(sin(dot(i + vec2<f32>(1.0, 0.0), vec2<f32>(127.1, 311.7))) * 43758.5453);
+      let c = fract(sin(dot(i + vec2<f32>(0.0, 1.0), vec2<f32>(127.1, 311.7))) * 43758.5453);
+      let d = fract(sin(dot(i + vec2<f32>(1.0, 1.0), vec2<f32>(127.1, 311.7))) * 43758.5453);
+      return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    }
+
     fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
       let height = data.r;
       let velocity = data.g;
+      let foam = data.b;
       
-      // Water base colors
-      let deepColor = vec3<f32>(0.02, 0.08, 0.18);
-      let shallowColor = vec3<f32>(0.1, 0.35, 0.5);
+      // ─────────────────────────────────────────────────────────────────
+      // Surface Normal from Height
+      // ─────────────────────────────────────────────────────────────────
       
-      // Calculate normal from height (approximate with velocity)
-      let normalStrength = velocity * 8.0;
-      var normal = normalize(vec3<f32>(normalStrength, normalStrength, 1.0));
+      let normalStrength = 15.0;
+      let normal = normalize(vec3<f32>(
+        -velocity * normalStrength,
+        -velocity * normalStrength,
+        1.0
+      ));
       
-      // View and light direction
+      // ─────────────────────────────────────────────────────────────────
+      // Fresnel Effect
+      // ─────────────────────────────────────────────────────────────────
+      
       let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-      let lightDir = normalize(vec3<f32>(0.3, 0.5, 0.8));
+      let fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.0);
+      let F0 = 0.04; // Water IOR
+      let fresnelSchlick = F0 + (1.0 - F0) * fresnel;
       
-      // Fresnel effect
-      let fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+      // ─────────────────────────────────────────────────────────────────
+      // Lighting
+      // ─────────────────────────────────────────────────────────────────
       
-      // Specular highlight
+      let lightDir = normalize(vec3<f32>(0.4, 0.6, 0.7));
       let halfDir = normalize(lightDir + viewDir);
-      let specular = pow(max(dot(normal, halfDir), 0.0), 64.0) * 0.8;
       
-      // Depth factor based on height
-      let depthFactor = 0.5 + height * 0.3;
+      let diffuse = max(dot(normal, lightDir), 0.0);
+      let spec = pow(max(dot(normal, halfDir), 0.0), 128.0);
+      let specSecondary = pow(max(dot(normal, halfDir), 0.0), 32.0);
       
-      // Mix colors
-      var col = mix(deepColor, shallowColor, depthFactor);
-      col = mix(col, vec3<f32>(0.7, 0.85, 0.95), fresnel * 0.5);
-      col += vec3<f32>(1.0) * specular;
+      // ─────────────────────────────────────────────────────────────────
+      // Water Colors
+      // ─────────────────────────────────────────────────────────────────
       
-      // Subtle caustics pattern
-      let causticX = sin(uv.x * 40.0 + height * 10.0) * 0.5 + 0.5;
-      let causticY = sin(uv.y * 40.0 + height * 8.0) * 0.5 + 0.5;
-      col += vec3<f32>(0.1, 0.15, 0.2) * causticX * causticY * 0.15;
+      let deepColor = vec3<f32>(0.01, 0.04, 0.12);
+      let shallowColor = vec3<f32>(0.05, 0.25, 0.42);
+      let skyColor = vec3<f32>(0.6, 0.8, 0.95);
+      let sunColor = vec3<f32>(1.0, 0.95, 0.85);
+      
+      let depth = 0.5 + height * 0.4;
+      var col = mix(deepColor, shallowColor, clamp(depth, 0.0, 1.0));
+      
+      // Reflection
+      let reflectedSky = mix(skyColor, sunColor, spec * 0.5);
+      col = mix(col, reflectedSky, fresnelSchlick * 0.7);
+      
+      // Specular highlights
+      col += sunColor * spec * 1.5;
+      col += vec3<f32>(0.8, 0.9, 1.0) * specSecondary * 0.25;
+      
+      col *= 0.7 + diffuse * 0.4;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Animated Caustics
+      // ─────────────────────────────────────────────────────────────────
+      
+      let causticUV = uv * 25.0;
+      let caustic1 = sin(causticUV.x + height * 8.0 + u.time * 1.5) * 
+                     sin(causticUV.y + height * 6.0 + u.time * 1.2);
+      let caustic2 = sin(causticUV.x * 0.7 - u.time + height * 5.0) * 
+                     sin(causticUV.y * 0.8 + u.time * 0.8 + height * 4.0);
+      let caustic = (caustic1 * caustic2) * 0.5 + 0.5;
+      let causticIntensity = pow(caustic, 2.0) * 0.2 * (0.8 - abs(height) * 0.4);
+      col += vec3<f32>(0.15, 0.25, 0.3) * causticIntensity;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Foam
+      // ─────────────────────────────────────────────────────────────────
+      
+      let foamColor = vec3<f32>(0.95, 0.97, 1.0);
+      let foamPattern = noise(uv * 80.0 + u.time * 2.0);
+      let foamEdge = smoothstep(0.1, 0.5, foam) * foamPattern;
+      col = mix(col, foamColor, foamEdge * 0.8);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Subsurface Scattering
+      // ─────────────────────────────────────────────────────────────────
+      
+      let scatter = max(-dot(normal, lightDir), 0.0);
+      col += vec3<f32>(0.0, 0.15, 0.2) * scatter * 0.35;
+      
+      // Tone mapping
+      col = col / (col + 0.8);
+      col = pow(col, vec3<f32>(0.9));
       
       return vec4<f32>(col, 1.0);
     }
@@ -108,7 +259,7 @@ gpu(
   { canvas: document.getElementById('c'), scale: 0.5 }
 );
 
-console.log('%c 🌊 mushu WebGPU Water Ready ', 'background: linear-gradient(90deg, #0077be, #00bcd4); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('%c 🌊 mushu WebGPU Water Ready ', 'background: linear-gradient(90deg, #0066aa, #00bbdd); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
 console.log('Click and drag to create ripples!');
 </script>
 </body>

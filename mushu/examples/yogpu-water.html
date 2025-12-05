@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mushu — YOGPU Water Demo</title>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { yoGPU } from '../src/gpu/yoGPU.js';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// YOGPU Water Simulation (WebGPU Fluent API)
+// 
+// Uses the yoGPU() fluent builder for WebGPU compute+render pipeline
+// Features:
+//   • 8-neighbor wave equation
+//   • Dynamic foam generation
+//   • Fresnel reflections
+//   • Animated caustics
+//   • Interactive ripples
+// 
+// Click and drag to create ripples!
+// ═══════════════════════════════════════════════════════════════════════════
+
+yoGPU(document.getElementById('c'))
+  .scale(0.5)
+  .simulate(`
+    fn hash(p: vec2<f32>) -> f32 {
+      return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+    }
+    
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+      );
+    }
+
+    fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+      let dims = vec2<i32>(textureDimensions(src));
+      let C = vec2<i32>(id.xy);
+      if (C.x >= dims.x || C.y >= dims.y) { return; }
+      
+      let uv = vec2<f32>(C) / vec2<f32>(dims);
+      var data = textureLoad(src, C, 0);
+      
+      // Extended neighborhood
+      let up = textureLoad(src, clamp(C + vec2<i32>(0, 1), vec2<i32>(0), dims - 1), 0);
+      let down = textureLoad(src, clamp(C + vec2<i32>(0, -1), vec2<i32>(0), dims - 1), 0);
+      let left = textureLoad(src, clamp(C + vec2<i32>(-1, 0), vec2<i32>(0), dims - 1), 0);
+      let right = textureLoad(src, clamp(C + vec2<i32>(1, 0), vec2<i32>(0), dims - 1), 0);
+      let upLeft = textureLoad(src, clamp(C + vec2<i32>(-1, 1), vec2<i32>(0), dims - 1), 0);
+      let upRight = textureLoad(src, clamp(C + vec2<i32>(1, 1), vec2<i32>(0), dims - 1), 0);
+      let downLeft = textureLoad(src, clamp(C + vec2<i32>(-1, -1), vec2<i32>(0), dims - 1), 0);
+      let downRight = textureLoad(src, clamp(C + vec2<i32>(1, -1), vec2<i32>(0), dims - 1), 0);
+      
+      // State: R = height, G = velocity, B = foam
+      var height = data.r;
+      var velocity = data.g;
+      var foam = data.b;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Wave Equation (8-neighbor Laplacian)
+      // ─────────────────────────────────────────────────────────────────
+      
+      let laplacian = (
+        up.r + down.r + left.r + right.r +
+        (upLeft.r + upRight.r + downLeft.r + downRight.r) * 0.5
+      ) / 6.0 - height;
+      
+      velocity += laplacian * 0.46;
+      velocity *= 0.996 - abs(height) * 0.006;
+      height += velocity;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Foam
+      // ─────────────────────────────────────────────────────────────────
+      
+      if (abs(laplacian) > 0.018 && abs(height) > 0.04) {
+        foam += abs(laplacian) * 0.1;
+      }
+      
+      let neighborFoam = (up.b + down.b + left.b + right.b) * 0.25;
+      foam = mix(foam, neighborFoam, 0.08);
+      foam *= 0.985;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Mouse Interaction
+      // ─────────────────────────────────────────────────────────────────
+      
+      let mousePos = vec2<f32>(u.mouseX, u.mouseY);
+      let screenUV = vec2<f32>(uv.x, 1.0 - uv.y);
+      let d = length(screenUV - mousePos);
+      
+      if (u.mouseDown > 0.5 && d < 0.055) {
+        let falloff = pow(1.0 - d / 0.055, 2.0);
+        height += falloff * 0.45;
+        foam += falloff * 0.2;
+      }
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Random Raindrops
+      // ─────────────────────────────────────────────────────────────────
+      
+      let dropChance = hash(vec2<f32>(f32(C.x) + time * 100.0, f32(C.y) + time * 73.0));
+      if (dropChance > 0.9998) {
+        height += 0.22 + hash(uv + time) * 0.15;
+        foam += 0.1;
+      }
+      
+      // Wind ripples
+      let wind = noise(uv * 12.0 + vec2<f32>(time * 0.35, time * 0.2)) - 0.5;
+      height += wind * 0.002;
+      
+      // Edge reflection
+      if (uv.x < 0.02 || uv.x > 0.98 || uv.y < 0.02 || uv.y > 0.98) {
+        velocity *= -0.5;
+        height *= 0.9;
+      }
+      
+      textureStore(dst, C, vec4<f32>(
+        clamp(height, -1.5, 1.5),
+        clamp(velocity, -0.8, 0.8),
+        clamp(foam, 0.0, 1.0),
+        1.0
+      ));
+    }
+  `)
+  .display(`
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * (3.0 - 2.0 * f);
+      let a = fract(sin(dot(i, vec2<f32>(127.1, 311.7))) * 43758.5453);
+      let b = fract(sin(dot(i + vec2<f32>(1.0, 0.0), vec2<f32>(127.1, 311.7))) * 43758.5453);
+      let c = fract(sin(dot(i + vec2<f32>(0.0, 1.0), vec2<f32>(127.1, 311.7))) * 43758.5453);
+      let d = fract(sin(dot(i + vec2<f32>(1.0, 1.0), vec2<f32>(127.1, 311.7))) * 43758.5453);
+      return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    }
+
+    @fragment fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
+      let data = textureSample(simTex, texSampler, uv);
+      let height = data.r;
+      let velocity = data.g;
+      let foam = data.b;
+      
+      // Normal from velocity
+      let normal = normalize(vec3<f32>(-velocity * 12.0, -velocity * 12.0, 1.0));
+      
+      // Fresnel
+      let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+      let fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.0);
+      let F = 0.04 + 0.96 * fresnel;
+      
+      // Lighting
+      let lightDir = normalize(vec3<f32>(0.4, 0.6, 0.7));
+      let halfDir = normalize(lightDir + viewDir);
+      let spec = pow(max(dot(normal, halfDir), 0.0), 128.0);
+      
+      // Colors
+      let deep = vec3<f32>(0.01, 0.04, 0.12);
+      let shallow = vec3<f32>(0.05, 0.25, 0.42);
+      let sky = vec3<f32>(0.6, 0.8, 0.95);
+      let sun = vec3<f32>(1.0, 0.95, 0.85);
+      
+      var col = mix(deep, shallow, clamp(0.5 + height * 0.4, 0.0, 1.0));
+      col = mix(col, mix(sky, sun, spec * 0.5), F * 0.65);
+      col += sun * spec * 1.4;
+      
+      // Caustics
+      let causticUV = uv * 25.0;
+      let caustic = sin(causticUV.x + height * 8.0 + time * 1.5) * 
+                    sin(causticUV.y + height * 6.0 + time * 1.2);
+      col += vec3<f32>(0.12, 0.22, 0.28) * pow(caustic * 0.5 + 0.5, 2.0) * 0.18;
+      
+      // Foam
+      let foamPattern = noise(uv * 70.0 + time * 1.5);
+      col = mix(col, vec3<f32>(0.95, 0.97, 1.0), smoothstep(0.1, 0.5, foam) * foamPattern * 0.75);
+      
+      // Tone mapping
+      col = col / (col + 0.75);
+      col = pow(col, vec3<f32>(0.9));
+      
+      return vec4<f32>(col, 1.0);
+    }
+  `)
+  .go();
+
+console.log('%c 🌊 mushu YOGPU Water Ready ', 'background: linear-gradient(90deg, #0066aa, #00bbdd); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Click and drag to create ripples!');
+</script>
+</body>
+</html>

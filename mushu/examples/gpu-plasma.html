@@ -11,75 +11,205 @@
 import { gpu } from '../src/gpu/yoGPU.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// WebGPU Plasma Effect
-// Classic demo-scene plasma with modern WGSL
-// Move mouse to influence the colors!
+// WebGPU Advanced Plasma Effect
+// 
+// Features:
+//   • Multi-frequency sinusoidal interference patterns
+//   • Perlin noise-based distortion
+//   • Dynamic color palette with gradient shifts
+//   • Mouse-interactive energy waves
+//   • Bloom and glow effects
+//   • Pulsing energy core
+// 
+// Move mouse to influence the plasma! Click for energy burst!
 // ═══════════════════════════════════════════════════════════════════════════
 
 gpu(
-  // Compute shader - Store plasma values in state
+  // Compute shader - Plasma state
   /* wgsl */`
+    fn hash(p: vec2<f32>) -> f32 {
+      return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+    }
+    
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+      ) * 2.0 - 1.0;
+    }
+    
+    fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+      var value = 0.0;
+      var amplitude = 0.5;
+      var pos = p;
+      let rot = mat2x2<f32>(0.8, 0.6, -0.6, 0.8);
+      for (var i = 0; i < 5; i++) {
+        if (i >= octaves) { break; }
+        value += amplitude * noise(pos);
+        pos = rot * pos * 2.0;
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
     fn compute(C: vec2<i32>, uv: vec2<f32>) {
       // Aspect-correct coordinates
       let aspect = u.width / u.height;
-      let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+      var p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
       let t = u.time * 0.5;
       
-      // Mouse influence
-      let mouseInfluence = (vec2<f32>(u.mouseX, u.mouseY) - 0.5) * 0.4;
-      let q = p + mouseInfluence;
+      // ─────────────────────────────────────────────────────────────────
+      // Mouse Interaction - Warp Space
+      // ─────────────────────────────────────────────────────────────────
       
-      // Classic plasma patterns
+      let mouseP = (vec2<f32>(u.mouseX, u.mouseY) - 0.5) * vec2<f32>(aspect, 1.0);
+      let mouseDist = length(p - mouseP);
+      
+      // Warp space toward mouse
+      p += normalize(p - mouseP + vec2<f32>(0.001)) * (1.0 / (mouseDist * 5.0 + 1.0)) * 0.08;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Noise Distortion
+      // ─────────────────────────────────────────────────────────────────
+      
+      let distort = vec2<f32>(
+        fbm(p * 3.0 + t * 0.3, 4),
+        fbm(p * 3.0 + t * 0.3 + 100.0, 4)
+      );
+      p += distort * 0.12;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Multi-frequency Plasma Waves
+      // ─────────────────────────────────────────────────────────────────
+      
       var v = 0.0;
       
-      // Sine wave interference
-      v += sin(q.x * 10.0 + t);
-      v += sin(q.y * 10.0 + t * 0.7);
-      v += sin((q.x + q.y) * 10.0 + t * 0.5);
-      v += sin(sqrt(q.x * q.x + q.y * q.y + 1.0) * 12.0 - t * 1.5);
+      // Primary waves
+      v += sin(p.x * 10.0 + t * 1.2);
+      v += sin(p.y * 12.0 + t * 0.9);
+      v += sin((p.x + p.y) * 8.0 + t * 0.7);
+      v += sin(length(p) * 15.0 - t * 2.5);
       
-      // Circular waves from center
-      let cx = q.x + 0.5 * sin(t * 0.3);
-      let cy = q.y + 0.5 * cos(t * 0.4);
-      v += sin(sqrt(cx * cx + cy * cy + 1.0) * 10.0 + t);
+      // Rotated secondary waves
+      let rotP = mat2x2<f32>(0.866, 0.5, -0.5, 0.866) * p;
+      v += sin(rotP.x * 8.0 + sin(rotP.y * 4.0 + t) * 2.0) * 0.7;
+      v += sin(rotP.y * 9.0 + sin(rotP.x * 3.0 - t * 0.5) * 2.0) * 0.7;
       
-      // Additional complexity
-      v += sin(q.x * 5.0 + sin(q.y * 3.0 + t) * 2.0);
+      // Moving circular wave centers
+      let c1 = vec2<f32>(sin(t * 0.3) * 0.5, cos(t * 0.4) * 0.5);
+      let c2 = vec2<f32>(cos(t * 0.5) * 0.4, sin(t * 0.35) * 0.6);
+      let c3 = vec2<f32>(sin(t * 0.25 + 2.0) * 0.6, cos(t * 0.45 + 1.0) * 0.4);
       
-      v *= 0.25;
+      v += sin(length(p - c1) * 12.0 - t * 2.0) * 0.8;
+      v += sin(length(p - c2) * 10.0 + t * 1.5) * 0.6;
+      v += sin(length(p - c3) * 14.0 - t * 1.8) * 0.5;
       
-      // Store v and some mouse-related values for rendering
+      // High-frequency detail
+      v += fbm(p * 8.0 + t, 4) * 0.6;
+      
+      v *= 0.12;
+      
+      // Store plasma value and mouse info
       let glow = select(0.0, 1.0, u.mouseDown > 0.5);
       
       textureStore(dst, C, vec4<f32>(v, u.mouseX, u.mouseY, glow));
     }
   `,
   
-  // Render shader - Plasma coloring
+  // Render shader - Advanced plasma coloring
   /* wgsl */`
+    fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+      return a + b * cos(6.28318 * (c * t + d));
+    }
+
     fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
       let v = data.r;
       let mouseX = data.g;
       let mouseY = data.b;
       let glow = data.a;
+      let t = u.time * 0.3;
       
-      // Rainbow color palette
-      let r = sin(v * 3.14159) * 0.5 + 0.5;
-      let g = sin(v * 3.14159 + 2.094) * 0.5 + 0.5;
-      let b = sin(v * 3.14159 + 4.188) * 0.5 + 0.5;
+      // ─────────────────────────────────────────────────────────────────
+      // Dynamic Color Palette
+      // ─────────────────────────────────────────────────────────────────
       
-      var col = vec3<f32>(r, g, b);
+      let col1 = palette(v + t * 0.1,
+        vec3<f32>(0.5, 0.5, 0.5),
+        vec3<f32>(0.5, 0.5, 0.5),
+        vec3<f32>(1.0, 1.0, 1.0),
+        vec3<f32>(0.0, 0.33, 0.67)
+      );
       
-      // Glow effect when mouse is pressed
+      let col2 = palette(v + t * 0.15 + 0.5,
+        vec3<f32>(0.5, 0.5, 0.5),
+        vec3<f32>(0.5, 0.5, 0.5),
+        vec3<f32>(1.0, 0.7, 0.4),
+        vec3<f32>(0.0, 0.15, 0.2)
+      );
+      
+      let blend = sin(t * 0.5) * 0.5 + 0.5;
+      var col = mix(col1, col2, blend);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Energy Core
+      // ─────────────────────────────────────────────────────────────────
+      
+      let aspect = u.width / u.height;
+      let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+      
+      let core = exp(-length(p) * 3.0);
+      let pulse = sin(u.time * 4.0) * 0.3 + 0.7;
+      col += vec3<f32>(1.0, 0.9, 0.7) * core * pulse * 0.5;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Mouse Glow
+      // ─────────────────────────────────────────────────────────────────
+      
+      let mouseP = (vec2<f32>(mouseX, mouseY) - 0.5) * vec2<f32>(aspect, 1.0);
+      let mouseDist = length(p - mouseP);
+      
+      let mouseGlow = exp(-mouseDist * 4.0);
+      let mouseColor = palette(v + mouseDist * 2.0, 
+        vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 0.7, 0.4), vec3<f32>(0.3, 0.2, 0.2));
+      col = mix(col, mouseColor * 1.5, mouseGlow * 0.5);
+      
+      // Energy burst on click
       if (glow > 0.5) {
-        let mousePos = vec2<f32>(mouseX, mouseY);
-        let d = length(uv - mousePos);
-        col += vec3<f32>(1.0, 0.8, 0.5) * exp(-d * 4.0) * 1.5;
+        let burst = sin(mouseDist * 30.0 - u.time * 10.0);
+        let burstIntensity = pow(max(burst, 0.0), 2.0);
+        let burstFade = exp(-mouseDist * 3.0);
+        col += vec3<f32>(1.0, 0.8, 0.6) * burstIntensity * burstFade * 2.0;
+        
+        // Ripple waves
+        let ripple = sin(mouseDist * 50.0 - u.time * 15.0);
+        let rippleIntensity = smoothstep(0.7, 1.0, ripple);
+        col += vec3<f32>(1.0, 0.9, 0.8) * rippleIntensity * burstFade;
       }
       
-      // Slight vignette
-      let vignette = 1.0 - length(uv - 0.5) * 0.4;
-      col *= vignette;
+      // ─────────────────────────────────────────────────────────────────
+      // Bloom
+      // ─────────────────────────────────────────────────────────────────
+      
+      let luminance = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+      let bloom = pow(max(luminance - 0.5, 0.0) * 2.0, 2.0);
+      col += col * bloom * 0.3;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Final Adjustments
+      // ─────────────────────────────────────────────────────────────────
+      
+      // Vignette
+      let vignette = 1.0 - length(uv - 0.5) * 0.5;
+      let vignetteSmooth = smoothstep(0.0, 1.0, vignette);
+      col *= vignetteSmooth;
+      
+      // Contrast and color grading
+      col = pow(col, vec3<f32>(0.95));
+      col = mix(col, col * vec3<f32>(1.05, 1.0, 0.95), 0.3);
       
       return vec4<f32>(col, 1.0);
     }
@@ -87,8 +217,8 @@ gpu(
   { canvas: document.getElementById('c'), scale: 1.0 }
 );
 
-console.log('%c 🌈 mushu WebGPU Plasma Ready ', 'background: linear-gradient(90deg, #ff00ff, #00ffff); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Move mouse to influence colors. Click for glow effect!');
+console.log('%c 🌈 mushu WebGPU Plasma Ready ', 'background: linear-gradient(90deg, #ff00ff, #00ffff, #ff00ff); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Move mouse to influence plasma. Click for energy burst!');
 </script>
 </body>
 </html>

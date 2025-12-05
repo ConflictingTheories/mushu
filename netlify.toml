@@ -2,11 +2,70 @@
   publish = "."
   command = "echo 'No build step needed'"
 
+# Redirect root to examples
 [[redirects]]
   from = "/"
   to = "/examples/index.html"
   status = 200
 
+# Serve all static files from src directory
+[[redirects]]
+  from = "/src/*"
+  to = "/src/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/src/core/*"
+  to = "/src/core/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/src/glsl/*"
+  to = "/src/glsl/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/src/gpu/*"
+  to = "/src/gpu/:splat"
+  status = 200
+
+# Serve examples
+[[redirects]]
+  from = "/examples/*"
+  to = "/examples/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/examples/3d/*"
+  to = "/examples/3d/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/examples/glsl/*"
+  to = "/examples/glsl/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/examples/gpu/*"
+  to = "/examples/gpu/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/examples/flow-glsl/*"
+  to = "/examples/flow-glsl/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/examples/flow-gpu/*"
+  to = "/examples/flow-gpu/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/examples/boilerplate/*"
+  to = "/examples/boilerplate/:splat"
+  status = 200
+
+# JavaScript MIME type headers
 [[headers]]
   for = "/*.js"
   [headers.values]

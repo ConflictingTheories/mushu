@@ -62,34 +62,6 @@ const myShader = `
     </script>
     ```
 
-    Notes and fixes applied
-
-    - I fixed a WebGPU runtime bug (invalid texture mapping) and ensured a 1×1 dummy texture is uploaded correctly via `device.queue.writeTexture`.
-    - I standardized mouse coordinate handling across WebGPU renderers (mouse Y is flipped when passed to shaders so Y=0 is bottom, matching the GLSL conventions used by the examples).
-    - The WebGPU render pipelines in `src/gpu/gpuFlow.js` now flip the generated UVs in the vertex shader so fragment code receives consistent UVs (Y-origin at bottom).
-
-    API overview
-
-    - `mushu(canvasOrSelector)` — unified entry point. Returns helpers for `glsl`, `flow`, and `gpu`.
-    - `flow(canvas)` — WebGL2 runtime with plugin system. Plugins are simple objects or functions with `init`, `render`, `destroy` hooks.
-    - `gpu(computeWGSL, renderWGSL, options)` — simplified WebGPU compute+render helper.
-    - `gpuFlow(canvas)` — fluent WebGPU builder with `.simulate()` and `.display()`.
-
-    Documentation & types
-
-    - I added JSDoc module headers and key function comments across the `src/` files to improve editor hints and to make it easier to generate TypeScript definitions later.
-
-    Next steps you can ask me to do
-
-    - Annotate every exported function with full JSDoc typedefs (I added module headers and several key docs already).
-    - Run local smoke tests against the examples and iterate on any remaining WebGPU validation messages.
-    - Commit and push the changes and trigger a Netlify redeploy.
-
-    Browser support
-
-    - WebGL2: modern desktop browsers
-    - WebGPU: experimental across browsers; Chrome/Edge have the best support (check console for validation warnings)
-
     License
 
     MIT © 2025

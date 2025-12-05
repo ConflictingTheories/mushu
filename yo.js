@@ -540,7 +540,7 @@ export function yoGPU(canvas) {
         mouse[2] = mouse[0];
         mouse[3] = mouse[1];
         mouse[0] = e.clientX / rect.width;
-        mouse[1] = 1 - e.clientY / rect.height;
+        mouse[1] = e.clientY / rect.height;  // No flip - shaders flip when needed
       });
       canvas.addEventListener('mousedown', () => mouseDown = true);
       canvas.addEventListener('mouseup', () => mouseDown = false);

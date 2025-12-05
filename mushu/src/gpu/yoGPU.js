@@ -121,7 +121,7 @@ export function yoGPU(canvasOrSelector) {
       mouse.px = mouse.x;
       mouse.py = mouse.y;
       mouse.x = (x - rect.left) / rect.width;
-      mouse.y = 1 - (y - rect.top) / rect.height;
+      mouse.y = (y - rect.top) / rect.height;  // No flip - shaders flip when needed
     };
     
     canvas.addEventListener('mousemove', e => updateMouse(e.clientX, e.clientY));
@@ -179,25 +179,55 @@ export function yoGPU(canvasOrSelector) {
     resize();
     window.addEventListener('resize', resize);
     
-    // Create uniform buffers
-    const timeBuffer = device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    const resBuffer = device.createBuffer({ size: 8, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    const mouseBuffer = device.createBuffer({ size: 8, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    const mouseDownBuffer = device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    const mousePrevBuffer = device.createBuffer({ size: 8, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    // Create unified uniform buffer (padded to 16-byte alignment)
+    // Layout: time(4) + pad(4) + width(4) + height(4) + mouseX(4) + mouseY(4) + mouseDown(4) + pad(4) + prevMouseX(4) + prevMouseY(4) + pad(8) = 48 bytes
+    const uniformBuffer = device.createBuffer({ 
+      size: 48, 
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST 
+    });
     
-    // Compute shader
-    const computeModule = device.createShaderModule({ code: simulateCode });
+    // Compute shader - prepend uniforms to user code
+    // User code should define fn main(@builtin(global_invocation_id) id: vec3<u32>) with @compute @workgroup_size
+    const computeShaderCode = /* wgsl */`
+      struct Uniforms {
+        time: f32,
+        _pad0: f32,
+        width: f32,
+        height: f32,
+        mouseX: f32,
+        mouseY: f32,
+        mouseDown: f32,
+        _pad1: f32,
+        prevMouseX: f32,
+        prevMouseY: f32,
+      }
+      
+      @group(0) @binding(0) var<uniform> u: Uniforms;
+      @group(0) @binding(1) var src: texture_storage_2d<rgba16float, read>;
+      @group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+      
+      // Convenience aliases - these are private copies set at the start of main
+      var<private> time: f32;
+      var<private> resolution: vec2<f32>;
+      var<private> mouse: vec2<f32>;
+      var<private> mouseDown: f32;
+      
+      fn sample(offset: vec2<i32>, C: vec2<i32>) -> vec4<f32> {
+        let dims = vec2<i32>(textureDimensions(src));
+        let p = clamp(C + offset, vec2<i32>(0), dims - vec2<i32>(1));
+        return textureLoad(src, p);
+      }
+      
+      ${simulateCode}
+    `;
+    
+    const computeModule = device.createShaderModule({ code: computeShaderCode });
     
     const computeBindGroupLayout = device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
-        { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
-        { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
-        { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
-        { binding: 4, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'unfilterable-float' } },
-        { binding: 5, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba16float' } },
-        { binding: 6, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } }
+        { binding: 1, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'read-only', format: 'rgba16float' } },
+        { binding: 2, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba16float' } }
       ]
     });
     
@@ -209,6 +239,19 @@ export function yoGPU(canvasOrSelector) {
     // Render shader with proper vertex shader
     const renderModule = device.createShaderModule({
       code: `
+        struct Uniforms {
+          time: f32,
+          _pad0: f32,
+          width: f32,
+          height: f32,
+          mouseX: f32,
+          mouseY: f32,
+          mouseDown: f32,
+          _pad1: f32,
+          prevMouseX: f32,
+          prevMouseY: f32,
+        }
+        
         struct VertexOutput {
           @builtin(position) position: vec4f,
           @location(0) uv: vec2f
@@ -222,10 +265,13 @@ export function yoGPU(canvasOrSelector) {
           return output;
         }
         
-        @group(0) @binding(0) var<uniform> time: f32;
-        @group(0) @binding(1) var<uniform> resolution: vec2f;
-        @group(0) @binding(4) var simTex: texture_2d<f32>;
-        @group(0) @binding(6) var texSampler: sampler;
+        @group(0) @binding(0) var<uniform> u: Uniforms;
+        @group(0) @binding(1) var simTex: texture_2d<f32>;
+        @group(0) @binding(2) var texSampler: sampler;
+        
+        // Convenience aliases for user code
+        var<private> time: f32;
+        var<private> resolution: vec2<f32>;
         
         ${displayCode}
       `
@@ -247,12 +293,16 @@ export function yoGPU(canvasOrSelector) {
       
       const time = (performance.now() - startTime) * 0.001;
       
-      // Update uniforms
-      device.queue.writeBuffer(timeBuffer, 0, new Float32Array([time]));
-      device.queue.writeBuffer(resBuffer, 0, new Float32Array([simWidth, simHeight]));
-      device.queue.writeBuffer(mouseBuffer, 0, new Float32Array([mouse.x, mouse.y]));
-      device.queue.writeBuffer(mouseDownBuffer, 0, new Float32Array([mouse.down ? 1 : 0]));
-      device.queue.writeBuffer(mousePrevBuffer, 0, new Float32Array([mouse.px, mouse.py]));
+      // Update unified uniform buffer
+      // Layout: time, pad, width, height, mouseX, mouseY, mouseDown, pad, prevMouseX, prevMouseY, pad, pad
+      device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([
+        time, 0,
+        simWidth, simHeight,
+        mouse.x, mouse.y,
+        mouse.down ? 1 : 0, 0,
+        mouse.px, mouse.py,
+        0, 0
+      ]));
       
       const encoder = device.createCommandEncoder();
       
@@ -260,13 +310,9 @@ export function yoGPU(canvasOrSelector) {
       const computeBindGroup = device.createBindGroup({
         layout: computeBindGroupLayout,
         entries: [
-          { binding: 0, resource: { buffer: timeBuffer } },
-          { binding: 1, resource: { buffer: resBuffer } },
-          { binding: 2, resource: { buffer: mouseBuffer } },
-          { binding: 3, resource: { buffer: mouseDownBuffer } },
-          { binding: 4, resource: stateA.createView() },
-          { binding: 5, resource: stateB.createView() },
-          { binding: 6, resource: { buffer: mousePrevBuffer } }
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: stateA.createView() },
+          { binding: 2, resource: stateB.createView() }
         ]
       });
       
@@ -280,10 +326,9 @@ export function yoGPU(canvasOrSelector) {
       const renderBindGroup = device.createBindGroup({
         layout: renderPipeline.getBindGroupLayout(0),
         entries: [
-          { binding: 0, resource: { buffer: timeBuffer } },
-          { binding: 1, resource: { buffer: resBuffer } },
-          { binding: 4, resource: stateB.createView() },
-          { binding: 6, resource: sampler }
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: stateB.createView() },
+          { binding: 2, resource: sampler }
         ]
       });
       
@@ -462,7 +507,7 @@ export async function gpu(computeCode, renderCode, options = {}) {
     mouse[2] = mouse[0];
     mouse[3] = mouse[1];
     mouse[0] = e.clientX / window.innerWidth;
-    mouse[1] = 1 - e.clientY / window.innerHeight;
+    mouse[1] = e.clientY / window.innerHeight;  // No flip - shaders flip when needed
   });
   window.addEventListener('mousedown', () => mouseDown = true);
   window.addEventListener('mouseup', () => mouseDown = false);
@@ -536,6 +581,17 @@ export async function gpu(computeCode, renderCode, options = {}) {
   // Render pipeline
   const renderModule = device.createShaderModule({
     code: /* wgsl */`
+      struct Uniforms {
+        time: f32,
+        mouseX: f32,
+        mouseY: f32,
+        mouseDown: f32,
+        prevMouseX: f32,
+        prevMouseY: f32,
+        width: f32,
+        height: f32,
+      }
+      
       struct VertexOutput {
         @builtin(position) position: vec4<f32>,
         @location(0) uv: vec2<f32>,
@@ -554,8 +610,9 @@ export async function gpu(computeCode, renderCode, options = {}) {
         return output;
       }
 
-      @group(0) @binding(0) var tex: texture_2d<f32>;
-      @group(0) @binding(1) var samp: sampler;
+      @group(0) @binding(0) var<uniform> u: Uniforms;
+      @group(0) @binding(1) var tex: texture_2d<f32>;
+      @group(0) @binding(2) var samp: sampler;
 
       ${renderCode}
 
@@ -567,8 +624,16 @@ export async function gpu(computeCode, renderCode, options = {}) {
     `
   });
   
+  const renderBindGroupLayout = device.createBindGroupLayout({
+    entries: [
+      { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
+      { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
+      { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } }
+    ]
+  });
+  
   const renderPipeline = device.createRenderPipeline({
-    layout: 'auto',
+    layout: device.createPipelineLayout({ bindGroupLayouts: [renderBindGroupLayout] }),
     vertex: { module: renderModule, entryPoint: 'vs' },
     fragment: { module: renderModule, entryPoint: 'fs', targets: [{ format }] },
     primitive: { topology: 'triangle-list' }
@@ -615,10 +680,11 @@ export async function gpu(computeCode, renderCode, options = {}) {
     });
     renderPass.setPipeline(renderPipeline);
     renderPass.setBindGroup(0, device.createBindGroup({
-      layout: renderPipeline.getBindGroupLayout(0),
+      layout: renderBindGroupLayout,
       entries: [
-        { binding: 0, resource: stateB.createView() },
-        { binding: 1, resource: sampler }
+        { binding: 0, resource: { buffer: uniformBuffer } },
+        { binding: 1, resource: stateB.createView() },
+        { binding: 2, resource: sampler }
       ]
     }));
     renderPass.draw(3);

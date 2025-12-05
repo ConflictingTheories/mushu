@@ -55,6 +55,7 @@ yoGPU(document.getElementById('c'))
       return value;
     }
 
+    @compute @workgroup_size(8, 8)
     fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       let dims = vec2<i32>(textureDimensions(src));
       let C = vec2<i32>(id.xy);
@@ -63,7 +64,7 @@ yoGPU(document.getElementById('c'))
       let uv = vec2<f32>(C) / vec2<f32>(dims);
       let aspect = u.width / u.height;
       var p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-      let t = time * 0.5;
+      let t = u.time * 0.5;
       
       // ─────────────────────────────────────────────────────────────────
       // Mouse Warp
@@ -119,7 +120,7 @@ yoGPU(document.getElementById('c'))
       let mouseX = data.g;
       let mouseY = data.b;
       let glow = data.a;
-      let t = time * 0.3;
+      let t = u.time * 0.3;
       
       // Color palettes
       let col1 = palette(v + t * 0.1, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.0, 0.33, 0.67));
@@ -127,10 +128,10 @@ yoGPU(document.getElementById('c'))
       var col = mix(col1, col2, sin(t * 0.5) * 0.5 + 0.5);
       
       // Energy core
-      let aspect = resolution.x / resolution.y;
+      let aspect = u.width / u.height;
       let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
       let core = exp(-length(p) * 3.0);
-      let pulse = sin(time * 4.0) * 0.3 + 0.7;
+      let pulse = sin(u.time * 4.0) * 0.3 + 0.7;
       col += vec3<f32>(1.0, 0.9, 0.7) * core * pulse * 0.5;
       
       // Mouse glow
@@ -142,10 +143,10 @@ yoGPU(document.getElementById('c'))
       
       // Energy burst
       if (glow > 0.5) {
-        let burst = sin(mouseDist * 30.0 - time * 10.0);
+        let burst = sin(mouseDist * 30.0 - u.time * 10.0);
         let burstFade = exp(-mouseDist * 3.0);
         col += vec3<f32>(1.0, 0.8, 0.6) * pow(max(burst, 0.0), 2.0) * burstFade * 2.0;
-        col += vec3<f32>(1.0, 0.9, 0.8) * smoothstep(0.7, 1.0, sin(mouseDist * 50.0 - time * 15.0)) * burstFade;
+        col += vec3<f32>(1.0, 0.9, 0.8) * smoothstep(0.7, 1.0, sin(mouseDist * 50.0 - u.time * 15.0)) * burstFade;
       }
       
       // Bloom

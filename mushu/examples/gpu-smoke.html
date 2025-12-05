@@ -156,9 +156,8 @@ gpu(
       // Mouse Emission
       // ─────────────────────────────────────────────────────────────────
       
-      let mousePos = vec2<f32>(u.mouseX, u.mouseY);
-      let screenUV = vec2<f32>(uv.x, 1.0 - uv.y);
-      let d = length(screenUV - mousePos);
+      let mousePos = vec2<f32>(u.mouseX, 1.0 - u.mouseY);
+      let d = length(uv - mousePos);
       
       if (u.mouseDown > 0.5 && d < 0.1) {
         let falloff = pow(1.0 - d / 0.1, 2.0);

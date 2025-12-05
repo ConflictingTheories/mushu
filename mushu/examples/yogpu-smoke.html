@@ -56,6 +56,7 @@ yoGPU(document.getElementById('c'))
       return value;
     }
 
+    @compute @workgroup_size(8, 8)
     fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       let dims = vec2<i32>(textureDimensions(src));
       let C = vec2<i32>(id.xy);
@@ -92,7 +93,7 @@ yoGPU(document.getElementById('c'))
       // Turbulence
       // ─────────────────────────────────────────────────────────────────
       
-      let turbPos = uv * 5.0 + vec2<f32>(time * 0.2, time * 0.15);
+      let turbPos = uv * 5.0 + vec2<f32>(u.time * 0.2, u.time * 0.15);
       let turbX = fbm(turbPos, 4) - 0.5;
       let turbY = fbm(turbPos + 50.0, 4) - 0.5;
       
@@ -119,9 +120,8 @@ yoGPU(document.getElementById('c'))
       // Mouse Emission
       // ─────────────────────────────────────────────────────────────────
       
-      let mousePos = vec2<f32>(u.mouseX, u.mouseY);
-      let screenUV = vec2<f32>(uv.x, 1.0 - uv.y);
-      let d = length(screenUV - mousePos);
+      let mousePos = vec2<f32>(u.mouseX, 1.0 - u.mouseY);
+      let d = length(uv - mousePos);
       
       if (u.mouseDown > 0.5 && d < 0.1) {
         let falloff = pow(1.0 - d / 0.1, 2.0);
@@ -135,7 +135,7 @@ yoGPU(document.getElementById('c'))
       
       if (uv.y > 0.92) {
         let edge = (uv.y - 0.92) / 0.08;
-        let emitter = fbm(vec2<f32>(uv.x * 8.0, time * 1.0), 3) * noise(vec2<f32>(uv.x * 20.0, time * 2.0));
+        let emitter = fbm(vec2<f32>(uv.x * 8.0, u.time * 1.0), 3) * noise(vec2<f32>(uv.x * 20.0, u.time * 2.0));
         if (emitter > 0.2) {
           density += (emitter - 0.2) * edge * edge * 0.3;
           temp += (emitter - 0.2) * edge * edge * 0.5;

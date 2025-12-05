@@ -61,6 +61,7 @@ yoGPU(document.getElementById('c'))
       return value;
     }
 
+    @compute @workgroup_size(8, 8)
     fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       let dims = vec2<i32>(textureDimensions(src));
       let C = vec2<i32>(id.xy);
@@ -83,7 +84,7 @@ yoGPU(document.getElementById('c'))
       // Turbulence
       // ─────────────────────────────────────────────────────────────────
       
-      let turbPos = vec2<f32>(uv.x * 12.0, uv.y * 6.0 + time * 2.5);
+      let turbPos = vec2<f32>(uv.x * 12.0, uv.y * 6.0 + u.time * 2.5);
       let turb = fbm(turbPos, 4) - 0.5;
       
       // ─────────────────────────────────────────────────────────────────
@@ -108,7 +109,7 @@ yoGPU(document.getElementById('c'))
         fuel -= burn;
         smoke += burn * 0.35;
         
-        if (burn > 0.12 && hash(uv + time) > 0.96) {
+        if (burn > 0.12 && hash(uv + u.time) > 0.96) {
           embers += 0.25;
         }
       }
@@ -129,9 +130,8 @@ yoGPU(document.getElementById('c'))
       // Mouse Ignition
       // ─────────────────────────────────────────────────────────────────
       
-      let mouse = vec2<f32>(u.mouseX, u.mouseY);
-      let mouseUV = vec2<f32>(uv.x, 1.0 - uv.y);
-      let d = length(mouseUV - mouse);
+      let mouse = vec2<f32>(u.mouseX, 1.0 - u.mouseY);
+      let d = length(uv - mouse);
       
       if (u.mouseDown > 0.5 && d < 0.1) {
         let intensity = pow(1.0 - d / 0.1, 2.0) * 12.0;
@@ -145,9 +145,9 @@ yoGPU(document.getElementById('c'))
       
       if (uv.y > 0.88) {
         let edge = (uv.y - 0.88) / 0.12;
-        let p1 = sin(uv.x * 25.0 + time * 4.5) * 0.5 + 0.5;
-        let p2 = sin(uv.x * 10.0 - time * 2.0) * 0.5 + 0.5;
-        let p3 = fbm(vec2<f32>(uv.x * 35.0, time * 7.0), 3);
+        let p1 = sin(uv.x * 25.0 + u.time * 4.5) * 0.5 + 0.5;
+        let p2 = sin(uv.x * 10.0 - u.time * 2.0) * 0.5 + 0.5;
+        let p3 = fbm(vec2<f32>(uv.x * 35.0, u.time * 7.0), 3);
         let pattern = p1 * p2 * (0.4 + p3 * 0.6);
         
         if (pattern > 0.2) {

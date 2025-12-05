@@ -161,9 +161,8 @@ gpu(
       // Mouse Ignition
       // ─────────────────────────────────────────────────────────────────
       
-      let mouse = vec2<f32>(u.mouseX, u.mouseY);
-      let mouseUV = vec2<f32>(uv.x, 1.0 - uv.y);
-      let d = length(mouseUV - mouse);
+      let mouse = vec2<f32>(u.mouseX, 1.0 - u.mouseY);
+      let d = length(uv - mouse);
       
       if (u.mouseDown > 0.5 && d < 0.12) {
         let intensity = pow(1.0 - d / 0.12, 2.0) * 15.0;

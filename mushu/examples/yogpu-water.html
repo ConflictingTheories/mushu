@@ -42,6 +42,7 @@ yoGPU(document.getElementById('c'))
       );
     }
 
+    @compute @workgroup_size(8, 8)
     fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       let dims = vec2<i32>(textureDimensions(src));
       let C = vec2<i32>(id.xy);
@@ -94,9 +95,8 @@ yoGPU(document.getElementById('c'))
       // Mouse Interaction
       // ─────────────────────────────────────────────────────────────────
       
-      let mousePos = vec2<f32>(u.mouseX, u.mouseY);
-      let screenUV = vec2<f32>(uv.x, 1.0 - uv.y);
-      let d = length(screenUV - mousePos);
+      let mousePos = vec2<f32>(u.mouseX, 1.0 - u.mouseY);
+      let d = length(uv - mousePos);
       
       if (u.mouseDown > 0.5 && d < 0.055) {
         let falloff = pow(1.0 - d / 0.055, 2.0);
@@ -108,14 +108,14 @@ yoGPU(document.getElementById('c'))
       // Random Raindrops
       // ─────────────────────────────────────────────────────────────────
       
-      let dropChance = hash(vec2<f32>(f32(C.x) + time * 100.0, f32(C.y) + time * 73.0));
+      let dropChance = hash(vec2<f32>(f32(C.x) + u.time * 100.0, f32(C.y) + u.time * 73.0));
       if (dropChance > 0.9998) {
-        height += 0.22 + hash(uv + time) * 0.15;
+        height += 0.22 + hash(uv + u.time) * 0.15;
         foam += 0.1;
       }
       
       // Wind ripples
-      let wind = noise(uv * 12.0 + vec2<f32>(time * 0.35, time * 0.2)) - 0.5;
+      let wind = noise(uv * 12.0 + vec2<f32>(u.time * 0.35, u.time * 0.2)) - 0.5;
       height += wind * 0.002;
       
       // Edge reflection
@@ -175,12 +175,12 @@ yoGPU(document.getElementById('c'))
       
       // Caustics
       let causticUV = uv * 25.0;
-      let caustic = sin(causticUV.x + height * 8.0 + time * 1.5) * 
-                    sin(causticUV.y + height * 6.0 + time * 1.2);
+      let caustic = sin(causticUV.x + height * 8.0 + u.time * 1.5) * 
+                    sin(causticUV.y + height * 6.0 + u.time * 1.2);
       col += vec3<f32>(0.12, 0.22, 0.28) * pow(caustic * 0.5 + 0.5, 2.0) * 0.18;
       
       // Foam
-      let foamPattern = noise(uv * 70.0 + time * 1.5);
+      let foamPattern = noise(uv * 70.0 + u.time * 1.5);
       col = mix(col, vec3<f32>(0.95, 0.97, 1.0), smoothstep(0.1, 0.5, foam) * foamPattern * 0.75);
       
       // Tone mapping

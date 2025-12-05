@@ -52,7 +52,7 @@ const gpu = async (computeCode, renderCode) => {
     mouse[2] = mouse[0];
     mouse[3] = mouse[1];
     mouse[0] = e.clientX / innerWidth;
-    mouse[1] = 1 - e.clientY / innerHeight;
+    mouse[1] = e.clientY / innerHeight;
   });
   addEventListener('mousedown', () => mouseDown = true);
   addEventListener('mouseup', () => mouseDown = false);
@@ -252,7 +252,7 @@ gpu(
       height += velocity;
       
       // Mouse disturbance
-      let mouse = vec2<f32>(u.mouseX, u.mouseY);
+      let mouse = vec2<f32>(u.mouseX, 1.0 - u.mouseY);
       let d = length(uv - mouse);
       let intensity = select(2.0, 8.0, u.mouseDown > 0.5);
       if (d < 0.05) {

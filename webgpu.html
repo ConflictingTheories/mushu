@@ -68,7 +68,7 @@ const gpu = async (computeCode, renderCode) => {
     mouse[2] = mouse[0];
     mouse[3] = mouse[1];
     mouse[0] = e.clientX / innerWidth;
-    mouse[1] = 1 - e.clientY / innerHeight;
+    mouse[1] = e.clientY / innerHeight;
   });
   addEventListener('mousedown', () => mouseDown = true);
   addEventListener('mouseup', () => mouseDown = false);
@@ -291,7 +291,7 @@ gpu(
 
     fn compute(C: vec2<i32>, uv: vec2<f32>) {
       let t = u.time;
-      let mouse = vec2<f32>(u.mouseX, u.mouseY);
+      let mouse = vec2<f32>(u.mouseX, 1.0 - u.mouseY);
       
       // Animated plasma
       var p = uv * 4.0;

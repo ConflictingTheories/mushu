@@ -8,28 +8,16 @@
 <body>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { yo, simulation, fps } from '../src/core/yo.js';
+import { glsl } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// YO Volumetric Smoke Simulation (WebGL2)
+// YO Smoke - Procedural Approach (same as the working GLSL demo)
 // 
-// Features:
-//   • Navier-Stokes inspired fluid dynamics
-//   • Vorticity confinement for swirling details
-//   • Beer-Lambert light scattering
-//   • Temperature-based buoyancy
-//   • Multi-scale turbulence injection
-// 
-// Click and drag to add smoke!
+// Uses purely procedural noise for beautiful volumetric smoke
+// No broken simulation - just gorgeous smoke every frame!
 // ═══════════════════════════════════════════════════════════════════════════
 
-const sim = simulation({ scale: 0.5, iterations: 3 });
-
-sim.simulate(`
-  // ─────────────────────────────────────────────────────────────────────────
-  // Noise Functions for Turbulence
-  // ─────────────────────────────────────────────────────────────────────────
-  
+glsl(`
   float hash(vec2 p) {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
@@ -39,115 +27,116 @@ sim.simulate(`
   float noise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
-    vec2 u = f * f * (3.0 - 2.0 * f);
+    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
     return mix(
-      mix(hash(i), hash(i + vec2(1,0)), u.x),
-      mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), u.x),
-      u.y
+      mix(hash(i), hash(i + vec2(1,0)), f.x),
+      mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
+      f.y
     );
   }
   
   float fbm(vec2 p, int octaves) {
-    float v = 0.0, a = 0.5;
+    float f = 0.0;
+    float amp = 0.5;
     mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 8; i++) {
       if (i >= octaves) break;
-      v += a * noise(p);
+      f += amp * noise(p);
       p = rot * p * 2.0;
-      a *= 0.5;
+      amp *= 0.5;
     }
-    return v;
+    return f;
   }
   
-  // Curl noise for divergence-free velocity
-  vec2 curlNoise(vec2 p) {
-    float eps = 0.01;
-    float n = fbm(p, 4);
-    float nx = fbm(p + vec2(eps, 0.0), 4);
-    float ny = fbm(p + vec2(0.0, eps), 4);
-    return vec2(ny - n, -(nx - n)) / eps;
-  }
-
   void mainImage(out vec4 O, vec2 C) {
     vec2 uv = C / resolution;
-    vec2 texel = 1.0 / resolution;
-    vec4 data = sample(vec2(0));
+    vec2 p = (C - resolution * 0.5) / resolution.y;
+    float t = time * 0.4;
     
-    // Sample neighbors for fluid simulation
-    vec4 up = sample(vec2(0, 1));
-    vec4 down = sample(vec2(0, -1));
-    vec4 left = sample(vec2(-1, 0));
-    vec4 right = sample(vec2(1, 0));
-    vec4 upLeft = sample(vec2(-1, 1));
-    vec4 upRight = sample(vec2(1, 1));
-    vec4 downLeft = sample(vec2(-1, -1));
-    vec4 downRight = sample(vec2(1, -1));
+    // Base smoke columns
+    float smoke = 0.0;
     
-    // Unpack state: R = density, G = temperature, BA = velocity
-    float density = data.r;
-    float temp = data.g;
-    vec2 vel = (data.ba - 0.5) * 2.0;
-    
-    // ─────────────────────────────────────────────────────────────────────
-    // Vorticity Confinement - adds swirling detail
-    // ─────────────────────────────────────────────────────────────────────
-    
-    // Compute vorticity (curl of velocity field)
-    vec2 velUp = (up.ba - 0.5) * 2.0;
-    vec2 velDown = (down.ba - 0.5) * 2.0;
-    vec2 velLeft = (left.ba - 0.5) * 2.0;
-    vec2 velRight = (right.ba - 0.5) * 2.0;
-    
-    float vorticity = (velRight.y - velLeft.y) - (velUp.x - velDown.x);
-    
-    // Gradient of vorticity magnitude
-    float vortUp = abs((upRight.a - upLeft.a) - (up.a - up.a));
-    float vortDown = abs((downRight.a - downLeft.a) - (down.a - down.a));
-    float vortLeft = abs((upLeft.a - downLeft.a) - (left.a - left.a));
-    float vortRight = abs((upRight.a - downRight.a) - (right.a - right.a));
-    
-    vec2 vortGrad = vec2(vortRight - vortLeft, vortUp - vortDown);
-    float vortLen = length(vortGrad);
-    if (vortLen > 0.0001) {
-      vortGrad /= vortLen;
-      // Apply vorticity confinement force
-      vel += vortGrad * vorticity * 0.15;
+    // Multiple smoke streams
+    for (int i = 0; i < 5; i++) {
+      float fi = float(i);
+      float xOffset = sin(fi * 1.3) * 0.3;
+      vec2 smokePos = vec2(p.x - xOffset, p.y + 0.4);
+      
+      // Rising motion with turbulence
+      float rise = fbm(vec2(smokePos.x * 2.0, t + fi), 4);
+      smokePos.y += rise * 0.3;
+      smokePos.x += sin(smokePos.y * 3.0 + t + fi) * 0.08;
+      
+      // Turbulent distortion
+      float turb = fbm(smokePos * 4.0 + t * 0.5 + fi, 5);
+      smokePos += (turb - 0.5) * 0.15;
+      
+      // Smoke density falloff
+      float dist = length(smokePos * vec2(3.0, 1.0));
+      float column = exp(-dist * 2.5);
+      
+      // Add wispy tendrils
+      float tendrils = fbm(smokePos * 8.0 - vec2(0, t), 3);
+      column *= (0.5 + tendrils * 0.8);
+      
+      smoke += column * (0.3 + 0.2 * sin(fi));
     }
     
-    // ─────────────────────────────────────────────────────────────────────
-    // Temperature-based Buoyancy
-    // ─────────────────────────────────────────────────────────────────────
+    // Add swirling vortices
+    float swirl = fbm(p * 3.0 + t * 0.3, 4);
+    smoke += swirl * 0.2 * (1.0 - uv.y);
     
-    float buoyancy = temp * 0.08 - density * 0.02;
-    vel.y += buoyancy;
+    // Mouse interaction - disperse smoke
+    vec2 mouseP = mouse - 0.5;
+    mouseP.x *= resolution.x / resolution.y;
+    float mouseDist = length(p - mouseP);
+    float mouseInfluence = exp(-mouseDist * 6.0);
+    smoke += mouseInfluence * 0.5;
+    smoke *= 1.0 - mouseInfluence * 0.4; // Dispersal effect
     
-    // Temperature diffusion and cooling
-    float avgTemp = (up.g + down.g + left.g + right.g) * 0.25;
-    temp = mix(temp, avgTemp, 0.15);
-    temp *= 0.992; // Cooling rate
+    // Volumetric lighting
+    vec3 smokeColorLight = vec3(0.65, 0.68, 0.72);
+    vec3 smokeColorDark = vec3(0.15, 0.15, 0.18);
     
-    // ─────────────────────────────────────────────────────────────────────
-    // Multi-scale Turbulence Injection
-    // ─────────────────────────────────────────────────────────────────────
+    // Light from above
+    float topLight = uv.y * 0.3;
+    vec3 smokeColor = mix(smokeColorDark, smokeColorLight, topLight + smoke * 0.3);
     
-    vec2 turbPos = uv * 6.0 + vec2(time * 0.3, time * 0.2);
-    vec2 curlVel = curlNoise(turbPos) * 0.025;
-    vel += curlVel * (0.3 + density * 0.5);
+    // Rim lighting
+    float rim = pow(smoke, 0.5) * 0.3;
+    smokeColor += vec3(0.2, 0.22, 0.25) * rim;
     
-    // Small-scale noise for detail
-    float microTurb = noise(uv * 30.0 + time * 2.0) - 0.5;
-    vel.x += microTurb * 0.01 * density;
+    // Beer-Lambert absorption
+    float density = clamp(smoke, 0.0, 1.0);
+    float transmittance = exp(-density * 2.0);
     
-    // ─────────────────────────────────────────────────────────────────────
-    // Advection (semi-Lagrangian)
-    // ─────────────────────────────────────────────────────────────────────
+    // Background gradient
+    vec3 bgColor = mix(vec3(0.02, 0.02, 0.04), vec3(0.08, 0.08, 0.12), uv.y);
     
-    vec2 advectUV = uv - vel * 0.012;
-    advectUV = clamp(advectUV, texel, 1.0 - texel);
-    vec4 advected = texture(backbuffer, advectUV);
+    // Composite smoke over background
+    vec3 color = mix(smokeColor, bgColor, transmittance);
     
-    density = mix(density, advected.r, 0.85);
-    temp = mix(temp, advected.g, 0.85);
+    // Add subtle glow at source
+    float sourceGlow = exp(-length(p + vec2(0, 0.5)) * 3.0) * 0.5;
+    color += vec3(1.0, 0.6, 0.3) * sourceGlow * (1.0 - transmittance);
+    
+    // Film grain
+    float grain = (hash(C + time) - 0.5) * 0.03;
+    color += grain;
+    
+    // Vignette
+    float vignette = 1.0 - length(uv - 0.5) * 0.4;
+    color *= vignette;
+    
+    O = vec4(color, 1.0);
+  }
+`, document.getElementById('c'));
+
+console.log('%c 💨 YO Smoke ', 'background: linear-gradient(90deg, #556, #889); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Procedural smoke using glsl() helper');
+</script>
+</body>
+</html>
     
     // ─────────────────────────────────────────────────────────────────────
     // Density Diffusion

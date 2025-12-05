@@ -107,7 +107,7 @@ gpu(
         height += falloff * 0.5;
         
         // Transfer mouse velocity to water
-        let mouseDelta = vec2<f32>(u.mouseX - u.mousePrevX, u.mouseY - u.mousePrevY);
+        let mouseDelta = vec2<f32>(u.mouseX - u.prevMouseX, u.mouseY - u.prevMouseY);
         let pushStrength = length(mouseDelta) * falloff * 5.0;
         velocity += pushStrength;
         

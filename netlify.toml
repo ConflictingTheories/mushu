@@ -2,13 +2,13 @@
   publish = "."
   command = "echo 'No build step needed'"
 
-# Redirect root to examples
+# Redirect root to examples (external redirect so relative paths work)
 [[redirects]]
   from = "/"
-  to = "/examples/index.html"
-  status = 200
+  to = "/examples/"
+  status = 301
 
-# Catch-all for SPA (but NOT for files that exist)
+# Catch-all for SPA fallback (but NOT for files that exist)
 [[redirects]]
   from = "/*"
   to = "/examples/index.html"

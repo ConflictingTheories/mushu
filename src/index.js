@@ -23,7 +23,7 @@ export * from './glsl/index.js';
 export * from './gpu/index.js';
 
 // Import for mushu() unified API
-import { flow, glsl, shader } from './core/index.js';
+import { flow, shader } from './core/index.js';
 import { gpuFlow, gpu as gpuSimple } from './gpu/index.js';
 
 // ─────────────────────────────────────────────────────────────────────────────

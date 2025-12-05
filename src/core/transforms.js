@@ -159,6 +159,8 @@ export const vec4 = {
     return out;
   },
 
+  length: (v) => Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]),
+
   transformMat4: (out, v, m) => {
     const x = v[0], y = v[1], z = v[2], w = v[3];
     out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
@@ -739,7 +741,6 @@ export function camera(options = {}) {
  */
 export function orbitControls(cam, options = {}) {
   const {
-    damping = 0.1,
     rotateSpeed = 0.005,
     zoomSpeed = 0.001,
     minDistance = 1,

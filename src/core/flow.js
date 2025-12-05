@@ -550,7 +550,6 @@ export function simulation(options = {}) {
   const {
     scale = 0.5,      // Resolution scale
     iterations = 1,   // Simulation iterations per frame
-    format = 'RGBA16F',
   } = options;
 
 /**
@@ -569,6 +568,13 @@ export function simulation(options = {}) {
   let renderSrc = '';
 
   const createFBO = (gl, w, h) => {
+    /**
+     * Create a framebuffer with an attached RGBA16F texture for simulation.
+     * @param {WebGL2RenderingContext} gl
+     * @param {number} w Width in pixels
+     * @param {number} h Height in pixels
+     * @returns {{fb: WebGLFramebuffer, tex: WebGLTexture}}
+     */
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
@@ -585,6 +591,14 @@ export function simulation(options = {}) {
   };
 
   const compileShader = (gl, fragSrc, includeBackbuffer = false, addHelpers = false) => {
+    /**
+     * Compile a full-screen shader from fragment source.
+     * @param {WebGL2RenderingContext} gl
+     * @param {string} fragSrc Fragment shader source.
+     * @param {boolean} [includeBackbuffer] Whether to inject backbuffer sampling helpers.
+     * @param {boolean} [addHelpers] Whether to add sample helpers.
+     * @returns {WebGLProgram|null} The compiled program or null if compilation failed.
+     */
     const vs = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vs, `#version 300 es
       void main() {

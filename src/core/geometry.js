@@ -73,6 +73,12 @@ export function vao(options = {}) {
 
       // Helper to create and bind buffer
       const createBuffer = (data, target = gl.ARRAY_BUFFER) => {
+        /**
+         * Create a GPU buffer for vertex or index data.
+         * @param {Array|TypedArray} data The buffer data.
+         * @param {number} [target] GL buffer target (ARRAY_BUFFER or ELEMENT_ARRAY_BUFFER).
+         * @returns {{buffer: WebGLBuffer, typedData: TypedArray}}
+         */
         const buffer = gl.createBuffer();
         gl.bindBuffer(target, buffer);
         const typedData = data instanceof Float32Array ? data :
@@ -295,7 +301,7 @@ export function mesh(geometry, options = {}) {
    */
   function updateTransform(t) {
     identity();
-    const { position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1] } = t;
+    const { position = [0, 0, 0], scale = [1, 1, 1] } = t;
 
     // Translation
     modelMatrix[12] = position[0];
@@ -363,9 +369,6 @@ export function plane(options = {}) {
   const normals = [];
   const uvs = [];
   const indices = [];
-
-  const hw = width / 2;
-  const hh = height / 2;
 
   for (let iy = 0; iy <= heightSegments; iy++) {
     const y = (iy / heightSegments - 0.5) * height;
@@ -558,7 +561,6 @@ export function cylinder(options = {}) {
   const uvs = [];
   const indices = [];
 
-  let index = 0;
   const halfHeight = height / 2;
 
   // Generate body

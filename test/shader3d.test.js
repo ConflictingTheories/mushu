@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import shader3d, { defaultVertex, defaultFragment, pbrShader } from '../src/core/shader3d.js';
+import { defaultVertex, defaultFragment, pbrShader } from '../src/core/shader3d.js';
 
 describe('shader3d exports', () => {
   it('default shaders are strings', () => {

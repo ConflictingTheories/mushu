@@ -46,7 +46,6 @@ export function texture(source, options = {}) {
   } = options;
 
   let tex = null;
-  let loaded = false;
 
   return {
     name: `texture:${name}`,
@@ -92,7 +91,7 @@ export function texture(source, options = {}) {
             gl.texParameterf(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(anisotropy, max));
           }
 
-          loaded = true;
+          // Texture loaded successfully
           ctx.state[`tex_${name}`] = { texture: tex, unit, width: img.width, height: img.height };
         };
         img.onerror = () => {
@@ -107,7 +106,7 @@ export function texture(source, options = {}) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[minFilter]);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl[magFilter]);
         if (generateMipmaps) gl.generateMipmap(gl.TEXTURE_2D);
-        loaded = true;
+        // Texture loaded from element
         ctx.state[`tex_${name}`] = { texture: tex, unit, width: source.width, height: source.height };
       }
     },
@@ -461,7 +460,7 @@ export function cubeMap(sources, options = {}) {
       gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
 
       // Placeholder
-      faces.forEach((face, i) => {
+      faces.forEach((face, _i) => {
         gl.texImage2D(gl[face], 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
           new Uint8Array([128, 128, 128, 255]));
       });

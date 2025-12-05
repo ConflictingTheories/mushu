@@ -8,75 +8,35 @@
   to = "/examples/index.html"
   status = 200
 
-# Serve all static files from src directory
+# Catch-all for SPA fallback (must be last)
 [[redirects]]
-  from = "/src/*"
-  to = "/src/:splat"
+  from = "/*"
+  to = "/examples/index.html"
   status = 200
-
-[[redirects]]
-  from = "/src/core/*"
-  to = "/src/core/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/src/glsl/*"
-  to = "/src/glsl/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/src/gpu/*"
-  to = "/src/gpu/:splat"
-  status = 200
-
-# Serve examples
-[[redirects]]
-  from = "/examples/*"
-  to = "/examples/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/examples/3d/*"
-  to = "/examples/3d/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/examples/glsl/*"
-  to = "/examples/glsl/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/examples/gpu/*"
-  to = "/examples/gpu/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/examples/flow-glsl/*"
-  to = "/examples/flow-glsl/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/examples/flow-gpu/*"
-  to = "/examples/flow-gpu/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/examples/boilerplate/*"
-  to = "/examples/boilerplate/:splat"
-  status = 200
+  conditions = { "Not" = [{ "Path" = ["/src/*", "/examples/*"] }] }
 
 # JavaScript MIME type headers
 [[headers]]
   for = "/*.js"
   [headers.values]
-    Content-Type = "application/javascript"
+    Content-Type = "application/javascript; charset=utf-8"
 
 [[headers]]
   for = "/src/*.js"
   [headers.values]
-    Content-Type = "application/javascript"
+    Content-Type = "application/javascript; charset=utf-8"
 
 [[headers]]
   for = "/src/**/*.js"
   [headers.values]
-    Content-Type = "application/javascript"
+    Content-Type = "application/javascript; charset=utf-8"
+
+[[headers]]
+  for = "/examples/*.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+
+[[headers]]
+  for = "/examples/**/*.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mushu — WebGPU Smoke Demo</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #000; overflow: hidden; }
+    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
+            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
+    .info code { color: #aabbcc; }
+  </style>
+</head>
+<body>
+<div class="info">💨 <code>gpu(compute, render)</code> Smoke | WebGPU Function API</div>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { gpu } from '../src/gpu/yoGPU.js';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WebGPU Procedural Volumetric Smoke - Matching GLSL quality
+// 
+// Features:
+//   • Procedural FBM noise for realistic smoke billowing
+//   • Beer-Lambert light scattering
+//   • Multiple smoke columns with natural turbulence
+//   • Smoke rises naturally from bottom of screen
+// ═══════════════════════════════════════════════════════════════════════════
+
+gpu(
+  // No compute shader needed - purely procedural
+  null,
+  
+  // Render shader - Procedural volumetric smoke
+  /* wgsl */`
+    fn hash(p: vec2<f32>) -> f32 {
+      var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+      p3 = p3 + dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+    
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+      );
+    }
+    
+    fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+      var value = 0.0;
+      var amplitude = 0.5;
+      var pos = p;
+      let rot = mat2x2<f32>(0.8, 0.6, -0.6, 0.8);
+      for (var i = 0; i < 6; i++) {
+        if (i >= octaves) { break; }
+        value += amplitude * noise(pos);
+        pos = rot * pos * 2.0;
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
+    fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
+      // Flip Y so smoke rises from bottom to top
+      let y = 1.0 - uv.y;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Smoke Shape - procedural columns rising from bottom
+      // ─────────────────────────────────────────────────────────────────
+      
+      var smoke = 0.0;
+      
+      // Multiple smoke columns
+      for (var i = 0; i < 4; i++) {
+        let fi = f32(i);
+        let xOff = 0.15 + fi * 0.22;
+        let phase = fi * 2.1;
+        
+        // Column sways with turbulent motion
+        let sway = fbm(vec2<f32>(y * 2.0 + phase, u.time * 0.5 + fi), 4) - 0.5;
+        let dx = uv.x - xOff + sway * 0.12 * y;
+        
+        // Smoke expands as it rises
+        let width = 0.04 + y * 0.15;
+        let column = exp(-dx * dx / (width * width));
+        
+        // Vertical density - fades at top
+        let yShape = pow(y, 0.5) * exp(-y * 1.2);
+        
+        // Billowing effect
+        let billow = 0.6 + 0.4 * fbm(vec2<f32>(uv.x * 8.0 + phase, y * 6.0 - u.time * 1.5), 4);
+        
+        smoke += column * yShape * billow * 0.5;
+      }
+      
+      // Add wispy detail throughout
+      let detail = fbm(vec2<f32>(uv.x * 12.0, y * 8.0 - u.time * 1.0), 5);
+      smoke *= 0.6 + detail * 0.6;
+      
+      // Base emission
+      let baseSmoke = exp(-y * 3.0) * 0.3;
+      let baseNoise = fbm(vec2<f32>(uv.x * 8.0, u.time * 0.8), 3);
+      smoke += baseSmoke * (0.5 + baseNoise * 0.5);
+      
+      smoke = clamp(smoke, 0.0, 1.5);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Beer-Lambert Light Scattering
+      // ─────────────────────────────────────────────────────────────────
+      
+      let absorption = 2.0;
+      let transmittance = exp(-smoke * absorption);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Smoke Color with Lighting
+      // ─────────────────────────────────────────────────────────────────
+      
+      let coolSmoke = vec3<f32>(0.75, 0.78, 0.85);
+      let warmSmoke = vec3<f32>(0.88, 0.85, 0.80);
+      var smokeColor = mix(coolSmoke, warmSmoke, y * 0.5);
+      
+      // Darker at higher density
+      let denseSmoke = vec3<f32>(0.25, 0.26, 0.30);
+      smokeColor = mix(smokeColor, denseSmoke, smoke * 0.4);
+      
+      // Top-down lighting gradient
+      let lighting = 0.5 + y * 0.5;
+      smokeColor *= lighting;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Background
+      // ─────────────────────────────────────────────────────────────────
+      
+      let bgTop = vec3<f32>(0.02, 0.025, 0.04);
+      let bgBottom = vec3<f32>(0.04, 0.04, 0.05);
+      var bg = mix(bgTop, bgBottom, y);
+      
+      // Vignette
+      let vignette = 1.0 - length(uv - 0.5) * 0.3;
+      bg *= vignette;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Final Compositing
+      // ─────────────────────────────────────────────────────────────────
+      
+      var col = mix(smokeColor, bg, transmittance);
+      
+      // Atmospheric haze
+      col = mix(col, vec3<f32>(0.30, 0.35, 0.45), (1.0 - transmittance) * 0.08);
+      
+      // Tone mapping
+      col = col / (col + 0.5);
+      col = pow(col, vec3<f32>(0.95));
+      
+      return vec4<f32>(col, 1.0);
+    }
+  `,
+  { canvas: document.getElementById('c'), scale: 0.5 }
+);
+
+// FPS Counter
+(function() {
+  const fpsDiv = document.createElement('div');
+  fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
+  document.body.appendChild(fpsDiv);
+  let frames = 0, lastTime = performance.now();
+  function updateFPS() {
+    frames++;
+    const now = performance.now();
+    if (now - lastTime >= 500) {
+      fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
+      frames = 0; lastTime = now;
+    }
+    requestAnimationFrame(updateFPS);
+  }
+  updateFPS();
+})();
+
+console.log('%c 💨 mushu WebGPU Smoke Ready ', 'background: linear-gradient(90deg, #556, #889); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mushu — WebGPU Fire Demo</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #000; overflow: hidden; }
+    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
+            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
+    .info code { color: #ff6622; }
+  </style>
+</head>
+<body>
+<div class="info">🔥 <code>gpu(compute, render)</code> Fire | WebGPU Function API</div>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { gpu } from '../src/gpu/yoGPU.js';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WebGPU Procedural Fire - Matching GLSL quality
+// 
+// Features:
+//   • Procedural FBM noise for realistic flames
+//   • Blackbody radiation coloring
+//   • Fire rises naturally from bottom of screen
+//   • No simulation state - pure procedural generation
+// ═══════════════════════════════════════════════════════════════════════════
+
+gpu(
+  // No compute shader needed - purely procedural
+  null,
+  
+  // Render shader - Procedural fire with blackbody coloring
+  /* wgsl */`
+    fn hash(p: vec2<f32>) -> f32 {
+      var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+      p3 = p3 + dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+    
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+      );
+    }
+    
+    fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+      var value = 0.0;
+      var amplitude = 0.5;
+      var pos = p;
+      let rot = mat2x2<f32>(0.8, 0.6, -0.6, 0.8);
+      for (var i = 0; i < 6; i++) {
+        if (i >= octaves) { break; }
+        value += amplitude * noise(pos);
+        pos = rot * pos * 2.0;
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
+    fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
+      // Flip Y so fire rises from bottom to top
+      let y = 1.0 - uv.y;
+      var col = vec3<f32>(0.0);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Fire Shape - procedural flames rising from bottom
+      // ─────────────────────────────────────────────────────────────────
+      
+      // Create multiple flame columns with different phases
+      var fire = 0.0;
+      
+      for (var i = 0; i < 5; i++) {
+        let fi = f32(i);
+        let xOff = fi * 0.2 + 0.1;
+        let phase = fi * 1.7;
+        
+        // Flame column position with turbulence
+        let turbX = fbm(vec2<f32>(uv.x * 3.0 + phase, u.time * 2.0 + fi), 4) - 0.5;
+        let dx = uv.x - xOff + turbX * 0.15;
+        
+        // Flame shape - narrow at top, wide at bottom
+        let width = 0.08 + y * 0.12;
+        let flame = exp(-dx * dx / (width * width));
+        
+        // Vertical intensity - strongest at bottom, fading upward
+        let yShape = pow(y, 0.3) * exp(-y * 2.5);
+        
+        // Flickering with time
+        let flicker = 0.7 + 0.3 * fbm(vec2<f32>(uv.x * 8.0 + phase, u.time * 4.0 - y * 3.0), 3);
+        
+        fire += flame * yShape * flicker * 0.6;
+      }
+      
+      // Add base fire glow across the bottom
+      let baseGlow = exp(-y * 4.0) * 0.8;
+      let baseNoise = fbm(vec2<f32>(uv.x * 15.0, u.time * 3.0), 4);
+      fire += baseGlow * (0.6 + baseNoise * 0.4);
+      
+      // Add turbulent detail
+      let detail = fbm(vec2<f32>(uv.x * 20.0, y * 10.0 - u.time * 6.0), 5);
+      fire *= 0.7 + detail * 0.5;
+      
+      fire = clamp(fire, 0.0, 3.0);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Blackbody Radiation Color Ramp
+      // ─────────────────────────────────────────────────────────────────
+      
+      // Deep red base (~1000K)
+      col += vec3<f32>(0.5, 0.05, 0.0) * fire * 0.8;
+      
+      // Red-orange (~1500K)
+      col += vec3<f32>(1.0, 0.25, 0.0) * pow(fire, 1.3) * 1.2;
+      
+      // Orange (~2000K)
+      col += vec3<f32>(1.0, 0.55, 0.1) * pow(fire, 1.8) * 1.0;
+      
+      // Yellow (~2500K)
+      col += vec3<f32>(1.0, 0.85, 0.3) * pow(fire, 2.5) * 0.8;
+      
+      // White-hot core (~4000K+)
+      col += vec3<f32>(1.0, 1.0, 0.9) * pow(fire, 4.0) * 0.6;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Tone Mapping
+      // ─────────────────────────────────────────────────────────────────
+      
+      col = col / (col + 0.5);
+      col = pow(col, vec3<f32>(0.9));
+      
+      return vec4<f32>(col, 1.0);
+    }
+  `,
+  { canvas: document.getElementById('c'), scale: 0.5 }
+);
+
+// FPS Counter
+(function() {
+  const fpsDiv = document.createElement('div');
+  fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
+  document.body.appendChild(fpsDiv);
+  let frames = 0, lastTime = performance.now();
+  function updateFPS() {
+    frames++;
+    const now = performance.now();
+    if (now - lastTime >= 500) {
+      fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
+      frames = 0; lastTime = now;
+    }
+    requestAnimationFrame(updateFPS);
+  }
+  updateFPS();
+})();
+
+console.log('%c 🔥 mushu WebGPU Fire Ready ', 'background: linear-gradient(90deg, #ff4400, #ff8800); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+</script>
+</body>
+</html>

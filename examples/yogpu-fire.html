@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mushu — YOGPU Fire Demo</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #000; overflow: hidden; }
+    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
+            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
+    .info code { color: #ff6622; }
+  </style>
+</head>
+<body>
+<div class="info">🔥 <code>yoGPU().display().go()</code> Fire | WebGPU Fluent API</div>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { yoGPU } from '../src/gpu/yoGPU.js';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// YOGPU Fire - Procedural Approach (matches the working GLSL demo)
+// 
+// This uses purely procedural noise - no broken simulation!
+// Fire rises from the bottom, flickering with turbulent noise
+// 
+// Move mouse to interact with flames!
+// ═══════════════════════════════════════════════════════════════════════════
+
+yoGPU(document.getElementById('c'))
+  .display(`
+    // ─────────────────────────────────────────────────────────────────────
+    // Noise Functions
+    // ─────────────────────────────────────────────────────────────────────
+    
+    fn hash(p: vec2<f32>) -> f32 {
+      var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+      p3 = p3 + dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+    
+    fn noise(p: vec2<f32>) -> f32 {
+      let i = floor(p);
+      let f = fract(p);
+      let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+      return mix(
+        mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+      );
+    }
+    
+    fn fbm(pp: vec2<f32>, octaves: i32) -> f32 {
+      var value = 0.0;
+      var amplitude = 0.5;
+      var p = pp;
+      for (var i = 0; i < 8; i++) {
+        if (i >= octaves) { break; }
+        value += amplitude * noise(p);
+        p = p * 2.0;
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
+    @fragment fn main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+      let aspect = resolution.x / resolution.y;
+      var p = uv - 0.5;
+      p.x *= aspect;
+      
+      // Fire comes from bottom (uv.y = 1 is bottom in our display coords)
+      // Flip Y so fire rises upward
+      let flippedY = 1.0 - uv.y;
+      
+      // Fire base shape - stronger at bottom, tapers up
+      var fireShape = flippedY;
+      fireShape *= smoothstep(0.5, 0.0, abs(p.x) - 0.15 + flippedY * 0.3);
+      
+      // Animated turbulence that rises upward
+      let t = time;
+      var turbUV = vec2<f32>(p.x * 3.0, -p.y * 2.0 - t * 1.5);
+      let turb = fbm(turbUV * 4.0, 5);
+      let turb2 = fbm(turbUV * 8.0 + 100.0, 4);
+      
+      // Distort the fire shape
+      var distortedShape = fireShape;
+      distortedShape += (turb - 0.5) * 0.8 * fireShape;
+      distortedShape += (turb2 - 0.5) * 0.3 * fireShape;
+      
+      // Rising wisps
+      let wisps = noise(vec2<f32>(p.x * 20.0, -p.y * 5.0 - t * 3.0));
+      distortedShape += wisps * 0.3 * flippedY * smoothstep(0.3, 0.0, abs(p.x));
+      
+      // Mouse interaction
+      var mouseP = vec2<f32>(mouse.x - 0.5, (1.0 - mouse.y) - 0.5);
+      mouseP.x *= aspect;
+      let mouseDist = length(p - mouseP);
+      let mouseInfluence = exp(-mouseDist * 5.0) * 0.5;
+      distortedShape += mouseInfluence;
+      
+      // Clamp intensity
+      let intensity = clamp(distortedShape, 0.0, 1.0);
+      
+      // Fire color gradient (blackbody-inspired)
+      var color = vec3<f32>(0.0);
+      
+      // White-hot core
+      color += vec3<f32>(1.0, 1.0, 0.95) * pow(intensity, 4.0) * 3.0;
+      // Bright yellow
+      color += vec3<f32>(1.0, 0.9, 0.5) * pow(intensity, 2.5) * 2.0;
+      // Orange
+      color += vec3<f32>(1.0, 0.5, 0.1) * pow(intensity, 1.5) * 1.5;
+      // Red
+      color += vec3<f32>(0.9, 0.2, 0.05) * pow(intensity, 0.8) * 1.0;
+      // Deep red edges
+      color += vec3<f32>(0.4, 0.05, 0.0) * pow(intensity, 0.4) * 0.5;
+      
+      // Flickering
+      let flicker = noise(vec2<f32>(t * 10.0, 0.0)) * 0.1 + 0.95;
+      color *= flicker;
+      
+      // Tone mapping
+      color = 1.0 - exp(-color * 0.8);
+      color = pow(color, vec3<f32>(0.9));
+      
+      // Subtle vignette
+      let vignette = 1.0 - length(uv - 0.5) * 0.3;
+      color *= vignette;
+      
+      return vec4<f32>(color, 1.0);
+    }
+  `)
+  .go();
+
+// FPS Counter
+(function() {
+  const fpsDiv = document.createElement('div');
+  fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
+  document.body.appendChild(fpsDiv);
+  let frames = 0, lastTime = performance.now();
+  function updateFPS() {
+    frames++;
+    const now = performance.now();
+    if (now - lastTime >= 500) {
+      fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
+      frames = 0; lastTime = now;
+    }
+    requestAnimationFrame(updateFPS);
+  }
+  updateFPS();
+})();
+
+console.log('%c 🔥 mushu YOGPU Fire Ready ', 'background: linear-gradient(90deg, #ff4400, #ff8800); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Move mouse to interact with flames!');
+</script>
+</body>
+</html>

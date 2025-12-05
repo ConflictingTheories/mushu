@@ -8,7 +8,7 @@
 <body>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { yoGPU } from '../src/index.js';
+import { gpu } from '../src/gpu/yoGPU.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // WebGPU Plasma Effect
@@ -16,22 +16,18 @@ import { yoGPU } from '../src/index.js';
 // Move mouse to influence the colors!
 // ═══════════════════════════════════════════════════════════════════════════
 
-yoGPU(document.getElementById('c'))
-  .display(`
-    @group(0) @binding(0) var<uniform> time: f32;
-    @group(0) @binding(1) var<uniform> resolution: vec2f;
-    @group(0) @binding(2) var<uniform> mouse: vec2f;
-    @group(0) @binding(3) var<uniform> mouseDown: f32;
-
-    @fragment
-    fn main(@builtin(position) pos: vec4f) -> @location(0) vec4f {
-      let uv = pos.xy / resolution;
-      let p = (pos.xy - resolution * 0.5) / resolution.y;
-      let t = time * 0.5;
+gpu(
+  // Compute shader - Store plasma values in state
+  /* wgsl */`
+    fn compute(C: vec2<i32>, uv: vec2<f32>) {
+      // Aspect-correct coordinates
+      let aspect = u.width / u.height;
+      let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+      let t = u.time * 0.5;
       
       // Mouse influence
-      let mouseInfluence = (mouse - 0.5) * 0.4;
-      var q = p + mouseInfluence;
+      let mouseInfluence = (vec2<f32>(u.mouseX, u.mouseY) - 0.5) * 0.4;
+      let q = p + mouseInfluence;
       
       // Classic plasma patterns
       var v = 0.0;
@@ -52,28 +48,44 @@ yoGPU(document.getElementById('c'))
       
       v *= 0.25;
       
+      // Store v and some mouse-related values for rendering
+      let glow = select(0.0, 1.0, u.mouseDown > 0.5);
+      
+      textureStore(dst, C, vec4<f32>(v, u.mouseX, u.mouseY, glow));
+    }
+  `,
+  
+  // Render shader - Plasma coloring
+  /* wgsl */`
+    fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
+      let v = data.r;
+      let mouseX = data.g;
+      let mouseY = data.b;
+      let glow = data.a;
+      
       // Rainbow color palette
       let r = sin(v * 3.14159) * 0.5 + 0.5;
       let g = sin(v * 3.14159 + 2.094) * 0.5 + 0.5;
       let b = sin(v * 3.14159 + 4.188) * 0.5 + 0.5;
       
-      var col = vec3f(r, g, b);
+      var col = vec3<f32>(r, g, b);
       
       // Glow effect when mouse is pressed
-      if (mouseDown > 0.5) {
-        let mousePx = mouse * resolution;
-        let d = length(pos.xy - mousePx) / resolution.y;
-        col += vec3f(1.0, 0.8, 0.5) * exp(-d * 4.0) * 1.5;
+      if (glow > 0.5) {
+        let mousePos = vec2<f32>(mouseX, mouseY);
+        let d = length(uv - mousePos);
+        col += vec3<f32>(1.0, 0.8, 0.5) * exp(-d * 4.0) * 1.5;
       }
       
       // Slight vignette
       let vignette = 1.0 - length(uv - 0.5) * 0.4;
       col *= vignette;
       
-      return vec4f(col, 1.0);
+      return vec4<f32>(col, 1.0);
     }
-  `)
-  .go();
+  `,
+  { canvas: document.getElementById('c'), scale: 1.0 }
+);
 
 console.log('%c 🌈 mushu WebGPU Plasma Ready ', 'background: linear-gradient(90deg, #ff00ff, #00ffff); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
 console.log('Move mouse to influence colors. Click for glow effect!');

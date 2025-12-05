@@ -11,6 +11,7 @@
       --text: #e0e0e0;
       --accent: #ff6b9d;
       --accent2: #00d4aa;
+      --accent3: #ffaa00;
     }
     * { box-sizing: border-box; }
     body {
@@ -44,6 +45,12 @@
       border-bottom: 1px solid var(--border);
       padding-bottom: 0.5rem;
       margin-bottom: 1.5rem;
+    }
+    .section h2.yo {
+      color: var(--accent3);
+    }
+    .section h2.gpu {
+      color: var(--accent2);
     }
     .grid {
       display: grid;
@@ -99,6 +106,10 @@
       background: rgba(0,212,170,0.15);
       color: var(--accent2);
     }
+    .tag.yo {
+      background: rgba(255,170,0,0.15);
+      color: var(--accent3);
+    }
     footer {
       text-align: center;
       margin-top: 4rem;
@@ -115,6 +126,39 @@
   <h1>🍡 mushu</h1>
   <p class="subtitle">Simple WebGL2 & WebGPU creative coding library</p>
   
+  <div class="section">
+    <h2 class="yo">🎯 YO Demos (WebGL2 Simulation)</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag yo">YO</span>
+        <h3>🔥 YO Fire</h3>
+        <p>Multi-octave fire simulation with fuel combustion and rising heat dynamics.</p>
+        <a href="yo-fire.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag yo">YO</span>
+        <h3>💨 YO Smoke</h3>
+        <p>Volumetric smoke with turbulent vorticity and realistic dissipation.</p>
+        <a href="yo-smoke.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag yo">YO</span>
+        <h3>🌊 YO Water</h3>
+        <p>Pure water ripples using the wave equation with Fresnel reflections.</p>
+        <a href="yo-water.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag yo">YO</span>
+        <h3>🌈 YO Plasma</h3>
+        <p>Classic demo-scene plasma with rainbow colors and mouse interaction.</p>
+        <a href="yo-plasma.html">Launch Demo →</a>
+      </div>
+    </div>
+  </div>
+
   <div class="section">
     <h2>🎨 WebGL2 Demos</h2>
     <div class="grid">
@@ -156,7 +200,7 @@
   </div>
   
   <div class="section">
-    <h2>⚡ WebGPU Demos</h2>
+    <h2 class="gpu">⚡ WebGPU Demos</h2>
     <div class="grid">
       <div class="card">
         <span class="tag gpu">WebGPU</span>

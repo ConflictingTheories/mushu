@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>mushu — Realistic Fire Demo</title>
+  <title>mushu — YO Fire Demo</title>
   <style>body{margin:0;overflow:hidden;background:#000}</style>
 </head>
 <body>
@@ -11,16 +11,14 @@
 import { yo, simulation, fps } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Realistic Fire Simulation
+// YO Fire Simulation (WebGL2)
 // Features: Fuel consumption, heat diffusion, turbulence, smoke generation
 // Hold & drag mouse to add fuel and ignite flames!
 // ═══════════════════════════════════════════════════════════════════════════
 
 const sim = simulation({ scale: 0.5, iterations: 2 });
 
-// Simulation: Physics-based fire with fuel/heat/smoke model
 sim.simulate(`
-  // Pseudo-random for turbulence
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
@@ -43,68 +41,50 @@ sim.simulate(`
     float fuel = data.r;
     float heat = data.g;
     float smoke = data.b;
-    float velocity = data.a;
     
-    // Sample neighbors for diffusion and advection
     vec4 up = sample(vec2(0, 1));
     vec4 down = sample(vec2(0, -1));
     vec4 left = sample(vec2(-1, 0));
     vec4 right = sample(vec2(1, 0));
     
-    // Turbulence-based offset for more chaotic fire
     float turb = noise(uv * 20.0 + time * 2.0) * 2.0 - 1.0;
     vec4 turbLeft = sample(vec2(-1.0 + turb * 0.5, 0));
     vec4 turbRight = sample(vec2(1.0 + turb * 0.5, 0));
     
-    // Heat diffusion (spreads laterally)
     float diffusion = 0.15;
     heat += diffusion * (up.g + down.g + left.g + right.g - 4.0 * heat);
     
-    // Strong buoyancy - heat rises aggressively
-    float buoyancy = 0.25 + heat * 0.1; // More heat = faster rise
+    float buoyancy = 0.25 + heat * 0.1;
     heat = mix(heat, down.g, buoyancy);
-    
-    // Lateral turbulent mixing
     heat = mix(heat, (turbLeft.g + turbRight.g) * 0.5, 0.08);
     
-    // Fuel rises slower but still moves up
     fuel = mix(fuel, down.r, 0.1);
     fuel += 0.03 * (up.r + down.r + left.r + right.r - 4.0 * fuel);
     
-    // Combustion: fuel + heat = more heat + smoke
     float ignitionTemp = 0.3;
-    float combustion = 0.0;
     if (heat > ignitionTemp && fuel > 0.01) {
-      combustion = min(fuel, (heat - ignitionTemp) * 0.8);
-      heat += combustion * 1.2;   // Combustion releases heat
-      fuel -= combustion;          // Fuel is consumed
-      smoke += combustion * 0.6;   // Smoke is produced
+      float combustion = min(fuel, (heat - ignitionTemp) * 0.8);
+      heat += combustion * 1.2;
+      fuel -= combustion;
+      smoke += combustion * 0.6;
     }
     
-    // Decay rates
     fuel *= 0.985;
-    heat *= 0.975;  // Heat dissipates
-    smoke *= 0.995; // Smoke lingers
+    heat *= 0.975;
+    smoke *= 0.995;
     
-    // Smoke rises and spreads
     smoke = mix(smoke, down.b, 0.08);
     smoke += 0.02 * (left.b + right.b - 2.0 * smoke);
     
-    // Mouse interaction - add fuel and heat
-    vec2 mouseUV = mouse;
-    float d = length(uv - mouseUV);
+    float d = length(uv - mouse);
     if (mouseDown > 0.5 && d < 0.1) {
-      float intensity = (1.0 - d / 0.1);
-      intensity *= intensity; // Quadratic falloff
+      float intensity = pow(1.0 - d / 0.1, 2.0);
       fuel += intensity * 6.0;
       heat += intensity * 3.0;
     }
     
-    // Fire source at bottom with animated pattern
     if (uv.y < 0.12) {
       float edge = 1.0 - uv.y / 0.12;
-      
-      // Multiple frequency patterns for natural look
       float p1 = sin(uv.x * 25.0 + time * 3.0) * 0.5 + 0.5;
       float p2 = sin(uv.x * 8.0 - time * 1.5) * 0.5 + 0.5;
       float p3 = noise(vec2(uv.x * 50.0, time * 5.0));
@@ -117,23 +97,15 @@ sim.simulate(`
       }
     }
     
-    // Random sparks/embers
-    float sparkChance = noise(vec2(C.x * 0.1, time * 10.0));
-    if (sparkChance > 0.998 && uv.y < 0.3) {
-      heat += 3.0;
-      fuel += 1.0;
-    }
-    
     O = vec4(
       clamp(fuel, 0.0, 20.0),
       clamp(heat, 0.0, 20.0),
       clamp(smoke, 0.0, 15.0),
-      clamp(velocity, -50.0, 50.0)
+      1.0
     );
   }
 `);
 
-// Display: Physically-inspired fire coloring
 sim.display(`
   void mainImage(out vec4 O, vec2 C) {
     vec2 uv = C / resolution;
@@ -145,44 +117,21 @@ sim.display(`
     
     vec3 color = vec3(0.0);
     
-    // Fire color ramp based on blackbody radiation approximation
-    // Very hot: white/blue-white
     color += vec3(1.0, 1.0, 1.0) * pow(heat, 4.0) * 3.0;
-    
-    // Hot: bright yellow
     color += vec3(1.0, 0.95, 0.7) * pow(heat, 3.0) * 2.5;
-    
-    // Medium: orange
     color += vec3(1.0, 0.6, 0.1) * pow(heat, 2.0) * 2.0;
-    
-    // Cooler: red
     color += vec3(1.0, 0.25, 0.0) * pow(heat, 1.2) * 1.5;
-    
-    // Deep red at edges
     color += vec3(0.6, 0.05, 0.0) * pow(heat, 0.6) * 0.8;
     
-    // Glowing embers from unburned fuel
     float embers = fuel * (1.0 - heat * 0.15);
     color += vec3(1.0, 0.3, 0.0) * embers * 0.5;
     
-    // Smoke - dark with slight blue tint (atmospheric scattering)
     vec3 smokeColor = vec3(0.03, 0.03, 0.04);
     float smokeOpacity = 1.0 - exp(-smoke * 0.3);
     color = mix(color, smokeColor, smokeOpacity * 0.85);
     
-    // Subtle ambient glow from fire below
-    float ambientGlow = heat * 0.05;
-    color += vec3(0.2, 0.05, 0.0) * ambientGlow;
-    
-    // HDR tone mapping
     color = 1.0 - exp(-color * 0.6);
-    
-    // Slight contrast boost
     color = pow(color, vec3(0.92));
-    
-    // Add subtle noise for organic feel
-    float n = fract(sin(dot(C, vec2(12.9898, 78.233))) * 43758.5453);
-    color += (n - 0.5) * 0.015;
     
     O = vec4(color, 1.0);
   }
@@ -194,7 +143,7 @@ yo(document.getElementById('c'))
   .use(fps())
   .go();
 
-console.log('%c 🔥 mushu Fire Ready ', 'background: linear-gradient(90deg, #ff4500, #ff8c00); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('%c 🔥 mushu YO Fire Ready ', 'background: linear-gradient(90deg, #ff4500, #ff8c00); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
 console.log('Hold & drag mouse to ignite flames!');
 </script>
 </body>

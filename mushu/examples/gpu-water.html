@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mushu — WebGPU Water Demo</title>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { gpu } from '../src/gpu/yoGPU.js';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WebGPU Water Ripple Simulation
+// Wave equation with damping on GPU compute shaders
+// Click and drag to create ripples!
+// ═══════════════════════════════════════════════════════════════════════════
+
+gpu(
+  // Compute shader - Wave equation physics
+  /* wgsl */`
+    fn hash(p: vec2<f32>) -> f32 {
+      return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+    }
+
+    fn compute(C: vec2<i32>, uv: vec2<f32>) {
+      var data = sample(C);
+      
+      // Sample neighbors
+      let up = sample(C + vec2<i32>(0, 1));
+      let down = sample(C + vec2<i32>(0, -1));
+      let left = sample(C + vec2<i32>(-1, 0));
+      let right = sample(C + vec2<i32>(1, 0));
+      
+      // R = height, G = velocity
+      var height = data.r;
+      var velocity = data.g;
+      
+      // Wave equation with neighbors
+      let laplacian = (up.r + down.r + left.r + right.r) * 0.25 - height;
+      velocity += laplacian * 0.4;
+      
+      // Damping
+      velocity *= 0.995;
+      height += velocity;
+      
+      // Mouse interaction - flip Y to match screen
+      let mousePos = vec2<f32>(u.mouseX, u.mouseY);
+      let screenUV = vec2<f32>(uv.x, 1.0 - uv.y);
+      let distToMouse = length(screenUV - mousePos);
+      
+      if (u.mouseDown > 0.5 && distToMouse < 0.05) {
+        let intensity = (1.0 - distToMouse / 0.05) * 0.4;
+        height += intensity;
+      }
+      
+      // Random raindrops
+      let dropChance = hash(vec2<f32>(f32(C.x) + u.time * 100.0, f32(C.y) + u.time * 73.0));
+      if (dropChance > 0.9999) {
+        height += 0.25;
+      }
+      
+      textureStore(dst, C, vec4<f32>(height, velocity, 0.0, 1.0));
+    }
+  `,
+  
+  // Render shader - Water visualization
+  /* wgsl */`
+    fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
+      let height = data.r;
+      let velocity = data.g;
+      
+      // Water base colors
+      let deepColor = vec3<f32>(0.02, 0.08, 0.18);
+      let shallowColor = vec3<f32>(0.1, 0.35, 0.5);
+      
+      // Calculate normal from height (approximate with velocity)
+      let normalStrength = velocity * 8.0;
+      var normal = normalize(vec3<f32>(normalStrength, normalStrength, 1.0));
+      
+      // View and light direction
+      let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+      let lightDir = normalize(vec3<f32>(0.3, 0.5, 0.8));
+      
+      // Fresnel effect
+      let fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+      
+      // Specular highlight
+      let halfDir = normalize(lightDir + viewDir);
+      let specular = pow(max(dot(normal, halfDir), 0.0), 64.0) * 0.8;
+      
+      // Depth factor based on height
+      let depthFactor = 0.5 + height * 0.3;
+      
+      // Mix colors
+      var col = mix(deepColor, shallowColor, depthFactor);
+      col = mix(col, vec3<f32>(0.7, 0.85, 0.95), fresnel * 0.5);
+      col += vec3<f32>(1.0) * specular;
+      
+      // Subtle caustics pattern
+      let causticX = sin(uv.x * 40.0 + height * 10.0) * 0.5 + 0.5;
+      let causticY = sin(uv.y * 40.0 + height * 8.0) * 0.5 + 0.5;
+      col += vec3<f32>(0.1, 0.15, 0.2) * causticX * causticY * 0.15;
+      
+      return vec4<f32>(col, 1.0);
+    }
+  `,
+  { canvas: document.getElementById('c'), scale: 0.5 }
+);
+
+console.log('%c 🌊 mushu WebGPU Water Ready ', 'background: linear-gradient(90deg, #0077be, #00bcd4); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Click and drag to create ripples!');
+</script>
+</body>
+</html>

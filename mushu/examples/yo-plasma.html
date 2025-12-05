@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>mushu — Plasma Demo</title>
+  <title>mushu — YO Plasma Demo</title>
   <style>body{margin:0;overflow:hidden;background:#000}</style>
 </head>
 <body>
@@ -11,8 +11,9 @@
 import { yo, shader, fps } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Classic Plasma Effect
-// Move mouse to influence the colors, click for glow!
+// YO Plasma Effect (WebGL2)
+// Classic demo-scene plasma with mouse interaction
+// Move mouse to influence the colors!
 // ═══════════════════════════════════════════════════════════════════════════
 
 yo(document.getElementById('c'))
@@ -63,7 +64,7 @@ yo(document.getElementById('c'))
   .use(fps())
   .go();
 
-console.log('%c 🌈 mushu Plasma Ready ', 'background: linear-gradient(90deg, #ff00ff, #00ffff); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('%c 🌈 mushu YO Plasma Ready ', 'background: linear-gradient(90deg, #ff00ff, #00ffff); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
 console.log('Move mouse to influence colors. Click for glow effect!');
 </script>
 </body>

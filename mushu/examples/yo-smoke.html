@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mushu — YO Smoke Demo</title>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { yo, simulation, fps } from '../src/core/yo.js';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// YO Smoke Simulation (WebGL2)
+// Volumetric smoke with turbulence and dissipation
+// Click and drag to add smoke!
+// ═══════════════════════════════════════════════════════════════════════════
+
+const sim = simulation({ scale: 0.5, iterations: 2 });
+
+sim.simulate(`
+  float hash(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+  }
+  
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash(i), hash(i + vec2(1,0)), f.x),
+      mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
+      f.y
+    );
+  }
+  
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 4; i++) {
+      v += a * noise(p);
+      p *= 2.0;
+      a *= 0.5;
+    }
+    return v;
+  }
+
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    vec4 data = sample(vec2(0));
+    
+    vec4 up = sample(vec2(0, 1));
+    vec4 down = sample(vec2(0, -1));
+    vec4 left = sample(vec2(-1, 0));
+    vec4 right = sample(vec2(1, 0));
+    
+    // R = density, GB = velocity
+    float density = data.r;
+    vec2 vel = data.gb - 0.5;
+    
+    // Turbulence
+    float turb = fbm(uv * 8.0 + time * 0.3) - 0.5;
+    vel.x += turb * 0.015;
+    
+    // Buoyancy
+    vel.y += density * 0.025;
+    
+    // Diffusion
+    float neighborDensity = (up.r + down.r + left.r + right.r) * 0.25;
+    density = mix(density, neighborDensity, 0.12);
+    
+    // Advection
+    vec2 advectUV = uv - vel * 0.015;
+    vec4 advected = texture(backbuffer, advectUV);
+    density = mix(density, advected.r, 0.7);
+    
+    // Dissipation
+    density *= 0.994;
+    
+    // Mouse emission
+    float d = length(uv - mouse);
+    if (mouseDown > 0.5 && d < 0.08) {
+      float intensity = pow(1.0 - d / 0.08, 2.0);
+      density += intensity * 0.5;
+    }
+    
+    // Auto emitters at bottom
+    if (uv.y < 0.1) {
+      float edge = 1.0 - uv.y / 0.1;
+      float emitterNoise = noise(vec2(uv.x * 15.0, time * 2.0));
+      if (emitterNoise > 0.5) {
+        density += edge * (emitterNoise - 0.5) * 0.12;
+      }
+    }
+    
+    density = clamp(density, 0.0, 1.5);
+    vel *= 0.97;
+    
+    O = vec4(density, vel + 0.5, 1.0);
+  }
+`);
+
+sim.display(`
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    vec4 data = texture(backbuffer, uv);
+    float density = data.r;
+    
+    vec3 smokeColor = mix(
+      vec3(0.08, 0.08, 0.1),
+      vec3(0.85, 0.87, 0.9),
+      density
+    );
+    
+    vec3 tintedColor = mix(
+      smokeColor,
+      vec3(0.7, 0.75, 0.85),
+      density * 0.25
+    );
+    
+    float alpha = density * 0.85;
+    
+    vec3 bg = mix(
+      vec3(0.015, 0.015, 0.035),
+      vec3(0.04, 0.04, 0.06),
+      uv.y
+    );
+    
+    vec3 finalColor = mix(bg, tintedColor, alpha);
+    
+    O = vec4(finalColor, 1.0);
+  }
+`);
+
+yo(document.getElementById('c'))
+  .scale(1)
+  .use(sim)
+  .use(fps())
+  .go();
+
+console.log('%c 💨 mushu YO Smoke Ready ', 'background: linear-gradient(90deg, #555, #999); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Click and drag to add smoke!');
+</script>
+</body>
+</html>

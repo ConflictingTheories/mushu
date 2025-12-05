@@ -50,7 +50,13 @@ export function mushu(canvasOrSelector) {
   }
   
   return {
-    // Quick shader helper - auto starts
+    // Quick shader helper - auto starts (gl() is the new name, glsl() is legacy)
+    gl(fragSource) {
+      return flow(canvas)
+        .use(shader(fragSource))
+        .go();
+    },
+    
     glsl(fragSource) {
       return flow(canvas)
         .use(shader(fragSource))
@@ -71,6 +77,11 @@ export function mushu(canvasOrSelector) {
       
       // Otherwise return chainable GPU builder
       return {
+        // WebGL2 fluent runtime with plugin system (new syntax)
+        gl() {
+          return flow(canvas);
+        },
+        
         // WebGPU fluent runtime with simulation
         flow() {
           return gpuFlow(canvas);

@@ -6,17 +6,17 @@
   <link rel="stylesheet" href="../common.css">
 </head>
 <body>
-<div class="info">🎨 <code>mushu().glsl()</code> Fire | Move mouse to interact</div>
+<div class="info">🎨 <code>mushu().gl()</code> Fire | Move mouse to interact</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
 import { mushu } from '../../src/index.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GLSL Helper - Simple One-Liner Fire Effect
-// This uses the mushu().glsl() helper for non-simulation effects
+// GL Helper - Simple One-Liner Fire Effect
+// This uses the mushu().gl() helper for non-simulation effects
 // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').glsl(`
+mushu('#c').gl(`
   // Noise functions for realistic fire
   float hash(vec2 p) {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -128,8 +128,8 @@ mushu('#c').glsl(`
   updateFPS();
 })();
 
-console.log('%c 🔥 mushu().glsl() Fire ', 'background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Simple shader-only fire effect using the mushu().glsl() one-liner helper');
+console.log('%c 🔥 mushu().gl() Fire ', 'background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Simple shader-only fire effect using the mushu().gl() one-liner helper');
 </script>
 <script>
 // Hide home-link if in iframe - run immediately and on load

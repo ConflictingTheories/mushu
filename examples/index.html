@@ -464,7 +464,7 @@
       </div>
       <div class="about-card">
         <h3>🎯 Pick Your Style</h3>
-        <p>Quick sketch? Use <code>mushu().glsl()</code>. Need plugins? Try <code>mushu().flow()</code>. Want compute shaders? Go <code>mushu().gpu()</code>.</p>
+        <p>Quick sketch? Use <code>mushu().gl()</code>. Need plugins? Try <code>mushu().gl().flow()</code>. Want compute shaders? Go <code>mushu().gpu()</code>.</p>
       </div>
       <div class="about-card">
         <h3>🔥 Batteries Included</h3>
@@ -483,9 +483,9 @@
       <h2>Four Ways to <span>Cook</span></h2>
       
       <div class="tabs">
-        <button class="tab glsl active" onclick="showTab('glsl')">mushu().glsl()</button>
+        <button class="tab glsl active" onclick="showTab('glsl')">mushu().gl()</button>
         <button class="tab gpu" onclick="showTab('gpu')">mushu().gpu()</button>
-        <button class="tab flow" onclick="showTab('flow')">mushu().flow()</button>
+        <button class="tab flow" onclick="showTab('flow')">mushu().gl().flow()</button>
         <button class="tab gpuFlow" onclick="showTab('gpuFlow')">mushu().gpu().flow()</button>
       </div>
       
@@ -496,7 +496,7 @@
           <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
 <span class="comment">// That's it. Seriously. One line.</span>
-<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">glsl</span>(<span class="string">`
+<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gl</span>(<span class="string">`
   void mainImage(out vec4 O, vec2 C) {
     vec2 uv = C / resolution;
     float t = time * 0.5;
@@ -534,7 +534,7 @@
           <pre><code><span class="keyword">import</span> { mushu, shader, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
 <span class="comment">// Chainable, pluggable, beautiful</span>
-<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">flow</span>()
+<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gl</span>().<span class="function">flow</span>()
   .<span class="function">use</span>(<span class="function">shader</span>(<span class="string">`
     void mainImage(out vec4 O, vec2 C) {
       vec2 uv = C / resolution;
@@ -578,9 +578,9 @@
       
       <div class="method-legend">
         <div class="item"><span class="dot boilerplate"></span> Boilerplate (Vanilla)</div>
-        <div class="item"><span class="dot glsl"></span> mushu().glsl()</div>
+        <div class="item"><span class="dot glsl"></span> mushu().gl()</div>
         <div class="item"><span class="dot gpu"></span> mushu().gpu()</div>
-        <div class="item"><span class="dot flow"></span> mushu().flow()</div>
+        <div class="item"><span class="dot flow"></span> mushu().gl().flow()</div>
         <div class="item"><span class="dot gpuFlow"></span> mushu().gpu().flow()</div>
       </div>
 
@@ -593,12 +593,12 @@
 
       <!-- GLSL Section -->
       <div class="section">
-        <h3 class="glsl">🎨 GLSL Examples <code>mushu('#c').glsl(shaderCode)</code></h3>
+        <h3 class="glsl">🎨 GLSL Examples <code>mushu('#c').gl(shaderCode)</code></h3>
         <div class="grid">
-          <div class="card glsl"><h4>🔥 Fire</h4><p>Procedural flames with blackbody colors</p><a href="fire.html">Demo →</a></div>
-          <div class="card glsl"><h4>💨 Smoke</h4><p>Volumetric smoke with turbulence</p><a href="smoke.html">Demo →</a></div>
-          <div class="card glsl"><h4>🌊 Water</h4><p>Gerstner waves with reflections</p><a href="water.html">Demo →</a></div>
-          <div class="card glsl"><h4>🌈 Plasma</h4><p>Classic plasma with rainbow colors</p><a href="plasma.html">Demo →</a></div>
+          <div class="card glsl"><h4>🔥 Fire</h4><p>Procedural flames with blackbody colors</p><a href="glsl/fire.html">Demo →</a></div>
+          <div class="card glsl"><h4>💨 Smoke</h4><p>Volumetric smoke with turbulence</p><a href="glsl/smoke.html">Demo →</a></div>
+          <div class="card glsl"><h4>🌊 Water</h4><p>Gerstner waves with reflections</p><a href="glsl/water.html">Demo →</a></div>
+          <div class="card glsl"><h4>🌈 Plasma</h4><p>Classic plasma with rainbow colors</p><a href="glsl/plasma.html">Demo →</a></div>
         </div>
       </div>
 
@@ -615,7 +615,7 @@
 
       <!-- Flow Section -->
       <div class="section">
-        <h3 class="flow">🎯 Flow Examples <code>mushu('#c').flow().use(shader()).go()</code></h3>
+        <h3 class="flow">🎯 Flow Examples <code>mushu('#c').gl().flow().use(shader()).go()</code></h3>
         <div class="grid">
           <div class="card flow"><h4>🔥 Fire</h4><p>Plugin-based fire with FPS</p><a href="flow-glsl/fire.html">Demo →</a></div>
           <div class="card flow"><h4>💨 Smoke</h4><p>Fluent smoke simulation</p><a href="flow-glsl/smoke.html">Demo →</a></div>
@@ -655,11 +655,11 @@
       <div class="faq-grid">
         <div class="faq-item">
           <h4>What's the difference between glsl() and flow()?</h4>
-          <p><code>mushu().glsl()</code> is a one-liner for quick shader sketches. <code>mushu().flow()</code> is a fluent builder that supports plugins like FPS counters, simulations, and post-processing chains.</p>
+          <p><code>mushu().gl()</code> is a one-liner for quick shader sketches. <code>mushu().gl().flow()</code> is a fluent builder that supports plugins like FPS counters, simulations, and post-processing chains.</p>
         </div>
         <div class="faq-item">
           <h4>Do I need WebGPU support?</h4>
-          <p>No! The <code>mushu().glsl()</code> and <code>mushu().flow()</code> APIs use WebGL2, which works everywhere. WebGPU (<code>mushu().gpu()</code> and <code>mushu().gpu().flow()</code>) is optional for when you need compute shaders.</p>
+          <p>No! The <code>mushu().gl()</code> and <code>mushu().gl().flow()</code> APIs use WebGL2, which works everywhere. WebGPU (<code>mushu().gpu()</code> and <code>mushu().gpu().flow()</code>) is optional for when you need compute shaders.</p>
         </div>
         <div class="faq-item">
           <h4>What uniforms are available?</h4>
@@ -675,7 +675,7 @@
         </div>
         <div class="faq-item">
           <h4>Is mushu good for learning shaders?</h4>
-          <p>Yes! Compare the boilerplate examples (200+ lines) to the <code>mushu().glsl()</code> versions (10 lines) to see how much easier it is to focus on the actual shader code.</p>
+          <p>Yes! Compare the boilerplate examples (200+ lines) to the <code>mushu().gl()</code> versions (10 lines) to see how much easier it is to focus on the actual shader code.</p>
         </div>
       </div>
     </section>

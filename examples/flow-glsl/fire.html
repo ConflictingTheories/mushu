@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-<div class="info">🔥 <code>mushu().flow()</code> Fire | Move mouse to interact</div>
+<div class="info">🔥 <code>mushu().gl().flow()</code> Fire | Move mouse to interact</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
 import { mushu, shader, fps } from '../../src/index.js';
@@ -36,7 +36,7 @@ import { mushu, shader, fps } from '../../src/index.js';
 // Move mouse to intensify flames!
 // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').flow()
+mushu('#c').gl().flow()
   .use(shader(`
     // ─────────────────────────────────────────────────────────────────────
     // Noise Functions

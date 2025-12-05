@@ -9,7 +9,7 @@
   </style>
 </head>
 <body>
-<div class="info">🎨 <code>mushu().glsl()</code> Plasma | Move mouse to interact</div>
+<div class="info">🎨 <code>mushu().gl()</code> Plasma | Move mouse to interact</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
 import { mushu } from '../../src/index.js';
@@ -18,7 +18,7 @@ import { mushu } from '../../src/index.js';
 // GLSL Helper - Classic Plasma Effect with Enhanced Visuals
 // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').glsl(`
+mushu('#c').gl(`
   // Better color palette function
   vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
     return a + b * cos(6.28318 * (c * t + d));
@@ -127,8 +127,8 @@ mushu('#c').glsl(`
   updateFPS();
 })();
 
-console.log('%c 🌈 glsl() Plasma ', 'background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Classic plasma effect using the glsl() one-liner helper');
+console.log('%c 🌈 gl() Plasma ', 'background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Classic plasma effect using the gl() one-liner helper');
 </script>
 <script>
 // Hide home-link if in iframe - run immediately and on load

@@ -24,6 +24,18 @@
 // Create custom VAOs with flexible attribute layouts
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a VAO plugin for the WebGL `flow()` runtime.
+ * @param {Object} [options]
+ * @param {Float32Array|Array<number>} [options.positions]
+ * @param {Float32Array|Array<number>} [options.normals]
+ * @param {Float32Array|Array<number>} [options.uvs]
+ * @param {Float32Array|Array<number>} [options.colors]
+ * @param {Uint16Array|Uint32Array|Array<number>} [options.indices]
+ * @param {Object} [options.attributes] - custom attributes map
+ * @param {string} [options.drawMode='TRIANGLES']
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), update:function(string, Float32Array, FlowContext), destroy:function(FlowContext)}}
+ */
 export function vao(options = {}) {
   const {
     positions = null,      // Float32Array or array of positions
@@ -185,6 +197,14 @@ export function vao(options = {}) {
 // Mesh — Higher-level mesh with material support
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * High-level mesh plugin that wraps a `vao` and manages model matrix and material uniforms.
+ * @param {Object} geometry - Geometry descriptor suitable for `vao()`.
+ * @param {Object} [options]
+ * @param {Object} [options.transform]
+ * @param {Object} [options.material]
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), setTransform:function(Object), destroy:function(FlowContext)}}
+ */
 export function mesh(geometry, options = {}) {
   const {
     transform = null,      // { position, rotation, scale }
@@ -280,6 +300,10 @@ export function mesh(geometry, options = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Fullscreen quad (for post-processing)
+/**
+ * Convenience: fullscreen quad VAO plugin.
+ * @returns {Object} plugin returned by `vao()` for a fullscreen triangle.
+ */
 export function fullscreenQuad() {
   return vao({
     positions: [
@@ -297,6 +321,11 @@ export function fullscreenQuad() {
 }
 
 // Plane (XY plane centered at origin)
+/**
+ * Generate a plane geometry and return a VAO plugin.
+ * @param {Object} [options] width,height,widthSegments,heightSegments
+ * @returns {Object} plugin from `vao()`
+ */
 export function plane(options = {}) {
   const {
     width = 1,
@@ -343,6 +372,12 @@ export function plane(options = {}) {
 }
 
 // Cube
+/**
+ * Create a cube mesh VAO plugin.
+ * @param {Object} [options]
+ * @param {number} [options.size=1]
+ * @returns {Object} plugin from `vao()`
+ */
 export function cube(options = {}) {
   const { size = 1 } = options;
   const s = size / 2;
@@ -409,6 +444,14 @@ export function cube(options = {}) {
 }
 
 // Sphere (UV sphere)
+/**
+ * Create a UV sphere geometry VAO plugin.
+ * @param {Object} [options]
+ * @param {number} [options.radius=0.5]
+ * @param {number} [options.widthSegments=32]
+ * @param {number} [options.heightSegments=16]
+ * @returns {Object} plugin from `vao()`
+ */
 export function sphere(options = {}) {
   const {
     radius = 0.5,
@@ -455,6 +498,11 @@ export function sphere(options = {}) {
 }
 
 // Cylinder
+/**
+ * Create a cylinder mesh VAO plugin.
+ * @param {Object} [options]
+ * @returns {Object} plugin from `vao()`
+ */
 export function cylinder(options = {}) {
   const {
     radiusTop = 0.5,
@@ -562,6 +610,11 @@ export function cylinder(options = {}) {
 }
 
 // Torus
+/**
+ * Create a torus geometry VAO plugin.
+ * @param {Object} [options]
+ * @returns {Object} plugin from `vao()`
+ */
 export function torus(options = {}) {
   const {
     radius = 0.5,
@@ -610,6 +663,11 @@ export function torus(options = {}) {
 }
 
 // Cone (special case of cylinder)
+/**
+ * Create a cone mesh (special-case of cylinder).
+ * @param {Object} [options]
+ * @returns {Object} plugin from `cylinder()`
+ */
 export function cone(options = {}) {
   return cylinder({
     radiusTop: 0,
@@ -625,6 +683,11 @@ export function cone(options = {}) {
 // OBJ Loader (simple parser)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Parse an OBJ format string into position, normal, uv and index arrays.
+ * @param {string} objString - Contents of an .obj file
+ * @returns {{positions:number[], normals:number[], uvs:number[], indices:number[]}}
+ */
 export function loadOBJ(objString) {
   const positions = [];
   const normals = [];
@@ -699,6 +762,12 @@ export function loadOBJ(objString) {
 }
 
 // OBJ loader plugin (loads from URL)
+/**
+ * OBJ loader plugin — fetches an OBJ file and creates a VAO plugin from it.
+ * @param {string} url - URL to the OBJ file.
+ * @param {Object} [options] - Passed to `vao()`.
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), destroy:function(FlowContext)}}
+ */
 export function obj(url, options = {}) {
   let vaoPlugin = null;
 
@@ -728,6 +797,14 @@ export function obj(url, options = {}) {
 // Lines and Points
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a line strip/loop VAO plugin from a flat array of points.
+ * @param {Array<number>|Float32Array} points
+ * @param {Object} [options]
+ * @param {boolean} [options.loop=false]
+ * @param {Array|Float32Array} [options.colors]
+ * @returns {Object}
+ */
 export function lines(points, options = {}) {
   const { loop = false, colors = null } = options;
 
@@ -738,6 +815,12 @@ export function lines(points, options = {}) {
   });
 }
 
+/**
+ * Create a line segments VAO plugin.
+ * @param {Array<number>|Float32Array} points
+ * @param {Object} [options]
+ * @returns {Object}
+ */
 export function lineSegments(points, options = {}) {
   return vao({
     positions: points,
@@ -746,6 +829,12 @@ export function lineSegments(points, options = {}) {
   });
 }
 
+/**
+ * Create a points VAO plugin.
+ * @param {Array<number>|Float32Array} positions
+ * @param {Object} [options]
+ * @returns {Object}
+ */
 export function points(positions, options = {}) {
   return vao({
     positions,

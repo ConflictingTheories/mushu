@@ -95,6 +95,14 @@ export async function gpuTexture(device, source, options = {}) {
   };
 }
 
+/**
+ * Create a GPU texture from an image/video/source and return `{ texture, sampler, width, height }`.
+ * @param {GPUDevice} device
+ * @param {(string|HTMLImageElement|ImageBitmap)} source
+ * @param {Object} [options]
+ * @returns {Promise<{texture:GPUTexture, sampler:GPUSampler, width:number, height:number, mipLevelCount:number, destroy:function()}>} 
+ */
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Mipmap Generation
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,6 +237,13 @@ export function gpuDataTexture(device, options = {}) {
   };
 }
 
+/**
+ * Create a GPU data texture and optionally upload raw pixel data.
+ * @param {GPUDevice} device
+ * @param {Object} [options]
+ * @returns {{texture:GPUTexture, sampler:GPUSampler, width:number, height:number, format:string, update:function(Uint8Array|Float32Array)}}
+ */
+
 function getBytesPerPixel(format) {
   const sizes = {
     'r8unorm': 1,
@@ -302,6 +317,14 @@ export function gpuVideoTexture(device, videoSource, options = {}) {
     }
   };
 }
+
+/**
+ * Create a GPU-backed texture for a video element or URL.
+ * @param {GPUDevice} device
+ * @param {(string|HTMLVideoElement)} videoSource
+ * @param {Object} [options]
+ * @returns {Promise<{texture:GPUTexture, sampler:GPUSampler, width:number, height:number, destroy:function}>}
+ */
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cubemap Texture
@@ -490,6 +513,13 @@ export function gpuRenderTarget(device, options = {}) {
   };
 }
 
+/**
+ * Create an offscreen GPU render target texture helper.
+ * @param {GPUDevice} device
+ * @param {Object} [options]
+ * @returns {{texture:GPUTexture, view:GPUTextureView, destroy:function()}}
+ */
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Noise Texture (procedurally generated)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -535,6 +565,13 @@ export function gpuNoiseTexture(device, options = {}) {
     minFilter: 'linear',
   });
 }
+
+/**
+ * Create a procedural noise texture on the GPU (returns {texture, sampler}).
+ * @param {GPUDevice} device
+ * @param {Object} [options]
+ * @returns {{texture:GPUTexture, sampler:GPUSampler, width:number, height:number}}
+ */
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Default Export

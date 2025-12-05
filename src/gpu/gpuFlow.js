@@ -516,6 +516,15 @@ export function gpuFlow(canvasOrSelector) {
 //   sampleOffset(C, offset) - load with offset
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Simplified GPU helper — run a compute + render pipeline on a fullscreen canvas.
+ * @param {string|null} computeCode - WGSL compute shader code (or null for render-only).
+ * @param {string} renderCode - WGSL fragment shader code (required).
+ * @param {Object} [options]
+ * @param {HTMLCanvasElement} [options.canvas] - Optional canvas to attach.
+ * @param {number} [options.scale=0.5] - Simulation scale for ping-pong textures.
+ * @returns {Promise<{stop:function():void, canvas: HTMLCanvasElement, device: GPUDevice}|null>}
+ */
 export async function gpu(computeCode, renderCode, options = {}) {
   const {
     canvas = createFullscreenCanvas(),

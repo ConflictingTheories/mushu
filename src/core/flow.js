@@ -278,6 +278,12 @@ export function flow(canvasOrGl) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Clear the screen with a color
+/**
+ * Clear plugin — clears the color buffer each frame.
+ * @param {([number,number,number,number]|function(FlowContext):[number,number,number,number])} [colorOrFn=[0,0,0,1]]
+ *   Color array [r,g,b,a] or a function that returns one given the flow context.
+ * @returns {function(FlowContext): void} plugin compatible with `flow().use(...)`.
+ */
 export function clear(colorOrFn = [0, 0, 0, 1]) {
   return (ctx) => {
     const c = typeof colorOrFn === 'function' ? colorOrFn(ctx) : colorOrFn;
@@ -302,6 +308,11 @@ export function quad() {
     }
   };
 }
+
+/**
+ * Create a simple fullscreen quad plugin (VAO for a fullscreen triangle).
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext)}}
+ */
 
 // Compile and use a fragment shader
 export function shader(fragSource, options = {}) {
@@ -412,6 +423,14 @@ export function shader(fragSource, options = {}) {
   };
 }
 
+/**
+ * Shader plugin — compiles a fragment shader and draws a fullscreen triangle.
+ * The supplied fragment code must define `void mainImage(out vec4 O, vec2 C)`.
+ * @param {string} fragSource - GLSL fragment shader source (user code inserted into wrapper).
+ * @param {Object} [options] - Optional settings (e.g., uniforms map).
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), reload:function(string, FlowContext)}}
+ */
+
 // Set a custom uniform
 export function uniform(name, valueOrFn) {
   let location = null;
@@ -447,6 +466,13 @@ export function uniform(name, valueOrFn) {
   };
 }
 
+/**
+ * Uniform plugin — sets a named uniform on the active program each frame.
+ * @param {string} name - Uniform name in the shader program.
+ * @param {(number|Array|function(FlowContext):any)} valueOrFn - Value or a function returning value.
+ * @returns {{name:string, render:function(FlowContext)}}
+ */
+
 // FPS counter
 export function fps() {
   let div = null;
@@ -476,6 +502,11 @@ export function fps() {
   };
 }
 
+/**
+ * FPS plugin — shows a small FPS counter in the page.
+ * @returns {{name:string, init:function(), render:function(FlowContext), destroy:function()}}
+ */
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Advanced: Ping-pong FBO for simulations
 // ─────────────────────────────────────────────────────────────────────────────
@@ -487,6 +518,14 @@ export function simulation(options = {}) {
     format = 'RGBA16F',
   } = options;
 
+/**
+ * Simulation plugin — provides a ping-pong FBO simulation target and renderer.
+ * @param {Object} [options]
+ * @param {number} [options.scale=0.5]
+ * @param {number} [options.iterations=1]
+ * @param {string} [options.format='RGBA16F']
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), destroy:function(FlowContext)}}
+ */
   let fboA, fboB, texA, texB;
   let simProgram = null;
   let renderProgram = null;

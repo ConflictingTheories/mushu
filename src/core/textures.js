@@ -129,6 +129,13 @@ export function texture(source, options = {}) {
   };
 }
 
+/**
+ * Image texture plugin for WebGL2 flow.
+ * @param {(string|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement)} source
+ * @param {Object} [options]
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), update:function(*, FlowContext), destroy:function(FlowContext)}}
+ */
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Data Texture — Create textures from raw data
 // ─────────────────────────────────────────────────────────────────────────────
@@ -216,6 +223,12 @@ export function dataTexture(options = {}) {
   };
 }
 
+/**
+ * Create a data texture plugin that uploads raw pixel/float data to a GL texture.
+ * @param {Object} [options]
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), update:function(*, FlowContext), destroy:function(FlowContext)}}
+ */
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Video Texture — Continuously update from video element
 // ─────────────────────────────────────────────────────────────────────────────
@@ -294,6 +307,13 @@ export function videoTexture(videoElementOrUrl, options = {}) {
   };
 }
 
+/**
+ * Video texture plugin for playing and binding a video element as a GL texture.
+ * @param {(string|HTMLVideoElement)} videoElementOrUrl
+ * @param {Object} [options]
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), destroy:function(FlowContext)}}
+ */
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Webcam Texture
 // ─────────────────────────────────────────────────────────────────────────────
@@ -370,6 +390,12 @@ export function webcamTexture(options = {}) {
     }
   };
 }
+
+/**
+ * Webcam texture plugin — binds a webcam stream as a texture.
+ * @param {Object} [options]
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), destroy:function(FlowContext)}}
+ */
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cube Map Texture
@@ -451,6 +477,13 @@ export function cubeMap(sources, options = {}) {
     }
   };
 }
+
+/**
+ * Create a cubemap texture plugin from 6 image sources.
+ * @param {Array<string|HTMLImageElement>} sources
+ * @param {Object} [options]
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), destroy:function(FlowContext)}}
+ */
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Render Target (FBO) — Render to texture
@@ -579,6 +612,12 @@ export function renderTarget(options = {}) {
   };
 }
 
+/**
+ * Create an offscreen render target texture (FBO) plugin.
+ * @param {Object} [options]
+ * @returns {{name:string, init:function(FlowContext), getTexture:function(): WebGLTexture, destroy:function(FlowContext)}}
+ */
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Noise Textures (procedurally generated)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -662,6 +701,12 @@ export function noiseTexture(options = {}) {
     magFilter: 'LINEAR',
   });
 }
+
+/**
+ * Generate a procedural noise data texture plugin.
+ * @param {Object} [options]
+ * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), destroy:function(FlowContext)}}
+ */
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utility

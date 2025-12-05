@@ -22,6 +22,12 @@
 // GPU Mesh — WebGPU Vertex/Index Buffer Management
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Build GPU buffers for a mesh and return helper descriptors for pipeline use.
+ * @param {GPUDevice} device
+ * @param {Object} geometry - { positions, normals, uvs, colors, indices }
+ * @returns {{vertexBuffer: GPUBuffer, indexBuffer: GPUBuffer|null, vertexCount:number, indexCount:number, indexFormat:string, strideBytes:number, bufferLayout:Object, draw:function(passEncoder:GPURenderPassEncoder)}}
+ */
 export function gpuMesh(device, geometry) {
   const {
     positions,           // Float32Array or array

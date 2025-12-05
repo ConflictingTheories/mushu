@@ -17,7 +17,11 @@
   ],
   "scripts": {
     "start": "npx http-server . -c-1 -o examples/index.html",
-    "build": "echo 'No build step needed - pure ES modules'"
+    "build": "echo 'No build step needed - pure ES modules'",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0"
   },
   "keywords": [
     "webgl",

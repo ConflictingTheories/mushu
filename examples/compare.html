@@ -32,6 +32,7 @@
   <a href="#plasma" class="active">Plasma (WebGL)</a>
   <a href="#fire">Fire (WebGL)</a>
   <a href="#water">Water (WebGL)</a>
+  <a href="#smoke">Smoke (WebGL)</a>
   <a href="#gpu/plasma">Plasma (WebGPU)</a>
   <a href="#gpu/fire">Fire (WebGPU)</a>
 </nav>
@@ -658,6 +659,7 @@ water.<span class="function">display</span>(<span class="string">`
   
   <div class="demo-links">
     <a href="./gpu/plasma.html" class="demo-link gpu">▶ Run mushu WebGPU Plasma</a>
+    <a href="./gpu/plasma.html" class="demo-link secondary">▶ Full WebGPU Implementation</a>
   </div>
   
   <div class="comparison-grid">
@@ -799,6 +801,7 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
   
   <div class="demo-links">
     <a href="./gpu/fire.html" class="demo-link gpu">▶ Run mushu WebGPU Fire</a>
+    <a href="./gpu/fire.html" class="demo-link secondary">▶ Full WebGPU Implementation</a>
   </div>
   
   <div class="comparison-grid">
@@ -990,6 +993,139 @@ context.<span class="function">configure</span>({ device, format, alphaMode: <sp
 <span class="comment">// ✓ Render pipeline creation</span>
 <span class="comment">// ✓ Bind group management</span>
 <span class="comment">// ✓ Command encoding</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- SMOKE COMPARISON -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section id="smoke">
+  <h2>💨 Smoke Simulation — WebGL</h2>
+  
+  <div class="demo-links">
+    <a href="./glsl/smoke.html" class="demo-link">▶ Run mushu Smoke</a>
+    <a href="./boilerplate/smoke.html" class="demo-link secondary">▶ Run Original</a>
+  </div>
+  
+  <div class="comparison-grid">
+    <div class="code-panel">
+      <div class="panel-header">
+        <span class="panel-title before">❌ Traditional WebGL (~250 lines)</span>
+        <span class="line-count">FBO ping-pong + particle simulation</span>
+      </div>
+      <pre><code><span class="comment">// Canvas & WebGL2 setup (same as fire example)</span>
+<span class="keyword">const</span> canvas = document.<span class="function">createElement</span>(<span class="string">'canvas'</span>);
+<span class="keyword">const</span> gl = canvas.<span class="function">getContext</span>(<span class="string">'webgl2'</span>);
+
+<span class="comment">// Enable float textures</span>
+gl.<span class="function">getExtension</span>(<span class="string">'EXT_color_buffer_float'</span>);
+
+<span class="comment">// Create ping-pong FBOs for velocity & density</span>
+<span class="keyword">function</span> <span class="function">createFBO</span>(width, height) {
+  <span class="keyword">const</span> tex = gl.<span class="function">createTexture</span>();
+  gl.<span class="function">bindTexture</span>(gl.TEXTURE_2D, tex);
+  gl.<span class="function">texImage2D</span>(gl.TEXTURE_2D, <span class="number">0</span>, gl.RGBA16F, width, height, <span class="number">0</span>, gl.RGBA, gl.HALF_FLOAT, <span class="keyword">null</span>);
+  gl.<span class="function">texParameteri</span>(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.<span class="function">texParameteri</span>(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  <span class="keyword">const</span> fb = gl.<span class="function">createFramebuffer</span>();
+  gl.<span class="function">bindFramebuffer</span>(gl.FRAMEBUFFER, fb);
+  gl.<span class="function">framebufferTexture2D</span>(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, <span class="number">0</span>);
+  <span class="keyword">return</span> { tex, fb };
+}
+
+<span class="keyword">let</span> velocityA = <span class="function">createFBO</span>(width, height);
+<span class="keyword">let</span> velocityB = <span class="function">createFBO</span>(width, height);
+<span class="keyword">let</span> densityA = <span class="function">createFBO</span>(width, height);
+<span class="keyword">let</span> densityB = <span class="function">createFBO</span>(width, height);
+
+<span class="comment">// Advection shader (move velocity field)</span>
+<span class="keyword">const</span> advectionShader = <span class="string">`#version 300 es
+precision highp float;
+uniform sampler2D u_velocity;
+uniform sampler2D u_quantity;
+uniform float u_dt;
+uniform vec2 u_resolution;
+out vec4 O;
+
+void main() {
+  vec2 coord = gl_FragCoord.xy / u_resolution;
+  vec2 vel = texture(u_velocity, coord).xy;
+  vec2 backCoord = coord - vel * u_dt;
+  O = texture(u_quantity, backCoord);
+}
+`</span>;
+
+<span class="comment">// Divergence, pressure solve, force apply... (50+ more lines)</span>
+
+<span class="comment">// Render loop with multiple passes</span>
+<span class="keyword">const</span> <span class="function">loop</span> = (t) => {
+  <span class="comment">// Advection pass</span>
+  gl.<span class="function">bindFramebuffer</span>(gl.FRAMEBUFFER, velocityB.fb);
+  <span class="comment">// ... render velocity advection ...</span>
+  
+  <span class="comment">// Divergence calculation</span>
+  <span class="comment">// Pressure solve (Jacobi iteration)</span>
+  <span class="comment">// Gradient subtraction</span>
+  
+  <span class="comment">// Density advection</span>
+  <span class="comment">// Final display</span>
+  
+  <span class="function">requestAnimationFrame</span>(loop);
+};</code></pre>
+    </div>
+    
+    <div class="code-panel">
+      <div class="panel-header">
+        <span class="panel-title after">✅ mushu (~65 lines)</span>
+        <span class="line-count reduced">74% reduction</span>
+      </div>
+      <pre><code><span class="keyword">import</span> { mushu, simulation, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+
+<span class="keyword">const</span> smoke = <span class="function">simulation</span>({ scale: <span class="number">0.5</span>, iterations: <span class="number">2</span> });
+
+<span class="comment">// Advection: Move smoke with velocity field</span>
+smoke.<span class="function">simulate</span>(<span class="string">`
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    vec4 data = sample(vec2(0));
+    
+    <span class="comment">// Velocity field (from previous frame)</span>
+    vec2 vel = data.xy;
+    
+    <span class="comment">// Trace back where this particle came from</span>
+    vec2 backCoord = uv - vel * 0.016;
+    vec4 advected = sample(backCoord);
+    
+    <span class="comment">// Add buoyancy - hot smoke rises</span>
+    advected.z += 0.1 * advected.y;
+    
+    <span class="comment">// Dissipation</span>
+    advected *= 0.98;
+    
+    O = advected;
+  }
+`</span>);
+
+<span class="comment">// Display: Render smoke as gray clouds</span>
+smoke.<span class="function">display</span>(<span class="string">`
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    vec4 data = texture(backbuffer, uv);
+    
+    <span class="comment">// Smoke density creates darkness</span>
+    float smoke = data.z;
+    vec3 col = mix(vec3(0.1, 0.1, 0.1), vec3(1.0), exp(-smoke * 2.0));
+    
+    O = vec4(col, 1.0);
+  }
+`</span>);
+
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">gl</span>().<span class="function">flow</span>()
+  .<span class="function">use</span>(smoke)
+  .<span class="function">use</span>(<span class="function">fps</span>())
+  .<span class="function">go</span>();</code></pre>
     </div>
   </div>
 </section>

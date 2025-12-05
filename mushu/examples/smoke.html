@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>mushu — Volumetric Smoke Demo</title>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
+<script type="module">
+import { yo, simulation, fps } from '../src/index.js';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Volumetric Smoke Simulation
+// Features: Velocity field, vorticity confinement, density advection
+// Hold & drag mouse to blow wind through the smoke!
+// ═══════════════════════════════════════════════════════════════════════════
+
+const sim = simulation({ scale: 0.5, iterations: 3 });
+
+sim.simulate(`
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    vec4 data = sample(vec2(0));
+    
+    // R = density, G = temperature, B = velocity.x, A = velocity.y
+    float density = data.r;
+    float temp = data.g;
+    float vx = data.b;
+    float vy = data.a;
+    
+    // Sample neighbors
+    vec4 up = sample(vec2(0, 1));
+    vec4 down = sample(vec2(0, -1));
+    vec4 left = sample(vec2(-1, 0));
+    vec4 right = sample(vec2(1, 0));
+    
+    float dt = 0.016;
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Mouse force (wind)
+    // ─────────────────────────────────────────────────────────────────────
+    float mouseDist = length(uv - mouse);
+    if (mouseDown > 0.5 && mouseDist < 0.15) {
+      vec2 dir = normalize(mouseVelocity + vec2(0.001));
+      float speed = length(mouseVelocity) * 300.0;
+      float falloff = 1.0 - mouseDist / 0.15;
+      falloff *= falloff;
+      
+      vx += dir.x * speed * falloff;
+      vy += dir.y * speed * falloff;
+      
+      // Mouse adds smoke and heat
+      density += falloff * 3.0;
+      temp += falloff * 2.0;
+    }
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Buoyancy - hot smoke rises
+    // ─────────────────────────────────────────────────────────────────────
+    vy += temp * 1.2 * dt;
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Vorticity confinement - makes smoke curl realistically
+    // ─────────────────────────────────────────────────────────────────────
+    float curlL = left.a;    // vy at left
+    float curlR = right.a;   // vy at right
+    float curlT = up.b;      // vx at top
+    float curlB = down.b;    // vx at bottom
+    
+    float curl = (curlR - curlL) - (curlT - curlB);
+    float vorticity = 0.15;
+    
+    // Apply vorticity force perpendicular to curl gradient
+    float eta = 0.0001;
+    float gradX = abs(sample(vec2(1, 0)).b - sample(vec2(-1, 0)).b);
+    float gradY = abs(sample(vec2(0, 1)).a - sample(vec2(0, -1)).a);
+    float len = sqrt(gradX * gradX + gradY * gradY) + eta;
+    
+    vx += vorticity * curl * gradY / len;
+    vy -= vorticity * curl * gradX / len;
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Velocity diffusion & damping
+    // ─────────────────────────────────────────────────────────────────────
+    float velDiff = 0.08;
+    vx += velDiff * (left.b + right.b - 2.0 * vx);
+    vy += velDiff * (up.a + down.a - 2.0 * vy);
+    
+    // Velocity damping
+    vx *= 0.995;
+    vy *= 0.995;
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Advection - move density along velocity field
+    // ─────────────────────────────────────────────────────────────────────
+    vec2 vel = vec2(vx, vy);
+    vec2 advectPos = C - vel * dt * 80.0;
+    
+    // Bilinear sample for smooth advection
+    vec2 advectUV = advectPos / resolution;
+    if (advectUV.x >= 0.0 && advectUV.x <= 1.0 && advectUV.y >= 0.0 && advectUV.y <= 1.0) {
+      vec4 advected = texture(backbuffer, advectUV);
+      density = advected.r * 0.997;  // Slight density decay
+      temp = advected.g * 0.99;       // Temperature decays faster
+    }
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Smoke source at bottom
+    // ─────────────────────────────────────────────────────────────────────
+    if (uv.y < 0.08) {
+      float edge = 1.0 - uv.y / 0.08;
+      
+      // Animated emission pattern
+      float p1 = sin(uv.x * 12.0 + time * 1.5) * 0.5 + 0.5;
+      float p2 = sin(uv.x * 5.0 - time * 0.8) * 0.5 + 0.5;
+      float noise = hash(vec2(floor(uv.x * 100.0), floor(time * 10.0)));
+      
+      float pattern = p1 * p2 * (0.6 + noise * 0.4);
+      
+      if (pattern > 0.3) {
+        float intensity = pattern * edge;
+        density += intensity * 2.0;
+        temp += intensity * 3.0;
+        vy += intensity * 3.0;  // Initial upward velocity
+      }
+    }
+    
+    O = vec4(
+      clamp(density, 0.0, 15.0),
+      clamp(temp, 0.0, 15.0),
+      clamp(vx, -80.0, 80.0),
+      clamp(vy, -80.0, 80.0)
+    );
+  }
+`);
+
+sim.display(`
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    vec4 data = texture(backbuffer, uv);
+    
+    float density = data.r;
+    float temp = data.g;
+    
+    vec3 color = vec3(0.0);
+    
+    // Hot particles/embers at emission point
+    color += vec3(1.0, 0.9, 0.7) * pow(temp, 3.0) * 4.0;
+    color += vec3(1.0, 0.5, 0.2) * pow(temp, 2.0) * 2.0;
+    color += vec3(0.9, 0.2, 0.0) * pow(temp, 1.0) * 1.0;
+    
+    // Volumetric smoke appearance
+    // Base smoke color - varies with density
+    vec3 smokeLight = vec3(0.25, 0.25, 0.28);  // Lit smoke
+    vec3 smokeDark = vec3(0.03, 0.03, 0.04);   // Shadow
+    
+    // Self-shadowing approximation
+    float shadow = 1.0 - density * 0.08;
+    vec3 smokeColor = mix(smokeLight, smokeDark, 1.0 - shadow);
+    
+    // Volumetric density (Beer-Lambert)
+    float extinction = 0.35;
+    float transmittance = exp(-density * extinction);
+    
+    // Blend smoke over embers
+    color = color * transmittance + smokeColor * (1.0 - transmittance);
+    
+    // Atmospheric scattering - light from above
+    float scatter = density * 0.06;
+    color += vec3(0.35, 0.4, 0.5) * scatter * shadow;
+    
+    // Subtle rim lighting
+    float rim = density * (1.0 - density * 0.1);
+    color += vec3(0.2, 0.22, 0.25) * rim * 0.1;
+    
+    // Tone mapping
+    color = color / (color + 1.0);
+    color = pow(color, vec3(0.9));
+    
+    // Subtle film grain
+    float noise = fract(sin(dot(C * time * 0.001, vec2(12.9898, 78.233))) * 43758.5453);
+    color += (noise - 0.5) * 0.02;
+    
+    O = vec4(color, 1.0);
+  }
+`);
+
+yo(document.getElementById('c'))
+  .scale(1)
+  .use(sim)
+  .use(fps())
+  .go();
+
+console.log('%c 💨 mushu Smoke Ready ', 'background: linear-gradient(90deg, #4a5568, #718096); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Hold & drag mouse to blow wind through the smoke!');
+</script>
+</body>
+</html>

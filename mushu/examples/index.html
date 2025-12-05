@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>🍡 mushu Examples</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --card: #12121a;
+      --border: #2a2a3a;
+      --text: #e0e0e0;
+      --accent: #ff6b9d;
+      --accent2: #00d4aa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 3rem;
+      font-size: 1.1rem;
+    }
+    .section {
+      margin-bottom: 3rem;
+    }
+    .section h2 {
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .card h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.3rem;
+    }
+    .card p {
+      color: #888;
+      margin: 0 0 1rem;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .card a {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: opacity 0.2s;
+    }
+    .card a:hover {
+      opacity: 0.85;
+    }
+    .tag {
+      display: inline-block;
+      background: rgba(255,107,157,0.15);
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-right: 8px;
+      margin-bottom: 12px;
+    }
+    .tag.gpu {
+      background: rgba(0,212,170,0.15);
+      color: var(--accent2);
+    }
+    footer {
+      text-align: center;
+      margin-top: 4rem;
+      color: #666;
+      font-size: 0.9rem;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍡 mushu</h1>
+  <p class="subtitle">Simple WebGL2 & WebGPU creative coding library</p>
+  
+  <div class="section">
+    <h2>🎨 WebGL2 Demos</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag">WebGL2</span>
+        <h3>🔥 Fire</h3>
+        <p>Multi-octave fire simulation with fuel combustion and rising heat dynamics.</p>
+        <a href="fire.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag">WebGL2</span>
+        <h3>💨 Smoke</h3>
+        <p>Volumetric smoke with turbulent vorticity and realistic dissipation.</p>
+        <a href="smoke.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag">WebGL2</span>
+        <h3>🌊 Water</h3>
+        <p>Pure water ripples using the wave equation with reflection and refraction.</p>
+        <a href="water.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag">WebGL2</span>
+        <h3>✨ Caustics</h3>
+        <p>Underwater light caustics with animated surface distortion.</p>
+        <a href="caustics.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag">WebGL2</span>
+        <h3>🌈 Plasma</h3>
+        <p>Classic plasma effect with rainbow colors and mouse interaction.</p>
+        <a href="plasma.html">Launch Demo →</a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>⚡ WebGPU Demos</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag gpu">WebGPU</span>
+        <h3>🔥 GPU Fire</h3>
+        <p>Compute shader fire simulation with parallel fuel combustion.</p>
+        <a href="gpu-fire.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag gpu">WebGPU</span>
+        <h3>💨 GPU Smoke</h3>
+        <p>WebGPU volumetric smoke with turbulence and buoyancy.</p>
+        <a href="gpu-smoke.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag gpu">WebGPU</span>
+        <h3>🌊 GPU Water</h3>
+        <p>Wave equation simulation running entirely on the GPU.</p>
+        <a href="gpu-water.html">Launch Demo →</a>
+      </div>
+      
+      <div class="card">
+        <span class="tag gpu">WebGPU</span>
+        <h3>🌈 GPU Plasma</h3>
+        <p>High-performance plasma with compute shader state.</p>
+        <a href="gpu-plasma.html">Launch Demo →</a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>📚 Resources</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag">Tutorial</span>
+        <h3>Before & After</h3>
+        <p>Compare the original messy code with the clean mushu refactor.</p>
+        <a href="compare.html">View Comparison →</a>
+      </div>
+    </div>
+  </div>
+  
+  <footer>
+    <p>Made with 🍡 &mdash; <a href="../README.md">Read the docs</a></p>
+  </footer>
+</body>
+</html>

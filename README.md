@@ -160,12 +160,8 @@ Old World                    New World
 
 ## 📜 License
 
-MIT — Use this however you want. Make impossible art.
+MIT — Use this however you want. Have fun!
 
 ---
 
-**This is the endgame of creative coding.**
-
-One function. Infinite possibilities.
-
-Go create something that has never existed.
+_One function. Infinite possibilities._

@@ -1,0 +1,42 @@
+{
+  "name": "mushu",
+  "version": "1.0.0",
+  "description": "The Hookable Fluent Pattern for Creative Coding - WebGL & WebGPU made simple",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./core": "./src/core/index.js",
+    "./glsl": "./src/glsl/index.js",
+    "./gpu": "./src/gpu/index.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "npx http-server examples -p 8081 -c-1",
+    "build": "echo 'No build step needed - pure ES modules'"
+  },
+  "keywords": [
+    "webgl",
+    "webgpu",
+    "glsl",
+    "wgsl",
+    "shader",
+    "creative-coding",
+    "generative-art",
+    "graphics",
+    "simulation",
+    "fire",
+    "water",
+    "particles"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}

@@ -8,35 +8,16 @@
   to = "/examples/index.html"
   status = 200
 
-# Catch-all for SPA fallback (must be last)
+# Catch-all for SPA (but NOT for files that exist)
 [[redirects]]
   from = "/*"
   to = "/examples/index.html"
   status = 200
-  conditions = { "Not" = [{ "Path" = ["/src/*", "/examples/*"] }] }
+  force = false
 
-# JavaScript MIME type headers
+# Force correct MIME type for all JavaScript files
 [[headers]]
-  for = "/*.js"
+  for = "/**/*.js"
   [headers.values]
     Content-Type = "application/javascript; charset=utf-8"
-
-[[headers]]
-  for = "/src/*.js"
-  [headers.values]
-    Content-Type = "application/javascript; charset=utf-8"
-
-[[headers]]
-  for = "/src/**/*.js"
-  [headers.values]
-    Content-Type = "application/javascript; charset=utf-8"
-
-[[headers]]
-  for = "/examples/*.js"
-  [headers.values]
-    Content-Type = "application/javascript; charset=utf-8"
-
-[[headers]]
-  for = "/examples/**/*.js"
-  [headers.values]
-    Content-Type = "application/javascript; charset=utf-8"
+    Cache-Control = "public, max-age=3600"

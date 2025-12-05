@@ -8,6 +8,16 @@
   status = 200
 
 [[headers]]
+  for = "/*.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+
+[[headers]]
   for = "/src/*.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+
+[[headers]]
+  for = "/src/**/*.js"
   [headers.values]
     Content-Type = "application/javascript"

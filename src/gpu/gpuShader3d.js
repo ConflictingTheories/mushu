@@ -448,6 +448,12 @@ fn fbm3D(p: vec3<f32>, octaves: i32) -> f32 {
 // GPU 3D Pipeline Builder
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a GPU pipeline configured for 3D rendering with standard bindings.
+ * @param {GPUDevice} device The WebGPU device.
+ * @param {object} [options]
+ * @returns {GPURenderPipeline} The configured pipeline.
+ */
 export function gpu3dPipeline(device, options = {}) {
   const {
     vertexShader = wgslStandardVertex,
@@ -526,6 +532,11 @@ export function gpu3dPipeline(device, options = {}) {
 // Uniform Buffer Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a uniform buffer for camera matrices (view/projection) on the GPU.
+ * @param {GPUDevice} device The WebGPU device.
+ * @returns {GPUBuffer} GPU buffer for camera data.
+ */
 export function createCameraBuffer(device) {
   // Camera: viewMatrix(64) + projMatrix(64) + vpMatrix(64) + position(12) + pad(4) = 208 bytes
   const buffer = device.createBuffer({
@@ -547,6 +558,11 @@ export function createCameraBuffer(device) {
   };
 }
 
+/**
+ * Create a uniform buffer for model matrix / transform data.
+ * @param {GPUDevice} device The WebGPU device.
+ * @returns {GPUBuffer} GPU buffer for model transform.
+ */
 export function createModelBuffer(device) {
   // Model: modelMatrix(64) + normalMatrix(64) = 128 bytes
   const buffer = device.createBuffer({
@@ -566,6 +582,11 @@ export function createModelBuffer(device) {
   };
 }
 
+/**
+ * Create a uniform buffer for light parameters.
+ * @param {GPUDevice} device The WebGPU device.
+ * @returns {GPUBuffer} GPU buffer for lights.
+ */
 export function createLightBuffer(device) {
   // Light: position(12) + pad(4) + color(12) + intensity(4) + direction(12) + pad(4) = 48 bytes
   const buffer = device.createBuffer({
@@ -587,6 +608,12 @@ export function createLightBuffer(device) {
   };
 }
 
+/**
+ * Create a material uniform buffer; layout changes if PBR is enabled.
+ * @param {GPUDevice} device The WebGPU device.
+ * @param {boolean} [isPBR=false] Whether to allocate PBR material layout.
+ * @returns {GPUBuffer} GPU buffer for material data.
+ */
 export function createMaterialBuffer(device, isPBR = false) {
   // Standard: ambient(12) + pad + diffuse(12) + pad + specular(12) + shininess(4) = 48 bytes
   // PBR: albedo(12) + metallic(4) + roughness(4) + ao(4) + pad(8) = 32 bytes

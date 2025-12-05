@@ -41,6 +41,12 @@ import { gpuFlow, gpu as gpuSimple } from './gpu/index.js';
  * @param {HTMLElement|string=} canvasOrSelector - Canvas element or CSS selector. If omitted, a fullscreen canvas is created.
  * @returns {{glsl: function(string=), gl: function(string=), flow: function(): *, gpu: function(*=, *=, *=): *}}
  */
+/**
+ * Convenience entry to create a mushu rendering flow for a canvas.
+ * Re-exports deeper runtimes but provides a single top-level constructor.
+ * @param {HTMLCanvasElement|string} canvasOrSelector Canvas element or selector.
+ * @returns {object} The created flow instance.
+ */
 export function mushu(canvasOrSelector) {
   let canvas;
 

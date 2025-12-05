@@ -624,6 +624,11 @@ export const quat = {
 // Camera Plugin — Easy camera setup for 3D scenes
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a camera object containing projection and view matrices and helpers.
+ * @param {object} [options]
+ * @returns {object} Camera with matrices and update methods.
+ */
 export function camera(options = {}) {
   const {
     fov = 60,
@@ -726,6 +731,12 @@ export function camera(options = {}) {
 // Orbit Controls Plugin — Mouse/touch orbit camera
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Attach simple orbit controls to a camera object, updating the camera on input.
+ * @param {object} cam Camera created via `camera()`.
+ * @param {object} [options]
+ * @returns {object} Controls handle with `update()` and `dispose()`.
+ */
 export function orbitControls(cam, options = {}) {
   const {
     damping = 0.1,

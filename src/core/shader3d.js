@@ -108,6 +108,13 @@ void main() {
 // Shader3D Plugin
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a 3D shader program helper from vertex and fragment GLSL sources.
+ * @param {string} [vertSource] Vertex GLSL source.
+ * @param {string} [fragSource] Fragment GLSL source.
+ * @param {object} [options]
+ * @returns {object} Compiled shader program helper with `use()` and uniform setters.
+ */
 export function shader3d(vertSource = defaultVertex, fragSource = defaultFragment, options = {}) {
   const {
     uniforms = {},              // Custom uniforms
@@ -447,6 +454,11 @@ void main() {
   fragColor = vec4(color, 1.0);
 }`;
 
+/**
+ * Create a PBR-ready shader preset (GGX/metalness-roughness).
+ * @param {object} [options]
+ * @returns {object} Shader helper implementing PBR shading.
+ */
 export function pbrShader(options = {}) {
   return shader3d(pbrVertex, pbrFragment, {
     uniforms: {
@@ -504,6 +516,11 @@ void main() {
   }
 }`;
 
+/**
+ * Create an unlit shader preset (simple textured/color output).
+ * @param {object} [options]
+ * @returns {object} Shader helper for unlit rendering.
+ */
 export function unlitShader(options = {}) {
   return shader3d(unlitVertex, unlitFragment, {
     uniforms: {
@@ -519,6 +536,11 @@ export function unlitShader(options = {}) {
 // Normal Visualization Shader (for debugging)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a shader that outputs normals as color for debugging.
+ * @param {object} [options]
+ * @returns {object} Shader helper that visualizes normals.
+ */
 export function normalShader(options = {}) {
   const frag = /* glsl */`#version 300 es
 precision highp float;
@@ -538,6 +560,11 @@ void main() {
 // UV Visualization Shader (for debugging)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a shader that outputs UV coordinates as color for debugging.
+ * @param {object} [options]
+ * @returns {object} Shader helper that visualizes UVs.
+ */
 export function uvShader(options = {}) {
   const frag = /* glsl */`#version 300 es
 precision highp float;
@@ -599,6 +626,11 @@ void main() {
 // Depth Shader (for shadow mapping etc)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a shader that renders linear depth for shadowing/debugging.
+ * @param {object} [options]
+ * @returns {object} Shader helper that outputs depth.
+ */
 export function depthShader(options = {}) {
   const frag = /* glsl */`#version 300 es
 precision highp float;

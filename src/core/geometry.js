@@ -36,6 +36,11 @@
  * @param {string} [options.drawMode='TRIANGLES']
  * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), update:function(string, Float32Array, FlowContext), destroy:function(FlowContext)}}
  */
+/**
+ * Create a VAO wrapper object describing attribute buffers and counts.
+ * @param {object} [options]
+ * @returns {object} VAO description with buffers and draw-count.
+ */
 export function vao(options = {}) {
   const {
     positions = null,      // Float32Array or array of positions
@@ -205,6 +210,12 @@ export function vao(options = {}) {
  * @param {Object} [options.material]
  * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), setTransform:function(Object), destroy:function(FlowContext)}}
  */
+/**
+ * Wraps a geometry object into a renderable mesh, applying transforms and material data.
+ * @param {object} geometry Geometry returned from primitive generators or OBJ loader.
+ * @param {object} [options]
+ * @returns {object} Mesh object suitable for the runtime's draw calls.
+ */
 export function mesh(geometry, options = {}) {
   const {
     transform = null,      // { position, rotation, scale }
@@ -304,6 +315,10 @@ export function mesh(geometry, options = {}) {
  * Convenience: fullscreen quad VAO plugin.
  * @returns {Object} plugin returned by `vao()` for a fullscreen triangle.
  */
+/**
+ * Return a fullscreen triangle/quad geometry for postprocessing passes.
+ * @returns {object} Geometry object for a fullscreen draw.
+ */
 export function fullscreenQuad() {
   return vao({
     positions: [
@@ -325,6 +340,11 @@ export function fullscreenQuad() {
  * Generate a plane geometry and return a VAO plugin.
  * @param {Object} [options] width,height,widthSegments,heightSegments
  * @returns {Object} plugin from `vao()`
+ */
+/**
+ * Generate a subdivided plane geometry.
+ * @param {object} [options]
+ * @returns {object} Plane geometry with positions, uvs, normals and indices.
  */
 export function plane(options = {}) {
   const {
@@ -377,6 +397,11 @@ export function plane(options = {}) {
  * @param {Object} [options]
  * @param {number} [options.size=1]
  * @returns {Object} plugin from `vao()`
+ */
+/**
+ * Generate a unit cube geometry.
+ * @param {object} [options]
+ * @returns {object} Cube geometry with positions, uvs, normals and indices.
  */
 export function cube(options = {}) {
   const { size = 1 } = options;
@@ -452,6 +477,11 @@ export function cube(options = {}) {
  * @param {number} [options.heightSegments=16]
  * @returns {Object} plugin from `vao()`
  */
+/**
+ * Create a UV sphere geometry.
+ * @param {object} [options]
+ * @returns {object} Sphere geometry with positions, uvs, normals and indices.
+ */
 export function sphere(options = {}) {
   const {
     radius = 0.5,
@@ -502,6 +532,11 @@ export function sphere(options = {}) {
  * Create a cylinder mesh VAO plugin.
  * @param {Object} [options]
  * @returns {Object} plugin from `vao()`
+ */
+/**
+ * Create a cylinder geometry.
+ * @param {object} [options]
+ * @returns {object} Cylinder geometry with positions, uvs, normals and indices.
  */
 export function cylinder(options = {}) {
   const {
@@ -615,6 +650,11 @@ export function cylinder(options = {}) {
  * @param {Object} [options]
  * @returns {Object} plugin from `vao()`
  */
+/**
+ * Create a torus geometry.
+ * @param {object} [options]
+ * @returns {object} Torus geometry with positions, uvs, normals and indices.
+ */
 export function torus(options = {}) {
   const {
     radius = 0.5,
@@ -668,6 +708,11 @@ export function torus(options = {}) {
  * @param {Object} [options]
  * @returns {Object} plugin from `cylinder()`
  */
+/**
+ * Create a cone geometry.
+ * @param {object} [options]
+ * @returns {object} Cone geometry with positions, uvs, normals and indices.
+ */
 export function cone(options = {}) {
   return cylinder({
     radiusTop: 0,
@@ -687,6 +732,11 @@ export function cone(options = {}) {
  * Parse an OBJ format string into position, normal, uv and index arrays.
  * @param {string} objString - Contents of an .obj file
  * @returns {{positions:number[], normals:number[], uvs:number[], indices:number[]}}
+ */
+/**
+ * Parse an OBJ file string into a geometry object.
+ * @param {string} objString The contents of an OBJ file.
+ * @returns {object} Geometry with positions, uvs, normals and indices.
  */
 export function loadOBJ(objString) {
   const positions = [];
@@ -768,6 +818,12 @@ export function loadOBJ(objString) {
  * @param {Object} [options] - Passed to `vao()`.
  * @returns {{name:string, init:function(FlowContext), render:function(FlowContext), destroy:function(FlowContext)}}
  */
+/**
+ * Load an OBJ file from a URL and parse it into geometry.
+ * @param {string} url URL of the OBJ file.
+ * @param {object} [options]
+ * @returns {Promise<object>} Promise resolving to parsed geometry.
+ */
 export function obj(url, options = {}) {
   let vaoPlugin = null;
 
@@ -805,6 +861,12 @@ export function obj(url, options = {}) {
  * @param {Array|Float32Array} [options.colors]
  * @returns {Object}
  */
+/**
+ * Create a line-strip geometry from ordered points.
+ * @param {Array<number>} points Flat array of point coordinates.
+ * @param {object} [options]
+ * @returns {object} Line geometry.
+ */
 export function lines(points, options = {}) {
   const { loop = false, colors = null } = options;
 
@@ -821,6 +883,12 @@ export function lines(points, options = {}) {
  * @param {Object} [options]
  * @returns {Object}
  */
+/**
+ * Create line-segment geometry from pairs of points.
+ * @param {Array<number>} points Flat array of point coordinates (pairs form segments).
+ * @param {object} [options]
+ * @returns {object} Line segments geometry.
+ */
 export function lineSegments(points, options = {}) {
   return vao({
     positions: points,
@@ -834,6 +902,12 @@ export function lineSegments(points, options = {}) {
  * @param {Array<number>|Float32Array} positions
  * @param {Object} [options]
  * @returns {Object}
+ */
+/**
+ * Create a points cloud geometry from positions.
+ * @param {Array<number>} positions Flat array of vertex positions.
+ * @param {object} [options]
+ * @returns {object} Points geometry.
  */
 export function points(positions, options = {}) {
   return vao({

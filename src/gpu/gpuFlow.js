@@ -20,6 +20,10 @@
  * Return whether WebGPU is available in the current environment.
  * @returns {boolean}
  */
+/**
+ * Returns true when the current environment supports WebGPU.
+ * @returns {boolean} Whether WebGPU is available.
+ */
 export function hasWebGPU() {
   return !!navigator.gpu;
 }
@@ -35,6 +39,11 @@ export function hasWebGPU() {
  *
  * @param {HTMLCanvasElement|string} canvasOrSelector - Canvas element or selector.
  * @returns {{display: function(string), simulate: function(string), scale: function(number), go: function(): Promise<*> , stop: function(): *}}
+ */
+/**
+ * Create a minimal WebGPU-based rendering flow attached to a canvas.
+ * @param {HTMLCanvasElement|string} canvasOrSelector Canvas element or selector string.
+ * @returns {object} An object with helpers to build GPU render pipelines and submit frames.
  */
 export function gpuFlow(canvasOrSelector) {
   let canvas;

@@ -43,6 +43,11 @@
  * @param {HTMLCanvasElement|string|WebGL2RenderingContext} canvasOrGl - Canvas element, selector or GL context.
  * @returns {{use:function(*):*, scale:function(number):*, go:function():*, stop:function():*, ctx: FlowContext, hot:function(string, *):*, reset:function():*, destroy:function():*}}
  */
+/**
+ * Create a WebGL flow runtime which manages a render loop and plugins.
+ * @param {HTMLCanvasElement|WebGLRenderingContext|string} canvasOrGl Canvas or selector or an existing GL context.
+ * @returns {object} Flow instance with `.use()` and `.start()` helpers.
+ */
 export function flow(canvasOrGl) {
   // Accept either canvas element, selector, or WebGL context
   let canvas, gl;
@@ -284,6 +289,11 @@ export function flow(canvasOrGl) {
  *   Color array [r,g,b,a] or a function that returns one given the flow context.
  * @returns {function(FlowContext): void} plugin compatible with `flow().use(...)`.
  */
+/**
+ * Built-in plugin: clear the framebuffer each frame.
+ * @param {Array<number>|Function} [colorOrFn] Clear color array or a function returning a color.
+ * @returns {Function} Plugin function to register with `flow().use()`.
+ */
 export function clear(colorOrFn = [0, 0, 0, 1]) {
   return (ctx) => {
     const c = typeof colorOrFn === 'function' ? colorOrFn(ctx) : colorOrFn;
@@ -293,6 +303,10 @@ export function clear(colorOrFn = [0, 0, 0, 1]) {
 }
 
 // Fullscreen quad (sets up VAO for drawing)
+/**
+ * Built-in plugin: provide a fullscreen quad/triangle geometry for shader passes.
+ * @returns {Function} Plugin that injects a fullscreen geometry into the flow.
+ */
 export function quad() {
   let vao = null;
 
@@ -315,6 +329,12 @@ export function quad() {
  */
 
 // Compile and use a fragment shader
+/**
+ * Built-in plugin: compile and run a fragment shader for full-screen passes.
+ * @param {string} fragSource Fragment GLSL source string.
+ * @param {object} [options]
+ * @returns {Function} Plugin that renders the shader.
+ */
 export function shader(fragSource, options = {}) {
   let program = null;
   const customUniforms = options.uniforms || {};
@@ -432,6 +452,12 @@ export function shader(fragSource, options = {}) {
  */
 
 // Set a custom uniform
+/**
+ * Built-in plugin: inject a uniform into the shader environment.
+ * @param {string} name Uniform name.
+ * @param {any|Function} valueOrFn Static value or function producing the value each frame.
+ * @returns {Function} Plugin registering the uniform.
+ */
 export function uniform(name, valueOrFn) {
   let location = null;
   let lastProgram = null;
@@ -474,6 +500,10 @@ export function uniform(name, valueOrFn) {
  */
 
 // FPS counter
+/**
+ * Built-in plugin: provide frames-per-second timing metrics to the flow.
+ * @returns {Function} Plugin that tracks FPS and exposes it via `state.fps`.
+ */
 export function fps() {
   let div = null;
   let lastUpdate = 0;
@@ -511,6 +541,11 @@ export function fps() {
 // Advanced: Ping-pong FBO for simulations
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Built-in plugin: simple ping-pong simulation helper for GPGPU or CPU sim steps.
+ * @param {object} [options]
+ * @returns {Function} Plugin that manages simulation step state.
+ */
 export function simulation(options = {}) {
   const {
     scale = 0.5,      // Resolution scale
@@ -720,6 +755,12 @@ export function simulation(options = {}) {
 // Simple one-liner API for quick demos
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Convenience: create and mount a `flow()` instance that runs a single GLSL fragment.
+ * @param {string} fragSource Fragment GLSL source.
+ * @param {HTMLCanvasElement|string} canvasOrSelector Canvas element or selector.
+ * @returns {object} The created flow instance.
+ */
 export function glsl(fragSource, canvasOrSelector) {
   let canvas;
 

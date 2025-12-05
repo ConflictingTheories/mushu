@@ -25,6 +25,13 @@
 // Loads image textures from URLs with automatic format detection
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create or load a 2D texture for WebGL from various sources.
+ * @param {HTMLImageElement|HTMLCanvasElement|HTMLVideoElement|string|ArrayBufferView} source
+ *   Source for the texture. May be an element, URL string, or raw data.
+ * @param {object} [options]
+ * @returns {object} Texture handle usable by the runtime.
+ */
 export function texture(source, options = {}) {
   const {
     name = 'texture0',           // Uniform name
@@ -140,6 +147,11 @@ export function texture(source, options = {}) {
 // Data Texture — Create textures from raw data
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a data-backed texture (RGBA float/byte) from an options object.
+ * @param {object} [options]
+ * @returns {object} Texture handle for pixel data uploads.
+ */
 export function dataTexture(options = {}) {
   const {
     name = 'dataTexture',
@@ -233,6 +245,12 @@ export function dataTexture(options = {}) {
 // Video Texture — Continuously update from video element
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a live-updating texture sourced from a video element or URL.
+ * @param {HTMLVideoElement|string} videoElementOrUrl Video element or URL to load.
+ * @param {object} [options]
+ * @returns {object} Texture handle which updates each frame.
+ */
 export function videoTexture(videoElementOrUrl, options = {}) {
   const {
     name = 'video',
@@ -318,6 +336,11 @@ export function videoTexture(videoElementOrUrl, options = {}) {
 // Webcam Texture
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a texture that streams from the user's webcam (getUserMedia).
+ * @param {object} [options]
+ * @returns {Promise<object>} Resolves to a texture handle once stream is active.
+ */
 export function webcamTexture(options = {}) {
   const {
     name = 'webcam',
@@ -401,6 +424,12 @@ export function webcamTexture(options = {}) {
 // Cube Map Texture
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Load or create a cubemap texture from 6 image sources.
+ * @param {Array<string|HTMLImageElement>} sources Array of 6 sources ordered +X, -X, +Y, -Y, +Z, -Z.
+ * @param {object} [options]
+ * @returns {object} Cubemap texture handle.
+ */
 export function cubeMap(sources, options = {}) {
   // sources: { px, nx, py, ny, pz, nz } or array [px, nx, py, ny, pz, nz]
   const {
@@ -489,6 +518,11 @@ export function cubeMap(sources, options = {}) {
 // Render Target (FBO) — Render to texture
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a framebuffer/render-target texture pair used as an offscreen render target.
+ * @param {object} [options]
+ * @returns {object} Object containing the texture and framebuffer.
+ */
 export function renderTarget(options = {}) {
   const {
     name = 'renderTarget',
@@ -622,6 +656,11 @@ export function renderTarget(options = {}) {
 // Noise Textures (procedurally generated)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Generate a procedural noise texture (perlin/simplex) for use as input maps.
+ * @param {object} [options]
+ * @returns {object} Noise texture handle.
+ */
 export function noiseTexture(options = {}) {
   const {
     name = 'noise',

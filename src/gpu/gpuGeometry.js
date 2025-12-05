@@ -28,6 +28,12 @@
  * @param {Object} geometry - { positions, normals, uvs, colors, indices }
  * @returns {{vertexBuffer: GPUBuffer, indexBuffer: GPUBuffer|null, vertexCount:number, indexCount:number, indexFormat:string, strideBytes:number, bufferLayout:Object, draw:function(passEncoder:GPURenderPassEncoder)}}
  */
+/**
+ * Create GPU-side buffers for a geometry and return a draw-ready mesh wrapper.
+ * @param {GPUDevice} device The WebGPU device.
+ * @param {object} geometry Geometry with positions, normals, uvs and indices.
+ * @returns {object} GPU mesh wrapper containing buffers and draw metadata.
+ */
 export function gpuMesh(device, geometry) {
   const {
     positions,           // Float32Array or array
@@ -150,6 +156,11 @@ export function gpuMesh(device, geometry) {
 // Primitive Generators (return geometry objects for gpuMesh)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Helper to create a cube geometry suitable for GPU buffer upload.
+ * @param {number} [size=1]
+ * @returns {object} Geometry object.
+ */
 export function gpuCubeGeometry(size = 1) {
   const s = size / 2;
 
@@ -202,6 +213,13 @@ export function gpuCubeGeometry(size = 1) {
   return { positions, normals, uvs, indices };
 }
 
+/**
+ * Helper to create a sphere geometry suitable for GPU buffer upload.
+ * @param {number} [radius=0.5]
+ * @param {number} [widthSegments=32]
+ * @param {number} [heightSegments=16]
+ * @returns {object} Geometry object.
+ */
 export function gpuSphereGeometry(radius = 0.5, widthSegments = 32, heightSegments = 16) {
   const positions = [];
   const normals = [];
@@ -241,6 +259,14 @@ export function gpuSphereGeometry(radius = 0.5, widthSegments = 32, heightSegmen
   return { positions, normals, uvs, indices };
 }
 
+/**
+ * Helper to create a plane geometry for GPU buffers.
+ * @param {number} [width=1]
+ * @param {number} [height=1]
+ * @param {number} [widthSegments=1]
+ * @param {number} [heightSegments=1]
+ * @returns {object} Geometry object.
+ */
 export function gpuPlaneGeometry(width = 1, height = 1, widthSegments = 1, heightSegments = 1) {
   const positions = [];
   const normals = [];
@@ -276,6 +302,14 @@ export function gpuPlaneGeometry(width = 1, height = 1, widthSegments = 1, heigh
   return { positions, normals, uvs, indices };
 }
 
+/**
+ * Helper to create a torus geometry for GPU buffers.
+ * @param {number} [radius=0.5]
+ * @param {number} [tube=0.2]
+ * @param {number} [radialSegments=32]
+ * @param {number} [tubularSegments=24]
+ * @returns {object} Geometry object.
+ */
 export function gpuTorusGeometry(radius = 0.5, tube = 0.2, radialSegments = 32, tubularSegments = 24) {
   const positions = [];
   const normals = [];
@@ -320,6 +354,11 @@ export function gpuTorusGeometry(radius = 0.5, tube = 0.2, radialSegments = 32, 
 // OBJ Loader for WebGPU
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Parse an OBJ string into a geometry object (GPU-friendly format).
+ * @param {string} objString OBJ file contents.
+ * @returns {object} Parsed geometry with attributes and indices.
+ */
 export function parseOBJ(objString) {
   const positions = [];
   const normals = [];
@@ -396,6 +435,14 @@ export function parseOBJ(objString) {
 // Instanced Mesh for WebGPU
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create an instanced mesh wrapper that includes instance buffers and count.
+ * @param {GPUDevice} device The WebGPU device.
+ * @param {object} geometry Geometry object.
+ * @param {number} instanceCount Number of instances to allocate.
+ * @param {ArrayBuffer|TypedArray|null} [instanceData] Optional initial instance data.
+ * @returns {object} Instanced mesh wrapper with draw methods.
+ */
 export function gpuInstancedMesh(device, geometry, instanceCount, instanceData = null) {
   const mesh = gpuMesh(device, geometry);
 

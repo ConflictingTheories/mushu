@@ -166,6 +166,12 @@ async function generateMips(device, texture, width, height, mipLevelCount) {
 // Data Texture — Create textures from raw data
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a GPU-side data texture (wgpu) for buffer-backed data uploads.
+ * @param {GPUDevice} device The WebGPU device.
+ * @param {object} [options]
+ * @returns {object} GPU texture wrapper with update helpers.
+ */
 export function gpuDataTexture(device, options = {}) {
   const {
     width = 256,
@@ -263,6 +269,13 @@ function getBytesPerPixel(format) {
 // Video Texture
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create a GPU texture which is periodically updated from a video source.
+ * @param {GPUDevice} device The WebGPU device.
+ * @param {HTMLVideoElement|string} videoSource Video element or URL.
+ * @param {object} [options]
+ * @returns {object} GPU texture wrapper that updates from the video.
+ */
 export function gpuVideoTexture(device, videoSource, options = {}) {
   const {
     autoplay = true,
@@ -399,6 +412,12 @@ export async function gpuCubeMap(device, sources, options = {}) {
 // Render Target
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Create GPU-side render target textures / views for offscreen rendering.
+ * @param {GPUDevice} device The WebGPU device.
+ * @param {object} [options]
+ * @returns {object} Render target containing texture, view, and sample count.
+ */
 export function gpuRenderTarget(device, options = {}) {
   const {
     width = 512,
@@ -524,6 +543,12 @@ export function gpuRenderTarget(device, options = {}) {
 // Noise Texture (procedurally generated)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Generate a GPU-side noise texture uploaded to the device.
+ * @param {GPUDevice} device The WebGPU device.
+ * @param {object} [options]
+ * @returns {object} Noise texture wrapper for GPU sampling.
+ */
 export function gpuNoiseTexture(device, options = {}) {
   const {
     size = 256,

@@ -37,7 +37,10 @@ import { mushu, shader, fps } from '../../src/index.js';
 // Move mouse to influence the plasma! Click for energy burst!
 // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').gl().flow()
+// Move mouse to interact!
+// ═══════════════════════════════════════════════════════════════════════════
+
+mushu('#c').gl()
   .use(shader(`
     // ─────────────────────────────────────────────────────────────────────
     // Noise Functions

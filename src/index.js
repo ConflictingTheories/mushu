@@ -50,17 +50,27 @@ export function mushu(canvasOrSelector) {
   }
   
   return {
-    // Quick shader helper - auto starts (gl() is the new name, glsl() is legacy)
+    // Quick shader helper - auto starts if code provided, otherwise returns flow builder
     gl(fragSource) {
-      return flow(canvas)
-        .use(shader(fragSource))
-        .go();
+      // If called with shader code, auto-start
+      if (fragSource !== undefined) {
+        return flow(canvas)
+          .use(shader(fragSource))
+          .go();
+      }
+      // Otherwise return flow builder for chaining
+      return flow(canvas);
     },
     
     glsl(fragSource) {
-      return flow(canvas)
-        .use(shader(fragSource))
-        .go();
+      // If called with shader code, auto-start
+      if (fragSource !== undefined) {
+        return flow(canvas)
+          .use(shader(fragSource))
+          .go();
+      }
+      // Otherwise return flow builder for chaining
+      return flow(canvas);
     },
     
     // WebGL2 fluent runtime with plugin system

@@ -534,7 +534,7 @@
           <pre><code><span class="keyword">import</span> { mushu, shader, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
 
 <span class="comment">// Chainable, pluggable, beautiful</span>
-<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gl</span>().<span class="function">flow</span>()
+<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gl</span>()
   .<span class="function">use</span>(<span class="function">shader</span>(<span class="string">`
     void mainImage(out vec4 O, vec2 C) {
       vec2 uv = C / resolution;
@@ -615,7 +615,7 @@
 
       <!-- Flow Section -->
       <div class="section">
-        <h3 class="flow">🎯 Flow Examples <code>mushu('#c').gl().flow().use(shader()).go()</code></h3>
+        <h3 class="flow">🎯 Flow Examples <code>mushu('#c').gl().use(shader()).go()</code></h3>
         <div class="grid">
           <div class="card flow"><h4>🔥 Fire</h4><p>Plugin-based fire with FPS</p><a href="flow-glsl/fire.html">Demo →</a></div>
           <div class="card flow"><h4>💨 Smoke</h4><p>Fluent smoke simulation</p><a href="flow-glsl/smoke.html">Demo →</a></div>

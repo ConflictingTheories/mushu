@@ -38,7 +38,10 @@ import { mushu, shader, fps } from '../../src/index.js';
 // Move mouse to create ripples!
 // ═══════════════════════════════════════════════════════════════════════════
 
-mushu('#c').gl().flow()
+// Move mouse to disturb the water!
+// ═══════════════════════════════════════════════════════════════════════════
+
+mushu('#c').gl()
   .use(shader(`
     // ─────────────────────────────────────────────────────────────────────
     // Noise Functions

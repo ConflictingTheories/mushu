@@ -12,26 +12,24 @@
   </style>
 </head>
 <body>
-<div class="info">🔥 <code>yoGPU().display().go()</code> Fire | WebGPU Fluent API</div>
+<div class="info">🔥 <code>yoGPU().display().go()</code> Candle Flame | Move mouse to position flame</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
 import { yoGPU } from '../src/gpu/yoGPU.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// YOGPU Fire - Procedural Approach (matches the working GLSL demo)
+// YOGPU Candle Flame - Interactive flame that follows mouse
 // 
-// This uses purely procedural noise - no broken simulation!
-// Fire rises from the bottom, flickering with turbulent noise
-// 
-// Move mouse to interact with flames!
+// Features:
+//   • Realistic candle/match flame shape
+//   • Flame follows mouse position
+//   • Flickering and dancing motion
+//   • Proper blackbody coloring
+//   • Blue base like real candle flames
 // ═══════════════════════════════════════════════════════════════════════════
 
 yoGPU(document.getElementById('c'))
   .display(`
-    // ─────────────────────────────────────────────────────────────────────
-    // Noise Functions
-    // ─────────────────────────────────────────────────────────────────────
-    
     fn hash(p: vec2<f32>) -> f32 {
       var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
       p3 = p3 + dot(p3, p3.yzx + 33.33);
@@ -41,7 +39,7 @@ yoGPU(document.getElementById('c'))
     fn noise(p: vec2<f32>) -> f32 {
       let i = floor(p);
       let f = fract(p);
-      let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+      let u = f * f * (3.0 - 2.0 * f);
       return mix(
         mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
         mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x),
@@ -49,14 +47,14 @@ yoGPU(document.getElementById('c'))
       );
     }
     
-    fn fbm(pp: vec2<f32>, octaves: i32) -> f32 {
+    fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
       var value = 0.0;
       var amplitude = 0.5;
-      var p = pp;
-      for (var i = 0; i < 8; i++) {
+      var pos = p;
+      for (var i = 0; i < 6; i++) {
         if (i >= octaves) { break; }
-        value += amplitude * noise(p);
-        p = p * 2.0;
+        value += amplitude * noise(pos);
+        pos = pos * 2.0 + vec2<f32>(1.7, 3.2);
         amplitude *= 0.5;
       }
       return value;
@@ -64,69 +62,127 @@ yoGPU(document.getElementById('c'))
 
     @fragment fn main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
       let aspect = resolution.x / resolution.y;
-      var p = uv - 0.5;
-      p.x *= aspect;
-      
-      // Fire comes from bottom (uv.y = 1 is bottom in our display coords)
-      // Flip Y so fire rises upward
-      let flippedY = 1.0 - uv.y;
-      
-      // Fire base shape - stronger at bottom, tapers up
-      var fireShape = flippedY;
-      fireShape *= smoothstep(0.5, 0.0, abs(p.x) - 0.15 + flippedY * 0.3);
-      
-      // Animated turbulence that rises upward
       let t = time;
-      var turbUV = vec2<f32>(p.x * 3.0, -p.y * 2.0 - t * 1.5);
-      let turb = fbm(turbUV * 4.0, 5);
-      let turb2 = fbm(turbUV * 8.0 + 100.0, 4);
       
-      // Distort the fire shape
-      var distortedShape = fireShape;
-      distortedShape += (turb - 0.5) * 0.8 * fireShape;
-      distortedShape += (turb2 - 0.5) * 0.3 * fireShape;
+      // Mouse position is the flame base
+      var flameBase = mouse;
+      flameBase.y = 1.0 - flameBase.y;
       
-      // Rising wisps
-      let wisps = noise(vec2<f32>(p.x * 20.0, -p.y * 5.0 - t * 3.0));
-      distortedShape += wisps * 0.3 * flippedY * smoothstep(0.3, 0.0, abs(p.x));
+      // Position relative to flame base
+      var p = uv - flameBase;
+      p.x *= aspect;
+      p.y = -p.y; // Flame goes UP
       
-      // Mouse interaction
-      var mouseP = vec2<f32>(mouse.x - 0.5, (1.0 - mouse.y) - 0.5);
-      mouseP.x *= aspect;
-      let mouseDist = length(p - mouseP);
-      let mouseInfluence = exp(-mouseDist * 5.0) * 0.5;
-      distortedShape += mouseInfluence;
+      // ─────────────────────────────────────────────────────────────────
+      // Candle Flame Shape
+      // ─────────────────────────────────────────────────────────────────
       
-      // Clamp intensity
-      let intensity = clamp(distortedShape, 0.0, 1.0);
+      // Gentle sway
+      let sway = sin(t * 3.0) * 0.015 + sin(t * 7.3) * 0.008 + sin(t * 11.0) * 0.004;
+      p.x -= sway * p.y * 2.0;
       
-      // Fire color gradient (blackbody-inspired)
+      // Flame dimensions
+      let flameHeight = 0.22;
+      let flameWidth = 0.032;
+      
+      // Normalized height
+      let normalizedY = clamp(p.y / flameHeight, 0.0, 1.0);
+      
+      // Teardrop profile
+      let widthProfile = sin(normalizedY * 3.14159) * (1.0 - normalizedY * 0.4);
+      let currentWidth = flameWidth * (0.25 + widthProfile * 0.75);
+      
+      // Distance from center
+      let xDist = abs(p.x) / currentWidth;
+      
+      // In flame zone
+      let inFlameY = step(0.0, p.y) * step(p.y, flameHeight);
+      
+      // Flame intensity
+      var flame = (1.0 - xDist) * inFlameY;
+      flame = max(0.0, flame);
+      flame = pow(flame, 0.6);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Turbulence & Flickering
+      // ─────────────────────────────────────────────────────────────────
+      
+      // Edge turbulence
+      let turb = fbm(vec2<f32>(p.x * 15.0, p.y * 15.0 - t * 8.0), 4);
+      flame *= 0.7 + turb * 0.5;
+      
+      // Inner core (less turbulent)
+      let innerFlame = pow(max(0.0, 1.0 - xDist * 1.5), 2.0) * inFlameY;
+      
+      // Wispy tip
+      let wispY = (p.y - flameHeight * 0.65) / (flameHeight * 0.35);
+      if (wispY > 0.0) {
+        let wisp = fbm(vec2<f32>(p.x * 30.0, -t * 12.0), 3);
+        flame *= max(0.0, 1.0 - wispY + wisp * 0.5);
+      }
+      
+      // Global flicker
+      let flicker = 0.88 + 0.12 * sin(t * 15.0) * sin(t * 23.0);
+      flame *= flicker;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Blackbody Colors
+      // ─────────────────────────────────────────────────────────────────
+      
       var color = vec3<f32>(0.0);
       
-      // White-hot core
-      color += vec3<f32>(1.0, 1.0, 0.95) * pow(intensity, 4.0) * 3.0;
-      // Bright yellow
-      color += vec3<f32>(1.0, 0.9, 0.5) * pow(intensity, 2.5) * 2.0;
-      // Orange
-      color += vec3<f32>(1.0, 0.5, 0.1) * pow(intensity, 1.5) * 1.5;
-      // Red
-      color += vec3<f32>(0.9, 0.2, 0.05) * pow(intensity, 0.8) * 1.0;
-      // Deep red edges
-      color += vec3<f32>(0.4, 0.05, 0.0) * pow(intensity, 0.4) * 0.5;
+      // Dark red outer
+      color += vec3<f32>(0.4, 0.02, 0.0) * pow(flame, 0.5) * 0.5;
       
-      // Flickering
-      let flicker = noise(vec2<f32>(t * 10.0, 0.0)) * 0.1 + 0.95;
-      color *= flicker;
+      // Orange
+      color += vec3<f32>(1.0, 0.35, 0.0) * pow(flame, 0.8) * 1.2;
+      
+      // Yellow
+      color += vec3<f32>(1.0, 0.7, 0.15) * pow(flame, 1.2) * 1.5;
+      
+      // White-hot core
+      let core = pow(innerFlame, 2.0) * (1.0 - normalizedY);
+      color += vec3<f32>(0.9, 0.95, 1.0) * core * 2.0;
+      
+      // Blue base (real candle characteristic)
+      let blueBase = max(0.0, 1.0 - normalizedY * 3.0) * innerFlame;
+      color = mix(color, vec3<f32>(0.3, 0.5, 1.0), blueBase * 0.4);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Ember/Wick Glow
+      // ─────────────────────────────────────────────────────────────────
+      
+      let emberDist = length(p * vec2<f32>(1.0, 3.0));
+      let ember = exp(-emberDist * 40.0) * 0.8;
+      color += vec3<f32>(1.0, 0.4, 0.1) * ember;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Atmospheric Glow
+      // ─────────────────────────────────────────────────────────────────
+      
+      let glowDist = length(p * vec2<f32>(1.0, 0.5));
+      let glow = exp(-glowDist * 8.0) * 0.3;
+      color += vec3<f32>(1.0, 0.3, 0.05) * glow;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Background & Final
+      // ─────────────────────────────────────────────────────────────────
+      
+      let bg = vec3<f32>(0.01, 0.01, 0.02);
+      let ambient = exp(-length(uv - vec2<f32>(flameBase.x, 1.0 - flameBase.y)) * 3.0);
+      var finalColor = bg + vec3<f32>(0.15, 0.05, 0.02) * ambient;
+      
+      finalColor += color;
       
       // Tone mapping
-      color = 1.0 - exp(-color * 0.8);
-      color = pow(color, vec3<f32>(0.9));
+      finalColor = finalColor / (finalColor + 0.8);
+      finalColor = pow(finalColor, vec3<f32>(0.9));
       
-      // Subtle vignette
-      let vignette = 1.0 - length(uv - 0.5) * 0.3;
-      color *= vignette;
+      // Vignette
+      let vignette = 1.0 - length(uv - 0.5) * 0.4;
+      finalColor *= vignette;
       
-      return vec4<f32>(color, 1.0);
+      return vec4<f32>(finalColor, 1.0);
     }
   `)
   .go();
@@ -149,8 +205,8 @@ yoGPU(document.getElementById('c'))
   updateFPS();
 })();
 
-console.log('%c 🔥 mushu YOGPU Fire Ready ', 'background: linear-gradient(90deg, #ff4400, #ff8800); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Move mouse to interact with flames!');
+console.log('%c 🔥 YOGPU Candle Flame ', 'background: linear-gradient(90deg, #ff4400, #ff8800); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Move mouse to position the flame!');
 </script>
 </body>
 </html>

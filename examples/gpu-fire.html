@@ -12,26 +12,24 @@
   </style>
 </head>
 <body>
-<div class="info">🔥 <code>gpu(compute, render)</code> Fire | WebGPU Function API</div>
+<div class="info">🔥 <code>gpu(compute, render)</code> Candle Flame | Move mouse to position flame</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
 import { gpu } from '../src/gpu/yoGPU.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// WebGPU Procedural Fire - Matching GLSL quality
+// WebGPU Candle Flame - Interactive flame that follows mouse
 // 
 // Features:
-//   • Procedural FBM noise for realistic flames
-//   • Blackbody radiation coloring
-//   • Fire rises naturally from bottom of screen
-//   • No simulation state - pure procedural generation
+//   • Realistic candle/match flame shape
+//   • Flame follows mouse position
+//   • Flickering and dancing motion
+//   • Proper blackbody coloring
+//   • Glowing ember at base
 // ═══════════════════════════════════════════════════════════════════════════
 
 gpu(
-  // No compute shader needed - purely procedural
   null,
-  
-  // Render shader - Procedural fire with blackbody coloring
   /* wgsl */`
     fn hash(p: vec2<f32>) -> f32 {
       var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -54,91 +52,150 @@ gpu(
       var value = 0.0;
       var amplitude = 0.5;
       var pos = p;
-      let rot = mat2x2<f32>(0.8, 0.6, -0.6, 0.8);
       for (var i = 0; i < 6; i++) {
         if (i >= octaves) { break; }
         value += amplitude * noise(pos);
-        pos = rot * pos * 2.0;
+        pos = pos * 2.0 + vec2<f32>(1.7, 3.2);
         amplitude *= 0.5;
       }
       return value;
     }
 
     fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
-      // Flip Y so fire rises from bottom to top
-      let y = 1.0 - uv.y;
-      var col = vec3<f32>(0.0);
+      let aspect = u.resolution.x / u.resolution.y;
+      let t = u.time;
+      
+      // Mouse position is the flame base
+      var flameBase = u.mouse;
+      flameBase.y = 1.0 - flameBase.y; // Flip Y
+      
+      // Position relative to flame base
+      var p = uv - flameBase;
+      p.x *= aspect;
+      
+      // Flip so flame goes UP from base
+      p.y = -p.y;
       
       // ─────────────────────────────────────────────────────────────────
-      // Fire Shape - procedural flames rising from bottom
+      // Candle Flame Shape
       // ─────────────────────────────────────────────────────────────────
       
-      // Create multiple flame columns with different phases
-      var fire = 0.0;
+      // Flame sways gently
+      let sway = sin(t * 3.0) * 0.015 + sin(t * 7.3) * 0.008;
+      p.x -= sway * p.y * 2.0;
       
-      for (var i = 0; i < 5; i++) {
-        let fi = f32(i);
-        let xOff = fi * 0.2 + 0.1;
-        let phase = fi * 1.7;
-        
-        // Flame column position with turbulence
-        let turbX = fbm(vec2<f32>(uv.x * 3.0 + phase, u.time * 2.0 + fi), 4) - 0.5;
-        let dx = uv.x - xOff + turbX * 0.15;
-        
-        // Flame shape - narrow at top, wide at bottom
-        let width = 0.08 + y * 0.12;
-        let flame = exp(-dx * dx / (width * width));
-        
-        // Vertical intensity - strongest at bottom, fading upward
-        let yShape = pow(y, 0.3) * exp(-y * 2.5);
-        
-        // Flickering with time
-        let flicker = 0.7 + 0.3 * fbm(vec2<f32>(uv.x * 8.0 + phase, u.time * 4.0 - y * 3.0), 3);
-        
-        fire += flame * yShape * flicker * 0.6;
+      // Flame height and width
+      let flameHeight = 0.25;
+      let flameWidth = 0.035;
+      
+      // Tear-drop shape for flame
+      let normalizedY = clamp(p.y / flameHeight, 0.0, 1.0);
+      
+      // Width varies: narrow at top, widest near bottom, then tapers at base
+      let widthProfile = sin(normalizedY * 3.14159) * (1.0 - normalizedY * 0.3);
+      let currentWidth = flameWidth * (0.3 + widthProfile * 0.7);
+      
+      // Horizontal distance from center
+      let xDist = abs(p.x) / currentWidth;
+      
+      // Vertical flame boundary
+      let inFlameY = step(0.0, p.y) * step(p.y, flameHeight);
+      
+      // Flame intensity based on shape
+      var flame = (1.0 - xDist) * inFlameY;
+      flame = max(0.0, flame);
+      flame = pow(flame, 0.6);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Flickering and Turbulence
+      // ─────────────────────────────────────────────────────────────────
+      
+      // Turbulent edges
+      let turbFreq = 15.0;
+      let turb = fbm(vec2<f32>(p.x * turbFreq, p.y * turbFreq - t * 8.0), 4);
+      flame *= 0.7 + turb * 0.5;
+      
+      // Inner flame has less turbulence
+      let innerFlame = pow(max(0.0, 1.0 - xDist * 1.5), 2.0) * inFlameY;
+      
+      // Wispy top
+      let wispY = (p.y - flameHeight * 0.7) / (flameHeight * 0.3);
+      if (wispY > 0.0) {
+        let wisp = fbm(vec2<f32>(p.x * 30.0, -t * 12.0), 3);
+        flame *= max(0.0, 1.0 - wispY + wisp * 0.5);
       }
       
-      // Add base fire glow across the bottom
-      let baseGlow = exp(-y * 4.0) * 0.8;
-      let baseNoise = fbm(vec2<f32>(uv.x * 15.0, u.time * 3.0), 4);
-      fire += baseGlow * (0.6 + baseNoise * 0.4);
-      
-      // Add turbulent detail
-      let detail = fbm(vec2<f32>(uv.x * 20.0, y * 10.0 - u.time * 6.0), 5);
-      fire *= 0.7 + detail * 0.5;
-      
-      fire = clamp(fire, 0.0, 3.0);
+      // Overall flicker
+      let flicker = 0.85 + 0.15 * sin(t * 15.0) * sin(t * 23.0);
+      flame *= flicker;
       
       // ─────────────────────────────────────────────────────────────────
-      // Blackbody Radiation Color Ramp
+      // Candle Flame Colors (Blackbody)
       // ─────────────────────────────────────────────────────────────────
       
-      // Deep red base (~1000K)
-      col += vec3<f32>(0.5, 0.05, 0.0) * fire * 0.8;
+      var color = vec3<f32>(0.0);
       
-      // Red-orange (~1500K)
-      col += vec3<f32>(1.0, 0.25, 0.0) * pow(fire, 1.3) * 1.2;
+      // Temperature increases toward center and base
+      let temp = flame * (0.5 + innerFlame * 0.5) * (1.0 - normalizedY * 0.3);
       
-      // Orange (~2000K)
-      col += vec3<f32>(1.0, 0.55, 0.1) * pow(fire, 1.8) * 1.0;
+      // Dark red base
+      color += vec3<f32>(0.4, 0.02, 0.0) * pow(flame, 0.5) * 0.5;
       
-      // Yellow (~2500K)
-      col += vec3<f32>(1.0, 0.85, 0.3) * pow(fire, 2.5) * 0.8;
+      // Orange outer
+      color += vec3<f32>(1.0, 0.35, 0.0) * pow(flame, 0.8) * 1.2;
       
-      // White-hot core (~4000K+)
-      col += vec3<f32>(1.0, 1.0, 0.9) * pow(fire, 4.0) * 0.6;
+      // Yellow middle
+      color += vec3<f32>(1.0, 0.7, 0.15) * pow(flame, 1.2) * 1.5;
+      
+      // White-blue core (hottest)
+      let core = pow(innerFlame, 2.0) * (1.0 - normalizedY);
+      color += vec3<f32>(0.9, 0.95, 1.0) * core * 2.0;
+      
+      // Blue base (like real candle)
+      let blueBase = max(0.0, 1.0 - normalizedY * 3.0) * innerFlame;
+      color = mix(color, vec3<f32>(0.3, 0.5, 1.0), blueBase * 0.4);
       
       // ─────────────────────────────────────────────────────────────────
-      // Tone Mapping
+      // Glowing Base (wick/ember)
       // ─────────────────────────────────────────────────────────────────
       
-      col = col / (col + 0.5);
-      col = pow(col, vec3<f32>(0.9));
+      let emberDist = length(p * vec2<f32>(1.0, 3.0));
+      let ember = exp(-emberDist * 40.0) * 0.8;
+      color += vec3<f32>(1.0, 0.4, 0.1) * ember;
       
-      return vec4<f32>(col, 1.0);
+      // ─────────────────────────────────────────────────────────────────
+      // Glow around flame
+      // ─────────────────────────────────────────────────────────────────
+      
+      let glowDist = length(p * vec2<f32>(1.0, 0.5));
+      let glow = exp(-glowDist * 8.0) * 0.3;
+      color += vec3<f32>(1.0, 0.3, 0.05) * glow;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Background
+      // ─────────────────────────────────────────────────────────────────
+      
+      let bg = vec3<f32>(0.01, 0.01, 0.02);
+      
+      // Ambient light from flame
+      let ambient = exp(-length(uv - vec2<f32>(flameBase.x, 1.0 - flameBase.y)) * 3.0);
+      var finalColor = bg + vec3<f32>(0.15, 0.05, 0.02) * ambient;
+      
+      // Add flame
+      finalColor += color;
+      
+      // Tone mapping
+      finalColor = finalColor / (finalColor + 0.8);
+      finalColor = pow(finalColor, vec3<f32>(0.9));
+      
+      // Vignette
+      let vignette = 1.0 - length(uv - 0.5) * 0.4;
+      finalColor *= vignette;
+      
+      return vec4<f32>(finalColor, 1.0);
     }
   `,
-  { canvas: document.getElementById('c'), scale: 0.5 }
+  { canvas: document.getElementById('c') }
 );
 
 // FPS Counter
@@ -159,7 +216,8 @@ gpu(
   updateFPS();
 })();
 
-console.log('%c 🔥 mushu WebGPU Fire Ready ', 'background: linear-gradient(90deg, #ff4400, #ff8800); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('%c 🔥 WebGPU Candle Flame ', 'background: linear-gradient(90deg, #ff4400, #ff8800); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Move mouse to position the flame!');
 </script>
 </body>
 </html>

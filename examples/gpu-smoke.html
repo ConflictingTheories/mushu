@@ -12,26 +12,24 @@
   </style>
 </head>
 <body>
-<div class="info">💨 <code>gpu(compute, render)</code> Smoke | WebGPU Function API</div>
+<div class="info">💨 <code>gpu(compute, render)</code> Match Smoke | Move mouse - smoke trails from cursor</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
 import { gpu } from '../src/gpu/yoGPU.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// WebGPU Procedural Volumetric Smoke - Matching GLSL quality
+// WebGPU Match Smoke - Smoke emits from mouse cursor like a match
 // 
 // Features:
-//   • Procedural FBM noise for realistic smoke billowing
-//   • Beer-Lambert light scattering
-//   • Multiple smoke columns with natural turbulence
-//   • Smoke rises naturally from bottom of screen
+//   • Smoke emits from mouse position
+//   • Realistic rising and billowing
+//   • Turbulent swirls and wisps
+//   • Proper volumetric lighting
+//   • Smoke trail follows mouse movement
 // ═══════════════════════════════════════════════════════════════════════════
 
 gpu(
-  // No compute shader needed - purely procedural
   null,
-  
-  // Render shader - Procedural volumetric smoke
   /* wgsl */`
     fn hash(p: vec2<f32>) -> f32 {
       var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -65,82 +63,133 @@ gpu(
     }
 
     fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
-      // Flip Y so smoke rises from bottom to top
-      let y = 1.0 - uv.y;
+      let aspect = u.resolution.x / u.resolution.y;
+      let t = u.time;
+      
+      // Mouse position is smoke source
+      var smokeSource = u.mouse;
+      smokeSource.y = 1.0 - smokeSource.y; // Flip Y
+      
+      // Position relative to smoke source
+      var p = uv - smokeSource;
+      p.x *= aspect;
+      
+      // Smoke rises UP from source
+      p.y = -p.y;
       
       // ─────────────────────────────────────────────────────────────────
-      // Smoke Shape - procedural columns rising from bottom
+      // Smoke Plume Shape
       // ─────────────────────────────────────────────────────────────────
       
       var smoke = 0.0;
       
-      // Multiple smoke columns
-      for (var i = 0; i < 4; i++) {
-        let fi = f32(i);
-        let xOff = 0.15 + fi * 0.22;
-        let phase = fi * 2.1;
+      // Multiple smoke layers for depth
+      for (var layer = 0; layer < 4; layer++) {
+        let fl = f32(layer);
+        let layerOffset = fl * 0.15;
+        let layerPhase = fl * 2.3;
         
-        // Column sways with turbulent motion
-        let sway = fbm(vec2<f32>(y * 2.0 + phase, u.time * 0.5 + fi), 4) - 0.5;
-        let dx = uv.x - xOff + sway * 0.12 * y;
+        // Smoke column with turbulent sway
+        var smokeP = p;
+        
+        // Sway increases with height
+        let swayAmount = smokeP.y * 0.4;
+        let sway = fbm(vec2<f32>(smokeP.y * 2.0 + layerPhase, t * 0.3 + fl), 3) - 0.5;
+        smokeP.x += sway * swayAmount;
+        
+        // Additional turbulent distortion
+        let turbX = fbm(vec2<f32>(smokeP.y * 4.0, t * 0.5 + layerPhase), 4) - 0.5;
+        let turbY = fbm(vec2<f32>(smokeP.x * 4.0 + 100.0, t * 0.4 + layerPhase), 4) - 0.5;
+        smokeP += vec2<f32>(turbX, turbY) * 0.08 * smokeP.y;
         
         // Smoke expands as it rises
-        let width = 0.04 + y * 0.15;
-        let column = exp(-dx * dx / (width * width));
+        let expansion = 1.0 + smokeP.y * 2.0;
+        let width = 0.03 * expansion;
         
-        // Vertical density - fades at top
-        let yShape = pow(y, 0.5) * exp(-y * 1.2);
+        // Column density
+        let xDist = abs(smokeP.x) / width;
+        var column = exp(-xDist * xDist * 2.0);
+        
+        // Fade with height
+        let heightFade = exp(-smokeP.y * 1.5);
+        column *= heightFade;
+        
+        // Only visible above source
+        column *= smoothstep(-0.02, 0.05, smokeP.y);
         
         // Billowing effect
-        let billow = 0.6 + 0.4 * fbm(vec2<f32>(uv.x * 8.0 + phase, y * 6.0 - u.time * 1.5), 4);
+        let billow = fbm(smokeP * 10.0 + vec2<f32>(layerPhase, -t * 1.5), 5);
+        column *= 0.5 + billow * 0.7;
         
-        smoke += column * yShape * billow * 0.5;
+        smoke += column * (0.4 - fl * 0.08);
       }
       
-      // Add wispy detail throughout
-      let detail = fbm(vec2<f32>(uv.x * 12.0, y * 8.0 - u.time * 1.0), 5);
-      smoke *= 0.6 + detail * 0.6;
+      // Add wispy tendrils breaking off
+      let tendrilP = p + vec2<f32>(
+        fbm(vec2<f32>(p.y * 8.0, t), 3) - 0.5,
+        0.0
+      ) * 0.15;
+      let tendrils = fbm(tendrilP * 15.0 + vec2<f32>(0.0, -t * 2.0), 4);
+      let tendrilMask = exp(-abs(p.x) * 8.0) * exp(-p.y * 0.5) * step(0.0, p.y);
+      smoke += tendrils * tendrilMask * 0.3;
       
-      // Base emission
-      let baseSmoke = exp(-y * 3.0) * 0.3;
-      let baseNoise = fbm(vec2<f32>(uv.x * 8.0, u.time * 0.8), 3);
-      smoke += baseSmoke * (0.5 + baseNoise * 0.5);
+      // Near-source intensity
+      let sourceDist = length(p);
+      let sourceIntensity = exp(-sourceDist * 20.0) * 0.5;
+      smoke += sourceIntensity;
       
-      smoke = clamp(smoke, 0.0, 1.5);
+      smoke = clamp(smoke, 0.0, 1.0);
       
       // ─────────────────────────────────────────────────────────────────
-      // Beer-Lambert Light Scattering
+      // Volumetric Lighting (Beer-Lambert)
       // ─────────────────────────────────────────────────────────────────
       
-      let absorption = 2.0;
+      let absorption = 2.5;
       let transmittance = exp(-smoke * absorption);
       
       // ─────────────────────────────────────────────────────────────────
-      // Smoke Color with Lighting
+      // Smoke Colors with Lighting
       // ─────────────────────────────────────────────────────────────────
       
-      let coolSmoke = vec3<f32>(0.75, 0.78, 0.85);
-      let warmSmoke = vec3<f32>(0.88, 0.85, 0.80);
-      var smokeColor = mix(coolSmoke, warmSmoke, y * 0.5);
+      // Base smoke color - slight warm tint near source, cool as it rises
+      let warmSmoke = vec3<f32>(0.75, 0.72, 0.68);
+      let coolSmoke = vec3<f32>(0.6, 0.62, 0.68);
+      var smokeColor = mix(warmSmoke, coolSmoke, clamp(p.y * 2.0, 0.0, 1.0));
       
-      // Darker at higher density
-      let denseSmoke = vec3<f32>(0.25, 0.26, 0.30);
-      smokeColor = mix(smokeColor, denseSmoke, smoke * 0.4);
+      // Darker in dense areas
+      let denseColor = vec3<f32>(0.25, 0.26, 0.28);
+      smokeColor = mix(smokeColor, denseColor, smoke * 0.5);
       
-      // Top-down lighting gradient
-      let lighting = 0.5 + y * 0.5;
-      smokeColor *= lighting;
+      // Top-lit (light from above)
+      let topLight = 0.6 + (1.0 - uv.y) * 0.4;
+      smokeColor *= topLight;
+      
+      // Subtle rim lighting
+      let rim = pow(smoke, 0.7) * 0.2;
+      smokeColor += vec3<f32>(0.3, 0.32, 0.38) * rim;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Ember Glow at Source
+      // ─────────────────────────────────────────────────────────────────
+      
+      let emberGlow = exp(-sourceDist * 30.0);
+      let emberFlicker = 0.7 + 0.3 * sin(t * 12.0) * sin(t * 19.0);
+      var ember = vec3<f32>(1.0, 0.4, 0.1) * emberGlow * emberFlicker * 0.6;
       
       // ─────────────────────────────────────────────────────────────────
       // Background
       // ─────────────────────────────────────────────────────────────────
       
-      let bgTop = vec3<f32>(0.02, 0.025, 0.04);
-      let bgBottom = vec3<f32>(0.04, 0.04, 0.05);
-      var bg = mix(bgTop, bgBottom, y);
+      let bgTop = vec3<f32>(0.03, 0.04, 0.06);
+      let bgBottom = vec3<f32>(0.02, 0.02, 0.03);
+      var bg = mix(bgBottom, bgTop, uv.y);
+      
+      // Ambient glow from ember
+      let ambientGlow = exp(-length(uv - vec2<f32>(smokeSource.x, 1.0 - smokeSource.y)) * 4.0);
+      bg += vec3<f32>(0.1, 0.04, 0.02) * ambientGlow * 0.3;
       
       // Vignette
-      let vignette = 1.0 - length(uv - 0.5) * 0.3;
+      let vignette = 1.0 - length(uv - 0.5) * 0.4;
       bg *= vignette;
       
       // ─────────────────────────────────────────────────────────────────
@@ -148,18 +197,23 @@ gpu(
       // ─────────────────────────────────────────────────────────────────
       
       var col = mix(smokeColor, bg, transmittance);
+      col += ember;
       
       // Atmospheric haze
-      col = mix(col, vec3<f32>(0.30, 0.35, 0.45), (1.0 - transmittance) * 0.08);
+      col = mix(col, vec3<f32>(0.4, 0.42, 0.48), (1.0 - transmittance) * 0.05);
+      
+      // Film grain
+      let grain = (hash(uv * 500.0 + t * 100.0) - 0.5) * 0.02;
+      col += grain;
       
       // Tone mapping
-      col = col / (col + 0.5);
+      col = col / (col + 0.6);
       col = pow(col, vec3<f32>(0.95));
       
       return vec4<f32>(col, 1.0);
     }
   `,
-  { canvas: document.getElementById('c'), scale: 0.5 }
+  { canvas: document.getElementById('c') }
 );
 
 // FPS Counter
@@ -180,7 +234,8 @@ gpu(
   updateFPS();
 })();
 
-console.log('%c 💨 mushu WebGPU Smoke Ready ', 'background: linear-gradient(90deg, #556, #889); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('%c 💨 WebGPU Match Smoke ', 'background: linear-gradient(90deg, #445, #778); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Move mouse - smoke trails from cursor like a match!');
 </script>
 </body>
 </html>

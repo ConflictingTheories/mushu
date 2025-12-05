@@ -434,7 +434,7 @@ export function fps() {
     name: 'fps',
     init() {
       div = document.createElement('div');
-      div.style.cssText = 'position:fixed;top:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000;pointer-events:none';
+      div.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000;pointer-events:none';
       document.body.appendChild(div);
     },
     render(ctx) {

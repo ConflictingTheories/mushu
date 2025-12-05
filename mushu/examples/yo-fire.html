@@ -3,141 +3,146 @@
 <head>
   <meta charset="utf-8">
   <title>mushu — YO Fire Demo</title>
-  <style>
-    * { margin: 0; padding: 0; }
-    body { background: #000; overflow: hidden; }
-    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
-            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
-    .info code { color: #ffaa00; }
-  </style>
+  <style>body{margin:0;overflow:hidden;background:#000}</style>
 </head>
 <body>
-<div class="info">🎯 <code>yo().use().go()</code> Fire | Move mouse to interact</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { glsl } from '../src/core/yo.js';
+import { yo, shader, fps } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// YO Fire - Procedural Approach (same as the working GLSL demo)
+// YO Fire - Procedural Flames (WebGL2)
 // 
-// Uses purely procedural noise for beautiful realistic fire
-// No broken simulation - just gorgeous flames every frame!
+// Features:
+//   • Multi-octave FBM noise for realistic flames
+//   • Blackbody radiation color ramp
+//   • Mouse-interactive fire intensity
+//   • Rising wisps and turbulent motion
+//   • Flickering animation
+// 
+// Move mouse to intensify flames!
 // ═══════════════════════════════════════════════════════════════════════════
 
-glsl(`
-  // Noise functions for realistic fire
-  float hash(vec2 p) {
-    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-  }
-  
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-    return mix(
-      mix(hash(i), hash(i + vec2(1,0)), f.x),
-      mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
-      f.y
-    );
-  }
-  
-  float fbm(vec2 p, int octaves) {
-    float f = 0.0;
-    float amp = 0.5;
-    for (int i = 0; i < 8; i++) {
-      if (i >= octaves) break;
-      f += amp * noise(p);
-      p *= 2.0;
-      amp *= 0.5;
+yo(document.getElementById('c'))
+  .use(shader(`
+    // ─────────────────────────────────────────────────────────────────────
+    // Noise Functions
+    // ─────────────────────────────────────────────────────────────────────
+    
+    float hash(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
     }
-    return f;
-  }
-  
-  void mainImage(out vec4 O, vec2 C) {
-    vec2 uv = C / resolution;
-    vec2 p = (C - resolution * 0.5) / resolution.y;
     
-    // Fire base shape - tapers upward
-    float fireShape = 1.0 - uv.y;
-    fireShape *= smoothstep(0.5, 0.0, abs(p.x) - 0.15 + uv.y * 0.3);
-    
-    // Animated turbulence
-    float t = time;
-    vec2 turbUV = vec2(p.x * 3.0, p.y * 2.0 - t * 1.5);
-    float turb = fbm(turbUV * 4.0, 5);
-    float turb2 = fbm(turbUV * 8.0 + vec2(100.0), 4);
-    
-    // Distort the fire shape
-    float distortedShape = fireShape;
-    distortedShape += (turb - 0.5) * 0.8 * fireShape;
-    distortedShape += (turb2 - 0.5) * 0.3 * fireShape;
-    
-    // Add rising wisps
-    float wisps = noise(vec2(p.x * 20.0, p.y * 5.0 - t * 3.0));
-    wisps *= smoothstep(0.3, 0.0, abs(p.x));
-    distortedShape += wisps * 0.3 * (1.0 - uv.y);
-    
-    // Mouse interaction
-    vec2 mouseP = mouse - 0.5;
-    mouseP.x *= resolution.x / resolution.y;
-    float mouseDist = length(p - mouseP);
-    float mouseInfluence = exp(-mouseDist * 5.0) * 0.5;
-    distortedShape += mouseInfluence;
-    
-    // Fire color gradient (blackbody-inspired)
-    float intensity = clamp(distortedShape, 0.0, 1.0);
-    
-    vec3 color = vec3(0.0);
-    
-    // White-hot core
-    color += vec3(1.0, 1.0, 0.95) * pow(intensity, 4.0) * 3.0;
-    // Bright yellow
-    color += vec3(1.0, 0.9, 0.5) * pow(intensity, 2.5) * 2.0;
-    // Orange
-    color += vec3(1.0, 0.5, 0.1) * pow(intensity, 1.5) * 1.5;
-    // Red
-    color += vec3(0.9, 0.2, 0.05) * pow(intensity, 0.8) * 1.0;
-    // Deep red edges
-    color += vec3(0.4, 0.05, 0.0) * pow(intensity, 0.4) * 0.5;
-    
-    // Flickering
-    float flicker = noise(vec2(t * 10.0, 0.0)) * 0.1 + 0.95;
-    color *= flicker;
-    
-    // Tone mapping
-    color = 1.0 - exp(-color * 0.8);
-    color = pow(color, vec3(0.9));
-    
-    // Subtle vignette
-    float vignette = 1.0 - length(uv - 0.5) * 0.3;
-    color *= vignette;
-    
-    O = vec4(color, 1.0);
-  }
-`, document.getElementById('c'));
-
-// FPS Counter
-(function() {
-  const fpsDiv = document.createElement('div');
-  fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
-  document.body.appendChild(fpsDiv);
-  let frames = 0, lastTime = performance.now();
-  function updateFPS() {
-    frames++;
-    const now = performance.now();
-    if (now - lastTime >= 500) {
-      fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
-      frames = 0; lastTime = now;
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+      return mix(
+        mix(hash(i), hash(i + vec2(1,0)), f.x),
+        mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
+        f.y
+      );
     }
-    requestAnimationFrame(updateFPS);
-  }
-  updateFPS();
-})();
+    
+    float fbm(vec2 p, int octaves) {
+      float f = 0.0;
+      float amp = 0.5;
+      for (int i = 0; i < 8; i++) {
+        if (i >= octaves) break;
+        f += amp * noise(p);
+        p *= 2.0;
+        amp *= 0.5;
+      }
+      return f;
+    }
+    
+    void mainImage(out vec4 O, vec2 C) {
+      vec2 uv = C / resolution;
+      vec2 p = (C - resolution * 0.5) / resolution.y;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Fire Base Shape
+      // ─────────────────────────────────────────────────────────────────
+      
+      float fireShape = 1.0 - uv.y;
+      fireShape *= smoothstep(0.5, 0.0, abs(p.x) - 0.15 + uv.y * 0.3);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Animated Turbulence
+      // ─────────────────────────────────────────────────────────────────
+      
+      float t = time;
+      vec2 turbUV = vec2(p.x * 3.0, p.y * 2.0 - t * 1.5);
+      float turb = fbm(turbUV * 4.0, 5);
+      float turb2 = fbm(turbUV * 8.0 + vec2(100.0), 4);
+      
+      // Distort the fire shape
+      float distortedShape = fireShape;
+      distortedShape += (turb - 0.5) * 0.8 * fireShape;
+      distortedShape += (turb2 - 0.5) * 0.3 * fireShape;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Rising Wisps
+      // ─────────────────────────────────────────────────────────────────
+      
+      float wisps = noise(vec2(p.x * 20.0, p.y * 5.0 - t * 3.0));
+      wisps *= smoothstep(0.3, 0.0, abs(p.x));
+      distortedShape += wisps * 0.3 * (1.0 - uv.y);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Mouse Interaction
+      // ─────────────────────────────────────────────────────────────────
+      
+      vec2 mouseP = mouse - 0.5;
+      mouseP.x *= resolution.x / resolution.y;
+      float mouseDist = length(p - mouseP);
+      float mouseInfluence = exp(-mouseDist * 5.0) * 0.5;
+      distortedShape += mouseInfluence;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Blackbody Color Ramp
+      // ─────────────────────────────────────────────────────────────────
+      
+      float intensity = clamp(distortedShape, 0.0, 1.0);
+      
+      vec3 col = vec3(0.0);
+      
+      // White-hot core
+      col += vec3(1.0, 1.0, 0.95) * pow(intensity, 4.0) * 3.0;
+      // Bright yellow
+      col += vec3(1.0, 0.9, 0.5) * pow(intensity, 2.5) * 2.0;
+      // Orange
+      col += vec3(1.0, 0.5, 0.1) * pow(intensity, 1.5) * 1.5;
+      // Red
+      col += vec3(0.9, 0.2, 0.05) * pow(intensity, 0.8) * 1.0;
+      // Deep red edges
+      col += vec3(0.4, 0.05, 0.0) * pow(intensity, 0.4) * 0.5;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Flickering & Final Touches
+      // ─────────────────────────────────────────────────────────────────
+      
+      float flicker = noise(vec2(t * 10.0, 0.0)) * 0.1 + 0.95;
+      col *= flicker;
+      
+      // Tone mapping
+      col = 1.0 - exp(-col * 0.8);
+      col = pow(col, vec3(0.9));
+      
+      // Subtle vignette
+      float vignette = 1.0 - length(uv - 0.5) * 0.3;
+      col *= vignette;
+      
+      O = vec4(col, 1.0);
+    }
+  `))
+  .use(fps())
+  .go();
 
-console.log('%c 🔥 YO Fire ', 'background: linear-gradient(90deg, #ff4500, #ff8c00); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Procedural fire using glsl() helper');
+console.log('%c 🔥 mushu YO Fire Ready ', 'background: linear-gradient(90deg, #ff4500, #ff8c00); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Move mouse to intensify flames!');
 </script>
 </body>
 </html>

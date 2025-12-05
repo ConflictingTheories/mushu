@@ -8,132 +8,163 @@
 <body>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { glsl } from '../src/core/yo.js';
+import { yo, shader, fps } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// YO Smoke - Procedural Approach (same as the working GLSL demo)
+// YO Smoke - Procedural Volumetric Smoke (WebGL2)
 // 
-// Uses purely procedural noise for beautiful volumetric smoke
-// No broken simulation - just gorgeous smoke every frame!
+// Features:
+//   • Multi-octave FBM noise for realistic billowing
+//   • Beer-Lambert volumetric absorption
+//   • Multiple smoke columns with turbulent motion
+//   • Mouse-interactive smoke dispersal
+//   • Volumetric lighting from above
+//   • Subtle glow at smoke source
+// 
+// Move mouse to disperse smoke!
 // ═══════════════════════════════════════════════════════════════════════════
 
-glsl(`
-  float hash(vec2 p) {
-    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-  }
-  
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-    return mix(
-      mix(hash(i), hash(i + vec2(1,0)), f.x),
-      mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
-      f.y
-    );
-  }
-  
-  float fbm(vec2 p, int octaves) {
-    float f = 0.0;
-    float amp = 0.5;
-    mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
-    for (int i = 0; i < 8; i++) {
-      if (i >= octaves) break;
-      f += amp * noise(p);
-      p = rot * p * 2.0;
-      amp *= 0.5;
-    }
-    return f;
-  }
-  
-  void mainImage(out vec4 O, vec2 C) {
-    vec2 uv = C / resolution;
-    vec2 p = (C - resolution * 0.5) / resolution.y;
-    float t = time * 0.4;
+yo(document.getElementById('c'))
+  .use(shader(`
+    // ─────────────────────────────────────────────────────────────────────
+    // Noise Functions
+    // ─────────────────────────────────────────────────────────────────────
     
-    // Base smoke columns
-    float smoke = 0.0;
-    
-    // Multiple smoke streams
-    for (int i = 0; i < 5; i++) {
-      float fi = float(i);
-      float xOffset = sin(fi * 1.3) * 0.3;
-      vec2 smokePos = vec2(p.x - xOffset, p.y + 0.4);
-      
-      // Rising motion with turbulence
-      float rise = fbm(vec2(smokePos.x * 2.0, t + fi), 4);
-      smokePos.y += rise * 0.3;
-      smokePos.x += sin(smokePos.y * 3.0 + t + fi) * 0.08;
-      
-      // Turbulent distortion
-      float turb = fbm(smokePos * 4.0 + t * 0.5 + fi, 5);
-      smokePos += (turb - 0.5) * 0.15;
-      
-      // Smoke density falloff
-      float dist = length(smokePos * vec2(3.0, 1.0));
-      float column = exp(-dist * 2.5);
-      
-      // Add wispy tendrils
-      float tendrils = fbm(smokePos * 8.0 - vec2(0, t), 3);
-      column *= (0.5 + tendrils * 0.8);
-      
-      smoke += column * (0.3 + 0.2 * sin(fi));
+    float hash(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
     }
     
-    // Add swirling vortices
-    float swirl = fbm(p * 3.0 + t * 0.3, 4);
-    smoke += swirl * 0.2 * (1.0 - uv.y);
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+      return mix(
+        mix(hash(i), hash(i + vec2(1,0)), f.x),
+        mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
+        f.y
+      );
+    }
     
-    // Mouse interaction - disperse smoke
-    vec2 mouseP = mouse - 0.5;
-    mouseP.x *= resolution.x / resolution.y;
-    float mouseDist = length(p - mouseP);
-    float mouseInfluence = exp(-mouseDist * 6.0);
-    smoke += mouseInfluence * 0.5;
-    smoke *= 1.0 - mouseInfluence * 0.4; // Dispersal effect
+    float fbm(vec2 p, int octaves) {
+      float f = 0.0;
+      float amp = 0.5;
+      mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+      for (int i = 0; i < 8; i++) {
+        if (i >= octaves) break;
+        f += amp * noise(p);
+        p = rot * p * 2.0;
+        amp *= 0.5;
+      }
+      return f;
+    }
     
-    // Volumetric lighting
-    vec3 smokeColorLight = vec3(0.65, 0.68, 0.72);
-    vec3 smokeColorDark = vec3(0.15, 0.15, 0.18);
-    
-    // Light from above
-    float topLight = uv.y * 0.3;
-    vec3 smokeColor = mix(smokeColorDark, smokeColorLight, topLight + smoke * 0.3);
-    
-    // Rim lighting
-    float rim = pow(smoke, 0.5) * 0.3;
-    smokeColor += vec3(0.2, 0.22, 0.25) * rim;
-    
-    // Beer-Lambert absorption
-    float density = clamp(smoke, 0.0, 1.0);
-    float transmittance = exp(-density * 2.0);
-    
-    // Background gradient
-    vec3 bgColor = mix(vec3(0.02, 0.02, 0.04), vec3(0.08, 0.08, 0.12), uv.y);
-    
-    // Composite smoke over background
-    vec3 color = mix(smokeColor, bgColor, transmittance);
-    
-    // Add subtle glow at source
-    float sourceGlow = exp(-length(p + vec2(0, 0.5)) * 3.0) * 0.5;
-    color += vec3(1.0, 0.6, 0.3) * sourceGlow * (1.0 - transmittance);
-    
-    // Film grain
-    float grain = (hash(C + time) - 0.5) * 0.03;
-    color += grain;
-    
-    // Vignette
-    float vignette = 1.0 - length(uv - 0.5) * 0.4;
-    color *= vignette;
-    
-    O = vec4(color, 1.0);
-  }
-`, document.getElementById('c'));
+    void mainImage(out vec4 O, vec2 C) {
+      vec2 uv = C / resolution;
+      vec2 p = (C - resolution * 0.5) / resolution.y;
+      float t = time * 0.4;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Multiple Smoke Columns
+      // ─────────────────────────────────────────────────────────────────
+      
+      float smoke = 0.0;
+      
+      for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float xOffset = sin(fi * 1.3) * 0.3;
+        vec2 smokePos = vec2(p.x - xOffset, p.y + 0.4);
+        
+        // Rising motion with turbulence
+        float rise = fbm(vec2(smokePos.x * 2.0, t + fi), 4);
+        smokePos.y += rise * 0.3;
+        smokePos.x += sin(smokePos.y * 3.0 + t + fi) * 0.08;
+        
+        // Turbulent distortion
+        float turb = fbm(smokePos * 4.0 + t * 0.5 + fi, 5);
+        smokePos += (turb - 0.5) * 0.15;
+        
+        // Smoke density falloff
+        float dist = length(smokePos * vec2(3.0, 1.0));
+        float column = exp(-dist * 2.5);
+        
+        // Add wispy tendrils
+        float tendrils = fbm(smokePos * 8.0 - vec2(0, t), 3);
+        column *= (0.5 + tendrils * 0.8);
+        
+        smoke += column * (0.3 + 0.2 * sin(fi));
+      }
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Swirling Vortices
+      // ─────────────────────────────────────────────────────────────────
+      
+      float swirl = fbm(p * 3.0 + t * 0.3, 4);
+      smoke += swirl * 0.2 * (1.0 - uv.y);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Mouse Interaction
+      // ─────────────────────────────────────────────────────────────────
+      
+      vec2 mouseP = mouse - 0.5;
+      mouseP.x *= resolution.x / resolution.y;
+      float mouseDist = length(p - mouseP);
+      float mouseInfluence = exp(-mouseDist * 6.0);
+      smoke += mouseInfluence * 0.5;
+      smoke *= 1.0 - mouseInfluence * 0.4; // Dispersal effect
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Volumetric Lighting
+      // ─────────────────────────────────────────────────────────────────
+      
+      vec3 smokeColorLight = vec3(0.65, 0.68, 0.72);
+      vec3 smokeColorDark = vec3(0.15, 0.15, 0.18);
+      
+      // Light from above
+      float topLight = uv.y * 0.3;
+      vec3 smokeColor = mix(smokeColorDark, smokeColorLight, topLight + smoke * 0.3);
+      
+      // Rim lighting
+      float rim = pow(smoke, 0.5) * 0.3;
+      smokeColor += vec3(0.2, 0.22, 0.25) * rim;
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Beer-Lambert Absorption
+      // ─────────────────────────────────────────────────────────────────
+      
+      float density = clamp(smoke, 0.0, 1.0);
+      float transmittance = exp(-density * 2.0);
+      
+      // Background gradient
+      vec3 bgColor = mix(vec3(0.02, 0.02, 0.04), vec3(0.08, 0.08, 0.12), uv.y);
+      
+      // Composite smoke over background
+      vec3 col = mix(smokeColor, bgColor, transmittance);
+      
+      // ─────────────────────────────────────────────────────────────────
+      // Source Glow & Final Touches
+      // ─────────────────────────────────────────────────────────────────
+      
+      float sourceGlow = exp(-length(p + vec2(0, 0.5)) * 3.0) * 0.5;
+      col += vec3(1.0, 0.6, 0.3) * sourceGlow * (1.0 - transmittance);
+      
+      // Film grain
+      float grain = (hash(C + time) - 0.5) * 0.03;
+      col += grain;
+      
+      // Vignette
+      float vignette = 1.0 - length(uv - 0.5) * 0.4;
+      col *= vignette;
+      
+      O = vec4(col, 1.0);
+    }
+  `))
+  .use(fps())
+  .go();
 
-console.log('%c 💨 YO Smoke ', 'background: linear-gradient(90deg, #556, #889); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Procedural smoke using glsl() helper');
+console.log('%c 💨 mushu YO Smoke Ready ', 'background: linear-gradient(90deg, #556, #889); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Move mouse to disperse smoke!');
 </script>
 </body>
 </html>

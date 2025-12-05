@@ -3,9 +3,16 @@
 <head>
   <meta charset="utf-8">
   <title>mushu — WebGPU Water Demo</title>
-  <style>body{margin:0;overflow:hidden;background:#000}</style>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #000; overflow: hidden; }
+    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
+            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
+    .info code { color: #00bbdd; }
+  </style>
 </head>
 <body>
+<div class="info">🌊 <code>gpu(compute, render)</code> Water | WebGPU Function API</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
 import { gpu } from '../src/gpu/yoGPU.js';

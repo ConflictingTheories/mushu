@@ -118,6 +118,24 @@ glsl(`
   }
 `, document.getElementById('c'));
 
+// FPS Counter
+(function() {
+  const fpsDiv = document.createElement('div');
+  fpsDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;color:white;font:14px monospace;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:4px;z-index:10000';
+  document.body.appendChild(fpsDiv);
+  let frames = 0, lastTime = performance.now();
+  function updateFPS() {
+    frames++;
+    const now = performance.now();
+    if (now - lastTime >= 500) {
+      fpsDiv.textContent = Math.round(frames * 1000 / (now - lastTime)) + ' fps';
+      frames = 0; lastTime = now;
+    }
+    requestAnimationFrame(updateFPS);
+  }
+  updateFPS();
+})();
+
 console.log('%c 🔥 YO Fire ', 'background: linear-gradient(90deg, #ff4500, #ff8c00); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
 console.log('Procedural fire using glsl() helper');
 </script>

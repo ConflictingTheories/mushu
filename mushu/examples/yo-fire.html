@@ -3,35 +3,54 @@
 <head>
   <meta charset="utf-8">
   <title>mushu — YO Fire Demo</title>
-  <style>body{margin:0;overflow:hidden;background:#000}</style>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #000; overflow: hidden; }
+    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
+            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
+    .info code { color: #ffaa00; }
+  </style>
 </head>
 <body>
+<div class="info">🎯 <code>yo().use().go()</code> Fire | Click & drag to ignite flames!</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
 import { yo, simulation, fps } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// YO Fire Simulation (WebGL2)
+// YO Fire Simulation (WebGL2) - Using the Fluent Plugin Architecture
 // Features: Fuel consumption, heat diffusion, turbulence, smoke generation
-// Hold & drag mouse to add fuel and ignite flames!
 // ═══════════════════════════════════════════════════════════════════════════
 
 const sim = simulation({ scale: 0.5, iterations: 2 });
 
 sim.simulate(`
   float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
   }
   
   float noise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
+    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
     return mix(
       mix(hash(i), hash(i + vec2(1,0)), f.x),
       mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
       f.y
     );
+  }
+  
+  float fbm(vec2 p) {
+    float f = 0.0;
+    float amp = 0.5;
+    for (int i = 0; i < 5; i++) {
+      f += amp * noise(p);
+      p *= 2.0;
+      amp *= 0.5;
+    }
+    return f;
   }
 
   void mainImage(out vec4 O, vec2 C) {
@@ -47,60 +66,78 @@ sim.simulate(`
     vec4 left = sample(vec2(-1, 0));
     vec4 right = sample(vec2(1, 0));
     
-    float turb = noise(uv * 20.0 + time * 2.0) * 2.0 - 1.0;
-    vec4 turbLeft = sample(vec2(-1.0 + turb * 0.5, 0));
-    vec4 turbRight = sample(vec2(1.0 + turb * 0.5, 0));
+    // Enhanced turbulence
+    float turb = fbm(uv * 15.0 + time * 1.5) * 2.0 - 1.0;
+    float turb2 = noise(uv * 30.0 - time * 2.5) * 2.0 - 1.0;
+    vec4 turbLeft = sample(vec2(-1.0 + turb * 0.6, turb2 * 0.3));
+    vec4 turbRight = sample(vec2(1.0 + turb * 0.6, turb2 * 0.3));
     
-    float diffusion = 0.15;
-    heat += diffusion * (up.g + down.g + left.g + right.g - 4.0 * heat);
+    // Heat diffusion with directional bias
+    float diffusion = 0.12;
+    heat += diffusion * (up.g * 0.8 + down.g * 1.3 + left.g + right.g - 4.1 * heat);
     
-    float buoyancy = 0.25 + heat * 0.1;
+    // Strong buoyancy
+    float buoyancy = 0.32 + heat * 0.12;
     heat = mix(heat, down.g, buoyancy);
-    heat = mix(heat, (turbLeft.g + turbRight.g) * 0.5, 0.08);
     
-    fuel = mix(fuel, down.r, 0.1);
-    fuel += 0.03 * (up.r + down.r + left.r + right.r - 4.0 * fuel);
+    // Turbulent mixing
+    heat = mix(heat, (turbLeft.g + turbRight.g) * 0.5, 0.12);
     
-    float ignitionTemp = 0.3;
+    // Fuel behavior
+    fuel = mix(fuel, down.r, 0.08);
+    fuel += 0.025 * (up.r + down.r + left.r + right.r - 4.0 * fuel);
+    
+    // Combustion
+    float ignitionTemp = 0.25;
     if (heat > ignitionTemp && fuel > 0.01) {
-      float combustion = min(fuel, (heat - ignitionTemp) * 0.8);
-      heat += combustion * 1.2;
+      float combustion = min(fuel, (heat - ignitionTemp) * 0.85);
+      heat += combustion * 1.3;
       fuel -= combustion;
-      smoke += combustion * 0.6;
+      smoke += combustion * 0.65;
     }
     
-    fuel *= 0.985;
-    heat *= 0.975;
-    smoke *= 0.995;
+    // Decay
+    fuel *= 0.986;
+    heat *= 0.968;
+    smoke *= 0.993;
     
-    smoke = mix(smoke, down.b, 0.08);
-    smoke += 0.02 * (left.b + right.b - 2.0 * smoke);
+    // Smoke dynamics
+    smoke = mix(smoke, down.b, 0.1);
+    smoke += 0.025 * (left.b + right.b - 2.0 * smoke);
     
+    // Mouse interaction
     float d = length(uv - mouse);
-    if (mouseDown > 0.5 && d < 0.1) {
-      float intensity = pow(1.0 - d / 0.1, 2.0);
-      fuel += intensity * 6.0;
-      heat += intensity * 3.0;
+    if (mouseDown > 0.5 && d < 0.12) {
+      float intensity = pow(1.0 - d / 0.12, 2.5);
+      fuel += intensity * 8.0;
+      heat += intensity * 4.0;
     }
     
-    if (uv.y < 0.12) {
-      float edge = 1.0 - uv.y / 0.12;
-      float p1 = sin(uv.x * 25.0 + time * 3.0) * 0.5 + 0.5;
-      float p2 = sin(uv.x * 8.0 - time * 1.5) * 0.5 + 0.5;
-      float p3 = noise(vec2(uv.x * 50.0, time * 5.0));
-      float pattern = p1 * p2 * (0.5 + p3 * 0.5);
+    // Fire source
+    if (uv.y < 0.14) {
+      float edge = pow(1.0 - uv.y / 0.14, 1.5);
+      float p1 = sin(uv.x * 28.0 + time * 4.0) * 0.5 + 0.5;
+      float p2 = sin(uv.x * 10.0 - time * 2.0) * 0.5 + 0.5;
+      float p3 = fbm(vec2(uv.x * 45.0, time * 6.0));
+      float pattern = p1 * p2 * (0.4 + p3 * 0.6);
       
-      if (pattern > 0.25) {
-        float intensity = pattern * edge * 2.0;
-        fuel += intensity * 1.5;
-        heat += intensity * 2.5;
+      if (pattern > 0.2) {
+        float intensity = pattern * edge * 2.2;
+        fuel += intensity * 1.8;
+        heat += intensity * 3.0;
       }
     }
     
+    // Sparks
+    if (noise(vec2(C.x * 0.05, time * 12.0)) > 0.995 && uv.y < 0.35) {
+      heat += 4.5;
+      fuel += 2.0;
+    }
+    
     O = vec4(
-      clamp(fuel, 0.0, 20.0),
-      clamp(heat, 0.0, 20.0),
-      clamp(smoke, 0.0, 15.0),
+      clamp(fuel, 0.0, 25.0),
+      clamp(heat, 0.0, 25.0),
+      clamp(smoke, 0.0, 18.0),
       1.0
     );
   }
@@ -117,21 +154,29 @@ sim.display(`
     
     vec3 color = vec3(0.0);
     
-    color += vec3(1.0, 1.0, 1.0) * pow(heat, 4.0) * 3.0;
-    color += vec3(1.0, 0.95, 0.7) * pow(heat, 3.0) * 2.5;
-    color += vec3(1.0, 0.6, 0.1) * pow(heat, 2.0) * 2.0;
-    color += vec3(1.0, 0.25, 0.0) * pow(heat, 1.2) * 1.5;
-    color += vec3(0.6, 0.05, 0.0) * pow(heat, 0.6) * 0.8;
+    // Blackbody-inspired color ramp
+    color += vec3(1.0, 1.0, 0.95) * pow(heat, 4.5) * 4.0;
+    color += vec3(1.0, 0.92, 0.65) * pow(heat, 3.2) * 2.8;
+    color += vec3(1.0, 0.55, 0.12) * pow(heat, 2.0) * 2.2;
+    color += vec3(1.0, 0.28, 0.02) * pow(heat, 1.3) * 1.8;
+    color += vec3(0.65, 0.08, 0.0) * pow(heat, 0.6) * 0.9;
     
-    float embers = fuel * (1.0 - heat * 0.15);
-    color += vec3(1.0, 0.3, 0.0) * embers * 0.5;
+    // Embers
+    float embers = fuel * (1.0 - heat * 0.12);
+    color += vec3(1.0, 0.35, 0.05) * embers * 0.55;
     
-    vec3 smokeColor = vec3(0.03, 0.03, 0.04);
-    float smokeOpacity = 1.0 - exp(-smoke * 0.3);
-    color = mix(color, smokeColor, smokeOpacity * 0.85);
+    // Smoke overlay
+    vec3 smokeColor = vec3(0.025, 0.025, 0.035);
+    float smokeOpacity = 1.0 - exp(-smoke * 0.32);
+    color = mix(color, smokeColor, smokeOpacity * 0.88);
     
-    color = 1.0 - exp(-color * 0.6);
-    color = pow(color, vec3(0.92));
+    // Tone mapping
+    color = 1.0 - exp(-color * 0.58);
+    color = pow(color, vec3(0.9));
+    
+    // Vignette
+    float vignette = 1.0 - length(uv - 0.5) * 0.28;
+    color *= vignette;
     
     O = vec4(color, 1.0);
   }
@@ -143,8 +188,8 @@ yo(document.getElementById('c'))
   .use(fps())
   .go();
 
-console.log('%c 🔥 mushu YO Fire Ready ', 'background: linear-gradient(90deg, #ff4500, #ff8c00); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Hold & drag mouse to ignite flames!');
+console.log('%c 🔥 YO Fire ', 'background: linear-gradient(90deg, #ff4500, #ff8c00); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Using yo().use(simulation()).go() fluent API');
 </script>
 </body>
 </html>

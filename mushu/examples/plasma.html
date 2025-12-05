@@ -2,69 +2,118 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>mushu — Plasma Demo</title>
-  <style>body{margin:0;overflow:hidden;background:#000}</style>
+  <title>mushu — glsl() Plasma Demo</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #000; overflow: hidden; }
+    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
+            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
+    .info code { color: #ff6b9d; }
+  </style>
 </head>
 <body>
+<div class="info">🎨 <code>glsl()</code> Plasma | Move mouse to interact</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { yo, shader, fps } from '../src/core/yo.js';
+import { glsl } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Classic Plasma Effect
-// Move mouse to influence the colors, click for glow!
+// GLSL Helper - Classic Plasma Effect with Enhanced Visuals
 // ═══════════════════════════════════════════════════════════════════════════
 
-yo(document.getElementById('c'))
-  .use(shader(`
-    void mainImage(out vec4 O, vec2 C) {
-      vec2 uv = C / resolution;
-      vec2 p = (C - resolution * 0.5) / resolution.y;
-      
-      // Mouse influence
-      p += (mouse - 0.5) * 0.6;
-      
-      float t = time * 0.5;
-      float v = 0.0;
-      
-      // Multiple wave patterns
-      v += sin(p.x * 10.0 + t);
-      v += sin(p.y * 10.0 + t * 0.7);
-      v += sin((p.x + p.y) * 10.0 + t * 0.5);
-      v += sin(length(p) * 15.0 - t * 2.0);
-      
-      // Circular wave from center
-      float cx = p.x + 0.5 * sin(t * 0.3);
-      float cy = p.y + 0.5 * cos(t * 0.4);
-      v += sin(sqrt(cx * cx + cy * cy + 1.0) * 10.0 + t);
-      
-      // Additional complexity
-      v += sin(p.x * 5.0 + sin(p.y * 3.0 + t) * 2.0);
-      
-      v *= 0.2;
-      
-      // Rainbow color palette
-      vec3 col = 0.5 + 0.5 * cos(t + v * 3.0 + p.xyx * 2.0 + vec3(0.0, 2.0, 4.0));
-      
-      // Glow effect when mouse is pressed
-      if (mouseDown > 0.5) {
-        vec2 mouseP = (mouse - 0.5) * vec2(resolution.x / resolution.y, 1.0);
-        float d = length(p - mouseP * 0.6);
-        col += vec3(1.0, 0.8, 0.5) * exp(-d * 4.0) * 2.0;
-      }
-      
-      // Subtle vignette
-      float vignette = 1.0 - length(uv - 0.5) * 0.4;
-      col *= vignette;
-      
-      O = vec4(col, 1.0);
+glsl(`
+  // Better color palette function
+  vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
+    return a + b * cos(6.28318 * (c * t + d));
+  }
+  
+  void mainImage(out vec4 O, vec2 C) {
+    vec2 uv = C / resolution;
+    vec2 p = (C - resolution * 0.5) / resolution.y;
+    
+    float t = time * 0.3;
+    
+    // Mouse influence
+    vec2 mouseP = (mouse - 0.5) * vec2(resolution.x / resolution.y, 1.0);
+    float mouseDist = length(p - mouseP);
+    float mouseInfluence = exp(-mouseDist * 4.0);
+    
+    // Multiple wave patterns
+    float v = 0.0;
+    
+    // Basic plasma waves
+    v += sin(p.x * 10.0 + t * 1.5);
+    v += sin(p.y * 10.0 + t * 1.2);
+    v += sin((p.x + p.y) * 10.0 + t);
+    
+    // Circular waves
+    float cx = p.x + 0.5 * sin(t * 0.5);
+    float cy = p.y + 0.5 * cos(t * 0.4);
+    v += sin(sqrt(cx * cx + cy * cy + 1.0) * 12.0 - t * 2.0);
+    
+    // Additional moving centers
+    for (int i = 0; i < 4; i++) {
+      float fi = float(i);
+      float angle = t * 0.3 + fi * 1.57;
+      vec2 center = vec2(cos(angle), sin(angle * 0.7)) * 0.4;
+      float d = length(p - center);
+      v += sin(d * 15.0 - t * 2.5 + fi);
     }
-  `))
-  .use(fps())
-  .go();
+    
+    // Mouse ripple
+    v += sin(mouseDist * 30.0 - t * 8.0) * mouseInfluence * 2.0;
+    
+    v *= 0.15;
+    
+    // Create multiple color layers
+    vec3 col1 = palette(v + t * 0.1, 
+      vec3(0.5, 0.5, 0.5), 
+      vec3(0.5, 0.5, 0.5), 
+      vec3(1.0, 1.0, 1.0), 
+      vec3(0.0, 0.33, 0.67)
+    );
+    
+    vec3 col2 = palette(v * 0.7 - t * 0.15,
+      vec3(0.5, 0.5, 0.5),
+      vec3(0.5, 0.5, 0.5),
+      vec3(1.0, 0.7, 0.4),
+      vec3(0.0, 0.15, 0.2)
+    );
+    
+    vec3 col3 = palette(v * 0.5 + t * 0.2,
+      vec3(0.8, 0.5, 0.4),
+      vec3(0.2, 0.4, 0.2),
+      vec3(2.0, 1.0, 1.0),
+      vec3(0.0, 0.25, 0.25)
+    );
+    
+    // Blend colors
+    float blend1 = sin(v * 3.14159) * 0.5 + 0.5;
+    float blend2 = cos(v * 2.0 + t) * 0.5 + 0.5;
+    
+    vec3 color = mix(col1, col2, blend1);
+    color = mix(color, col3, blend2 * 0.4);
+    
+    // Add glow near mouse
+    color += vec3(0.4, 0.3, 0.6) * mouseInfluence * 0.6;
+    
+    // Add pulsing brightness
+    float pulse = sin(t * 2.0) * 0.1 + 0.9;
+    color *= pulse;
+    
+    // Enhance contrast
+    color = pow(color, vec3(0.85));
+    
+    // Subtle vignette
+    float vignette = 1.0 - length(uv - 0.5) * 0.35;
+    color *= vignette;
+    
+    O = vec4(color, 1.0);
+  }
+`, document.getElementById('c'));
 
-console.log('%c 🌈 mushu Plasma Ready ', 'background: linear-gradient(90deg, #ff00ff, #00ffff); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Move mouse to influence colors. Click for glow effect!');
+console.log('%c 🌈 glsl() Plasma ', 'background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Classic plasma effect using the glsl() one-liner helper');
 </script>
 </body>
 </html>

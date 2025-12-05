@@ -12,6 +12,8 @@
       --accent: #ff6b9d;
       --accent2: #00d4aa;
       --accent3: #ffaa00;
+      --accent4: #a855f7;
+      --accent5: #3b82f6;
     }
     * { box-sizing: border-box; }
     body {
@@ -34,9 +36,36 @@
     .subtitle {
       text-align: center;
       color: #888;
-      margin-bottom: 3rem;
+      margin-bottom: 1rem;
       font-size: 1.1rem;
     }
+    .method-legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 3rem;
+      padding: 20px;
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .method-legend .item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+    .method-legend .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .method-legend .dot.boilerplate { background: var(--accent5); }
+    .method-legend .dot.glsl { background: var(--accent); }
+    .method-legend .dot.gpu { background: var(--accent2); }
+    .method-legend .dot.yo { background: var(--accent3); }
+    .method-legend .dot.yogpu { background: var(--accent4); }
     .section {
       margin-bottom: 3rem;
     }
@@ -45,12 +74,20 @@
       border-bottom: 1px solid var(--border);
       padding-bottom: 0.5rem;
       margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .section h2.yo {
-      color: var(--accent3);
-    }
-    .section h2.gpu {
-      color: var(--accent2);
+    .section h2.boilerplate { color: var(--accent5); }
+    .section h2.glsl { color: var(--accent); }
+    .section h2.gpu { color: var(--accent2); }
+    .section h2.yo { color: var(--accent3); }
+    .section h2.yogpu { color: var(--accent4); }
+    .section h2 code {
+      background: rgba(255,255,255,0.1);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
     }
     .grid {
       display: grid;
@@ -92,24 +129,24 @@
     .card a:hover {
       opacity: 0.85;
     }
+    .card.boilerplate a { background: linear-gradient(135deg, var(--accent5), #60a5fa); }
+    .card.glsl a { background: linear-gradient(135deg, var(--accent), #ff8fab); }
+    .card.gpu a { background: linear-gradient(135deg, var(--accent2), #34d399); }
+    .card.yo a { background: linear-gradient(135deg, var(--accent3), #fbbf24); }
+    .card.yogpu a { background: linear-gradient(135deg, var(--accent4), #c084fc); }
     .tag {
       display: inline-block;
-      background: rgba(255,107,157,0.15);
-      color: var(--accent);
       padding: 4px 10px;
       border-radius: 4px;
       font-size: 0.75rem;
       margin-right: 8px;
       margin-bottom: 12px;
     }
-    .tag.gpu {
-      background: rgba(0,212,170,0.15);
-      color: var(--accent2);
-    }
-    .tag.yo {
-      background: rgba(255,170,0,0.15);
-      color: var(--accent3);
-    }
+    .tag.boilerplate { background: rgba(59,130,246,0.15); color: var(--accent5); }
+    .tag.glsl { background: rgba(255,107,157,0.15); color: var(--accent); }
+    .tag.gpu { background: rgba(0,212,170,0.15); color: var(--accent2); }
+    .tag.yo { background: rgba(255,170,0,0.15); color: var(--accent3); }
+    .tag.yogpu { background: rgba(168,85,247,0.15); color: var(--accent4); }
     footer {
       text-align: center;
       margin-top: 4rem;
@@ -120,126 +157,210 @@
       color: var(--accent);
       text-decoration: none;
     }
+    .compare-section {
+      background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(0,212,170,0.1));
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 3rem;
+      text-align: center;
+    }
+    .compare-section h2 {
+      border: none;
+      justify-content: center;
+      color: var(--text);
+    }
+    .compare-section p {
+      color: #aaa;
+      margin-bottom: 1.5rem;
+    }
+    .compare-section a {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3), var(--accent4));
+      color: white;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
   </style>
 </head>
 <body>
   <h1>🍡 mushu</h1>
   <p class="subtitle">Simple WebGL2 & WebGPU creative coding library</p>
   
+  <div class="method-legend">
+    <div class="item"><span class="dot boilerplate"></span> Boilerplate (Vanilla WebGL2)</div>
+    <div class="item"><span class="dot glsl"></span> glsl() helper</div>
+    <div class="item"><span class="dot gpu"></span> gpu() helper (WebGPU)</div>
+    <div class="item"><span class="dot yo"></span> YO framework (WebGL2)</div>
+    <div class="item"><span class="dot yogpu"></span> YO-GPU framework (WebGPU)</div>
+  </div>
+
+  <div class="compare-section">
+    <h2>🔬 Side-by-Side Comparison</h2>
+    <p>Compare all 5 methods running the same effect simultaneously</p>
+    <a href="compare.html">Launch Comparison Tool →</a>
+  </div>
+
+  <!-- BOILERPLATE SECTION -->
   <div class="section">
-    <h2 class="yo">🎯 YO Demos (WebGL2 Simulation)</h2>
+    <h2 class="boilerplate">📝 Boilerplate Examples <code>Vanilla WebGL2</code></h2>
     <div class="grid">
-      <div class="card">
+      <div class="card boilerplate">
+        <span class="tag boilerplate">Vanilla</span>
+        <h3>🔥 Fire</h3>
+        <p>Raw WebGL2 boilerplate showing how fire simulation works from scratch.</p>
+        <a href="boilerplate-fire.html">View Code →</a>
+      </div>
+      <div class="card boilerplate">
+        <span class="tag boilerplate">Vanilla</span>
+        <h3>💨 Smoke</h3>
+        <p>Manual WebGL2 setup for volumetric smoke with turbulence.</p>
+        <a href="boilerplate-smoke.html">View Code →</a>
+      </div>
+      <div class="card boilerplate">
+        <span class="tag boilerplate">Vanilla</span>
+        <h3>🌊 Water</h3>
+        <p>Hand-coded WebGL2 water ripple simulation.</p>
+        <a href="boilerplate-water.html">View Code →</a>
+      </div>
+      <div class="card boilerplate">
+        <span class="tag boilerplate">Vanilla</span>
+        <h3>🌈 Plasma</h3>
+        <p>Classic plasma effect with raw WebGL2 code.</p>
+        <a href="boilerplate-plasma.html">View Code →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLSL SECTION -->
+  <div class="section">
+    <h2 class="glsl">🎨 GLSL Examples <code>glsl()</code></h2>
+    <div class="grid">
+      <div class="card glsl">
+        <span class="tag glsl">glsl()</span>
+        <h3>🔥 Fire</h3>
+        <p>One-liner fire effect using the glsl() helper function.</p>
+        <a href="fire.html">Launch Demo →</a>
+      </div>
+      <div class="card glsl">
+        <span class="tag glsl">glsl()</span>
+        <h3>💨 Smoke</h3>
+        <p>Volumetric smoke with turbulent vorticity using glsl().</p>
+        <a href="smoke.html">Launch Demo →</a>
+      </div>
+      <div class="card glsl">
+        <span class="tag glsl">glsl()</span>
+        <h3>🌊 Water</h3>
+        <p>Water ripples with reflection using the glsl() helper.</p>
+        <a href="water.html">Launch Demo →</a>
+      </div>
+      <div class="card glsl">
+        <span class="tag glsl">glsl()</span>
+        <h3>🌈 Plasma</h3>
+        <p>Classic plasma effect with rainbow colors using glsl().</p>
+        <a href="plasma.html">Launch Demo →</a>
+      </div>
+      <div class="card glsl">
+        <span class="tag glsl">glsl()</span>
+        <h3>✨ Caustics</h3>
+        <p>Underwater light caustics using the glsl() helper.</p>
+        <a href="caustics.html">Launch Demo →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- GPU SECTION -->
+  <div class="section">
+    <h2 class="gpu">⚡ GPU Examples <code>gpu()</code></h2>
+    <div class="grid">
+      <div class="card gpu">
+        <span class="tag gpu">gpu()</span>
+        <h3>🔥 Fire</h3>
+        <p>WebGPU compute shader fire with parallel fuel combustion.</p>
+        <a href="gpu-fire.html">Launch Demo →</a>
+      </div>
+      <div class="card gpu">
+        <span class="tag gpu">gpu()</span>
+        <h3>💨 Smoke</h3>
+        <p>GPU-accelerated volumetric smoke with buoyancy.</p>
+        <a href="gpu-smoke.html">Launch Demo →</a>
+      </div>
+      <div class="card gpu">
+        <span class="tag gpu">gpu()</span>
+        <h3>🌊 Water</h3>
+        <p>Wave equation simulation on WebGPU compute shaders.</p>
+        <a href="gpu-water.html">Launch Demo →</a>
+      </div>
+      <div class="card gpu">
+        <span class="tag gpu">gpu()</span>
+        <h3>🌈 Plasma</h3>
+        <p>High-performance plasma with WebGPU compute state.</p>
+        <a href="gpu-plasma.html">Launch Demo →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- YO SECTION -->
+  <div class="section">
+    <h2 class="yo">🎯 YO Examples <code>yo().use().go()</code></h2>
+    <div class="grid">
+      <div class="card yo">
         <span class="tag yo">YO</span>
-        <h3>🔥 YO Fire</h3>
-        <p>Multi-octave fire simulation with fuel combustion and rising heat dynamics.</p>
+        <h3>🔥 Fire</h3>
+        <p>Fluent simulation framework with fuel, heat, and smoke channels.</p>
         <a href="yo-fire.html">Launch Demo →</a>
       </div>
-      
-      <div class="card">
+      <div class="card yo">
         <span class="tag yo">YO</span>
-        <h3>💨 YO Smoke</h3>
-        <p>Volumetric smoke with turbulent vorticity and realistic dissipation.</p>
+        <h3>💨 Smoke</h3>
+        <p>Plugin-based smoke with turbulence and dissipation.</p>
         <a href="yo-smoke.html">Launch Demo →</a>
       </div>
-      
-      <div class="card">
+      <div class="card yo">
         <span class="tag yo">YO</span>
-        <h3>🌊 YO Water</h3>
-        <p>Pure water ripples using the wave equation with Fresnel reflections.</p>
+        <h3>🌊 Water</h3>
+        <p>Chainable water simulation with Fresnel reflections.</p>
         <a href="yo-water.html">Launch Demo →</a>
       </div>
-      
-      <div class="card">
+      <div class="card yo">
         <span class="tag yo">YO</span>
-        <h3>🌈 YO Plasma</h3>
-        <p>Classic demo-scene plasma with rainbow colors and mouse interaction.</p>
+        <h3>🌈 Plasma</h3>
+        <p>Hookable plasma with mouse interaction.</p>
         <a href="yo-plasma.html">Launch Demo →</a>
       </div>
     </div>
   </div>
 
+  <!-- YO-GPU SECTION -->
   <div class="section">
-    <h2>🎨 WebGL2 Demos</h2>
+    <h2 class="yogpu">🚀 YO-GPU Examples <code>yoGPU().simulate().display().go()</code></h2>
     <div class="grid">
-      <div class="card">
-        <span class="tag">WebGL2</span>
+      <div class="card yogpu">
+        <span class="tag yogpu">YO-GPU</span>
         <h3>🔥 Fire</h3>
-        <p>Multi-octave fire simulation with fuel combustion and rising heat dynamics.</p>
-        <a href="fire.html">Launch Demo →</a>
+        <p>WebGPU fluent API with compute shader fire physics.</p>
+        <a href="yo-gpu-fire.html">Launch Demo →</a>
       </div>
-      
-      <div class="card">
-        <span class="tag">WebGL2</span>
+      <div class="card yogpu">
+        <span class="tag yogpu">YO-GPU</span>
         <h3>💨 Smoke</h3>
-        <p>Volumetric smoke with turbulent vorticity and realistic dissipation.</p>
-        <a href="smoke.html">Launch Demo →</a>
+        <p>Fluent WebGPU smoke with ping-pong compute textures.</p>
+        <a href="yo-gpu-smoke.html">Launch Demo →</a>
       </div>
-      
-      <div class="card">
-        <span class="tag">WebGL2</span>
+      <div class="card yogpu">
+        <span class="tag yogpu">YO-GPU</span>
         <h3>🌊 Water</h3>
-        <p>Pure water ripples using the wave equation with reflection and refraction.</p>
-        <a href="water.html">Launch Demo →</a>
+        <p>Chainable WebGPU water with real-time wave simulation.</p>
+        <a href="yo-gpu-water.html">Launch Demo →</a>
       </div>
-      
-      <div class="card">
-        <span class="tag">WebGL2</span>
-        <h3>✨ Caustics</h3>
-        <p>Underwater light caustics with animated surface distortion.</p>
-        <a href="caustics.html">Launch Demo →</a>
-      </div>
-      
-      <div class="card">
-        <span class="tag">WebGL2</span>
+      <div class="card yogpu">
+        <span class="tag yogpu">YO-GPU</span>
         <h3>🌈 Plasma</h3>
-        <p>Classic plasma effect with rainbow colors and mouse interaction.</p>
-        <a href="plasma.html">Launch Demo →</a>
-      </div>
-    </div>
-  </div>
-  
-  <div class="section">
-    <h2 class="gpu">⚡ WebGPU Demos</h2>
-    <div class="grid">
-      <div class="card">
-        <span class="tag gpu">WebGPU</span>
-        <h3>🔥 GPU Fire</h3>
-        <p>Compute shader fire simulation with parallel fuel combustion.</p>
-        <a href="gpu-fire.html">Launch Demo →</a>
-      </div>
-      
-      <div class="card">
-        <span class="tag gpu">WebGPU</span>
-        <h3>💨 GPU Smoke</h3>
-        <p>WebGPU volumetric smoke with turbulence and buoyancy.</p>
-        <a href="gpu-smoke.html">Launch Demo →</a>
-      </div>
-      
-      <div class="card">
-        <span class="tag gpu">WebGPU</span>
-        <h3>🌊 GPU Water</h3>
-        <p>Wave equation simulation running entirely on the GPU.</p>
-        <a href="gpu-water.html">Launch Demo →</a>
-      </div>
-      
-      <div class="card">
-        <span class="tag gpu">WebGPU</span>
-        <h3>🌈 GPU Plasma</h3>
-        <p>High-performance plasma with compute shader state.</p>
-        <a href="gpu-plasma.html">Launch Demo →</a>
-      </div>
-    </div>
-  </div>
-  
-  <div class="section">
-    <h2>📚 Resources</h2>
-    <div class="grid">
-      <div class="card">
-        <span class="tag">Tutorial</span>
-        <h3>Before & After</h3>
-        <p>Compare the original messy code with the clean mushu refactor.</p>
-        <a href="compare.html">View Comparison →</a>
+        <p>Fluent WebGPU plasma with compute state management.</p>
+        <a href="yo-gpu-plasma.html">Launch Demo →</a>
       </div>
     </div>
   </div>

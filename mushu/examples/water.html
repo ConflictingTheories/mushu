@@ -2,187 +2,159 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>mushu — Pure Water Ripples Demo</title>
-  <style>body{margin:0;overflow:hidden;background:#000}</style>
+  <title>mushu — glsl() Water Demo</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #000; overflow: hidden; }
+    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
+            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
+    .info code { color: #ff6b9d; }
+  </style>
 </head>
 <body>
+<div class="info">🎨 <code>glsl()</code> Water | Move mouse to interact</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { yo, simulation, fps } from '../src/core/yo.js';
+import { glsl } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Pure Water Ripple Simulation
-// Real wave equation physics - no caustics, just beautiful water surface
-// Click and drag to create ripples!
+// GLSL Helper - Simple Shader-Only Ocean Water Effect
 // ═══════════════════════════════════════════════════════════════════════════
 
-const sim = simulation({ scale: 0.75, iterations: 2 });
-
-sim.simulate(`
+glsl(`
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
-
-  void mainImage(out vec4 O, vec2 C) {
-    vec2 uv = C / resolution;
-    vec4 data = sample(vec2(0));
-    
-    // R = height, G = velocity, B = previous height (for temporal smoothing)
-    float height = data.r;
-    float velocity = data.g;
-    float prevHeight = data.b;
-    
-    // Sample neighbors for wave equation
-    float hUp = sample(vec2(0, 1)).r;
-    float hDown = sample(vec2(0, -1)).r;
-    float hLeft = sample(vec2(-1, 0)).r;
-    float hRight = sample(vec2(1, 0)).r;
-    
-    // Diagonal neighbors for smoother waves
-    float hUL = sample(vec2(-1, 1)).r;
-    float hUR = sample(vec2(1, 1)).r;
-    float hDL = sample(vec2(-1, -1)).r;
-    float hDR = sample(vec2(1, -1)).r;
-    
-    // Wave equation: acceleration = c² * laplacian
-    // Using weighted 8-neighbor stencil for smoother results
-    float c = 0.4; // Wave speed
-    float laplacian = 
-      (hUp + hDown + hLeft + hRight) * 0.2 +
-      (hUL + hUR + hDL + hDR) * 0.05 -
-      height;
-    
-    velocity += c * c * laplacian;
-    
-    // Damping - water doesn't oscillate forever
-    velocity *= 0.996;
-    
-    // Update height
-    height += velocity;
-    
-    // Boundary absorption (prevent edge reflections)
-    float edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-    float edgeDamp = smoothstep(0.0, 0.05, edgeDist);
-    height *= edgeDamp;
-    velocity *= edgeDamp;
-    
-    // Mouse interaction
-    float mouseDist = length(uv - mouse);
-    float mouseRadius = 0.06;
-    
-    if (mouseDown > 0.5 && mouseDist < mouseRadius) {
-      float strength = (1.0 - mouseDist / mouseRadius);
-      strength *= strength * strength; // Cubic falloff
-      
-      // Add both position and velocity for smoother ripples
-      height += strength * 0.8;
-      velocity += strength * 0.4;
-    }
-    
-    // Occasional raindrops
-    float rainSeed = hash(vec2(floor(time * 3.0), 0.0));
-    vec2 rainPos = hash(vec2(rainSeed * 100.0, rainSeed * 57.0 + 33.0)) * vec2(1.0);
-    float rainDist = length(uv - rainPos);
-    
-    if (rainDist < 0.015 && fract(time * 3.0) < 0.1) {
-      float splash = (1.0 - rainDist / 0.015);
-      splash *= splash;
-      height += splash * 0.3;
-    }
-    
-    // Gentle ambient waves
-    float ambient = sin(uv.x * 15.0 + time * 0.5) * sin(uv.y * 12.0 - time * 0.3) * 0.002;
-    height += ambient;
-    
-    O = vec4(
-      clamp(height, -2.0, 2.0),
-      clamp(velocity, -2.0, 2.0),
-      prevHeight,
-      1.0
+  
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash(i), hash(i + vec2(1,0)), f.x),
+      mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
+      f.y
     );
   }
-`);
-
-sim.display(`
+  
+  float fbm(vec2 p) {
+    float f = 0.0;
+    float amp = 0.5;
+    mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+    for (int i = 0; i < 5; i++) {
+      f += amp * noise(p);
+      p = rot * p * 2.0;
+      amp *= 0.5;
+    }
+    return f;
+  }
+  
+  // Gerstner wave
+  vec3 gerstnerWave(vec2 p, vec2 dir, float steepness, float wavelength, float t) {
+    float k = 6.28318 / wavelength;
+    float c = sqrt(9.8 / k);
+    float a = steepness / k;
+    float f = k * (dot(dir, p) - c * t);
+    return vec3(dir.x * a * cos(f), a * sin(f), dir.y * a * cos(f));
+  }
+  
   void mainImage(out vec4 O, vec2 C) {
     vec2 uv = C / resolution;
-    vec2 px = 1.0 / resolution;
+    vec2 p = (C - resolution * 0.5) / resolution.y;
+    float t = time * 0.5;
     
-    // Sample height field
-    float h = texture(backbuffer, uv).r;
-    float hL = texture(backbuffer, uv - vec2(px.x, 0.0)).r;
-    float hR = texture(backbuffer, uv + vec2(px.x, 0.0)).r;
-    float hU = texture(backbuffer, uv + vec2(0.0, px.y)).r;
-    float hD = texture(backbuffer, uv - vec2(0.0, px.y)).r;
+    // Mouse influence
+    vec2 mouseP = mouse - 0.5;
+    mouseP.x *= resolution.x / resolution.y;
+    float mouseDist = length(p - mouseP);
     
-    // Calculate surface normal from height gradient
+    // Combine multiple Gerstner waves
+    vec3 wave = vec3(0.0);
+    wave += gerstnerWave(p * 5.0, normalize(vec2(1.0, 0.3)), 0.15, 0.8, t);
+    wave += gerstnerWave(p * 5.0, normalize(vec2(-0.5, 0.8)), 0.12, 0.6, t * 1.1);
+    wave += gerstnerWave(p * 8.0, normalize(vec2(0.7, -0.5)), 0.08, 0.4, t * 1.3);
+    wave += gerstnerWave(p * 12.0, normalize(vec2(-0.3, -0.7)), 0.05, 0.25, t * 1.5);
+    
+    // Add turbulent detail
+    float detail = fbm(p * 8.0 + t * 0.2) * 0.1;
+    wave.y += detail;
+    
+    // Mouse creates local disturbance
+    float mouseRipple = sin(mouseDist * 40.0 - t * 8.0) * exp(-mouseDist * 6.0) * 0.15;
+    wave.y += mouseRipple;
+    
+    // Calculate normals from wave displacement
+    float eps = 0.01;
+    vec3 wave_dx = gerstnerWave((p + vec2(eps, 0)) * 5.0, normalize(vec2(1.0, 0.3)), 0.15, 0.8, t)
+                 + gerstnerWave((p + vec2(eps, 0)) * 5.0, normalize(vec2(-0.5, 0.8)), 0.12, 0.6, t * 1.1);
+    vec3 wave_dy = gerstnerWave((p + vec2(0, eps)) * 5.0, normalize(vec2(1.0, 0.3)), 0.15, 0.8, t)
+                 + gerstnerWave((p + vec2(0, eps)) * 5.0, normalize(vec2(-0.5, 0.8)), 0.12, 0.6, t * 1.1);
+    
     vec3 normal = normalize(vec3(
-      (hL - hR) * 20.0,
-      (hD - hU) * 20.0,
-      1.0
+      (wave.y - wave_dx.y) * 10.0,
+      1.0,
+      (wave.y - wave_dy.y) * 10.0
     ));
     
-    // View and light directions
-    vec3 viewDir = normalize(vec3(0.0, 0.0, 1.0));
-    vec3 lightDir = normalize(vec3(0.3, 0.5, 0.8));
+    // View and light setup
+    vec3 viewDir = vec3(0.0, 1.0, 0.0);
+    vec3 lightDir = normalize(vec3(0.3, 0.8, 0.5));
     
-    // Fresnel effect (more reflection at glancing angles)
+    // Fresnel
     float fresnel = pow(1.0 - max(0.0, dot(viewDir, normal)), 4.0);
-    fresnel = 0.1 + 0.9 * fresnel;
+    fresnel = 0.15 + 0.85 * fresnel;
     
-    // Reflection direction
+    // Reflection
     vec3 reflDir = reflect(-viewDir, normal);
-    
-    // Sky gradient for reflection
     float skyGradient = reflDir.y * 0.5 + 0.5;
     vec3 skyColor = mix(
-      vec3(0.6, 0.75, 0.9),   // Horizon
-      vec3(0.3, 0.5, 0.85),   // Zenith
-      pow(skyGradient, 0.5)
+      vec3(0.7, 0.8, 0.95),
+      vec3(0.4, 0.6, 0.9),
+      pow(skyGradient, 0.6)
     );
     
-    // Sun reflection (specular)
-    float sunSpec = pow(max(0.0, dot(reflDir, lightDir)), 256.0);
-    vec3 sunColor = vec3(1.0, 0.95, 0.85) * sunSpec * 3.0;
+    // Sun specular
+    float sunSpec = pow(max(0.0, dot(reflDir, lightDir)), 200.0);
+    vec3 sunColor = vec3(1.0, 0.95, 0.9) * sunSpec * 4.0;
     
-    // Subsurface scattering approximation
-    vec3 waterDeep = vec3(0.02, 0.08, 0.15);
-    vec3 waterShallow = vec3(0.1, 0.25, 0.35);
-    float depth = 0.5 + h * 2.0;
+    // Water colors
+    vec3 waterDeep = vec3(0.01, 0.05, 0.12);
+    vec3 waterShallow = vec3(0.08, 0.2, 0.3);
+    float depth = 0.5 + wave.y * 3.0;
     vec3 waterColor = mix(waterDeep, waterShallow, clamp(depth, 0.0, 1.0));
     
-    // Combine reflection and refraction
-    vec3 color = mix(waterColor, skyColor, fresnel * 0.8);
+    // Caustics
+    float caustic1 = sin((p.x + normal.x) * 30.0 + t * 2.0) * sin((p.y + normal.z) * 30.0 + t * 1.5);
+    float caustic2 = sin((p.x - normal.x) * 20.0 - t * 1.5) * sin((p.y - normal.z) * 25.0 + t * 2.0);
+    float caustics = pow((caustic1 + caustic2) * 0.5 + 0.5, 4.0) * 0.2;
+    waterColor += vec3(0.2, 0.3, 0.4) * caustics;
+    
+    // Combine
+    vec3 color = mix(waterColor, skyColor, fresnel * 0.7);
     color += sunColor;
     
-    // Soft foam on wave peaks
-    float foam = smoothstep(0.15, 0.25, h);
-    color = mix(color, vec3(0.9, 0.95, 1.0), foam * 0.4);
+    // Foam on wave crests
+    float foam = smoothstep(0.08, 0.15, wave.y);
+    color = mix(color, vec3(0.95, 0.98, 1.0), foam * 0.5);
     
-    // Subtle secondary highlight
-    float secondarySpec = pow(max(0.0, dot(reflDir, normalize(vec3(-0.5, 0.3, 0.7)))), 32.0);
-    color += vec3(0.7, 0.8, 0.9) * secondarySpec * 0.2;
-    
-    // Depth-based darkening at edges
-    float vignette = 1.0 - length(uv - 0.5) * 0.3;
-    color *= vignette;
+    // Subsurface scattering
+    float sss = pow(max(0.0, dot(lightDir, -normal)), 2.0) * 0.1;
+    color += vec3(0.1, 0.3, 0.4) * sss;
     
     // Tone mapping
-    color = color / (color + 0.5) * 1.2;
+    color = 1.0 - exp(-color * 1.2);
     color = pow(color, vec3(0.95));
+    
+    // Vignette
+    float vignette = 1.0 - length(uv - 0.5) * 0.25;
+    color *= vignette;
     
     O = vec4(color, 1.0);
   }
-`);
+`, document.getElementById('c'));
 
-yo(document.getElementById('c'))
-  .scale(1)
-  .use(sim)
-  .use(fps())
-  .go();
-
-console.log('%c 🌊 mushu Water Ready ', 'background: linear-gradient(90deg, #0077be, #00a8e8); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Click and drag to create ripples!');
+console.log('%c 🌊 glsl() Water ', 'background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Simple shader-only ocean effect using the glsl() one-liner helper');
 </script>
 </body>
 </html>

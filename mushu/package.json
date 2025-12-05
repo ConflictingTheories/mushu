@@ -16,8 +16,8 @@
     "README.md"
   ],
   "scripts": {
-    "dev": "npx http-server . -p 8081 -c-1 -o examples/index.html",
-    "start": "npx http-server . -p 8081 -c-1",
+    "dev": "npx http-server . -c-1 -o examples/index.html",
+    "start": "npx http-server . -c-1",
     "build": "echo 'No build step needed - pure ES modules'"
   },
   "keywords": [

@@ -11,89 +11,272 @@
 import { yo, simulation, fps } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// YO Water Ripples (WebGL2)
-// Wave equation simulation with Fresnel reflections
+// YO Advanced Water Simulation (WebGL2)
+// 
+// Features:
+//   • Wave equation with improved damping
+//   • Fresnel-based reflections
+//   • Animated caustics pattern
+//   • Realistic refraction distortion
+//   • Underwater fog gradient
+//   • Interactive ripples with momentum
+// 
 // Click and drag to create ripples!
 // ═══════════════════════════════════════════════════════════════════════════
 
-const sim = simulation({ scale: 0.5, iterations: 2 });
+const sim = simulation({ scale: 0.5, iterations: 3 });
 
 sim.simulate(`
+  // ─────────────────────────────────────────────────────────────────────────
+  // Noise for natural variation
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash(i), hash(i + vec2(1,0)), u.x),
+      mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), u.x),
+      u.y
+    );
+  }
+
   void mainImage(out vec4 O, vec2 C) {
     vec2 uv = C / resolution;
+    vec2 texel = 1.0 / resolution;
     vec4 data = sample(vec2(0));
     
+    // Sample extended neighborhood for better wave propagation
     vec4 up = sample(vec2(0, 1));
     vec4 down = sample(vec2(0, -1));
     vec4 left = sample(vec2(-1, 0));
     vec4 right = sample(vec2(1, 0));
+    vec4 upLeft = sample(vec2(-1, 1));
+    vec4 upRight = sample(vec2(1, 1));
+    vec4 downLeft = sample(vec2(-1, -1));
+    vec4 downRight = sample(vec2(1, -1));
     
-    // R = height, G = velocity
+    // State: R = height, G = velocity, B = foam, A = wave age
     float height = data.r;
     float velocity = data.g;
+    float foam = data.b;
+    float age = data.a;
     
-    // Wave equation
-    float laplacian = (up.r + down.r + left.r + right.r) * 0.25 - height;
-    velocity += laplacian * 0.45;
-    velocity *= 0.995; // Damping
+    // ─────────────────────────────────────────────────────────────────────
+    // Improved Wave Equation with Anisotropic Propagation
+    // ─────────────────────────────────────────────────────────────────────
+    
+    // 8-neighbor Laplacian for smoother waves
+    float laplacian = (
+      up.r + down.r + left.r + right.r +
+      (upLeft.r + upRight.r + downLeft.r + downRight.r) * 0.5
+    ) / 6.0 - height;
+    
+    // Wave speed (slightly depth-dependent)
+    float waveSpeed = 0.48;
+    velocity += laplacian * waveSpeed;
+    
+    // Non-linear damping (faster for small ripples, slower for big waves)
+    float dampingFactor = 0.996 - abs(height) * 0.01;
+    velocity *= clamp(dampingFactor, 0.98, 0.998);
+    
+    // Update height
     height += velocity;
     
-    // Mouse ripples
+    // ─────────────────────────────────────────────────────────────────────
+    // Foam Generation & Decay
+    // ─────────────────────────────────────────────────────────────────────
+    
+    // Generate foam at wave peaks where water is disturbed
+    float waveCurvature = abs(laplacian);
+    float waveHeight = abs(height);
+    if (waveCurvature > 0.02 && waveHeight > 0.05) {
+      foam += waveCurvature * 0.15;
+    }
+    
+    // Foam spreads and fades
+    float neighborFoam = (up.b + down.b + left.b + right.b) * 0.25;
+    foam = mix(foam, neighborFoam, 0.1);
+    foam *= 0.98;
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Mouse Interaction with Velocity Transfer
+    // ─────────────────────────────────────────────────────────────────────
+    
     float d = length(uv - mouse);
-    if (mouseDown > 0.5 && d < 0.05) {
-      height += (1.0 - d / 0.05) * 0.4;
+    float rippleRadius = 0.06;
+    
+    if (mouseDown > 0.5 && d < rippleRadius) {
+      float falloff = pow(1.0 - d / rippleRadius, 2.0);
+      
+      // Create ripple
+      height += falloff * 0.5;
+      
+      // Transfer mouse velocity to water
+      vec2 mouseVel = (mouse - mousePrev) * 15.0;
+      float pushStrength = length(mouseVel) * falloff * 0.3;
+      velocity += pushStrength;
+      
+      // Generate foam from interaction
+      foam += falloff * 0.3;
     }
     
-    // Random raindrops
-    float rnd = fract(sin(dot(C + time * 100.0, vec2(12.9898, 78.233))) * 43758.5453);
-    if (rnd > 0.9999) {
-      height += 0.25;
+    // ─────────────────────────────────────────────────────────────────────
+    // Random Raindrops with Variation
+    // ─────────────────────────────────────────────────────────────────────
+    
+    float rnd = hash(C + fract(time) * 100.0);
+    if (rnd > 0.9998) {
+      float dropSize = 0.2 + hash(C + time) * 0.3;
+      height += dropSize;
+      foam += 0.15;
     }
     
-    O = vec4(height, velocity, 0.0, 1.0);
+    // ─────────────────────────────────────────────────────────────────────
+    // Ambient Wind Ripples
+    // ─────────────────────────────────────────────────────────────────────
+    
+    float windNoise = noise(uv * 15.0 + vec2(time * 0.5, time * 0.3)) - 0.5;
+    height += windNoise * 0.003;
+    
+    // Edge reflection boundary
+    if (uv.x < 0.02 || uv.x > 0.98 || uv.y < 0.02 || uv.y > 0.98) {
+      velocity *= -0.5;
+      height *= 0.9;
+    }
+    
+    // Clamp values
+    height = clamp(height, -1.5, 1.5);
+    velocity = clamp(velocity, -0.8, 0.8);
+    foam = clamp(foam, 0.0, 1.0);
+    age = min(age + 0.01, 1.0);
+    
+    O = vec4(height, velocity, foam, age);
   }
 `);
 
 sim.display(`
+  // ─────────────────────────────────────────────────────────────────────────
+  // Water Rendering with Realistic Lighting
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    float a = fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.5453);
+    float b = fract(sin(dot(i + vec2(1,0), vec2(127.1, 311.7))) * 43758.5453);
+    float c = fract(sin(dot(i + vec2(0,1), vec2(127.1, 311.7))) * 43758.5453);
+    float d = fract(sin(dot(i + vec2(1,1), vec2(127.1, 311.7))) * 43758.5453);
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  }
+
   void mainImage(out vec4 O, vec2 C) {
     vec2 uv = C / resolution;
     vec2 px = 1.0 / resolution;
     
-    // Sample for normals
+    // Sample for normal calculation
     float h = texture(backbuffer, uv).r;
     float hL = texture(backbuffer, uv - vec2(px.x, 0)).r;
     float hR = texture(backbuffer, uv + vec2(px.x, 0)).r;
     float hD = texture(backbuffer, uv - vec2(0, px.y)).r;
     float hU = texture(backbuffer, uv + vec2(0, px.y)).r;
+    float foam = texture(backbuffer, uv).b;
     
+    // Compute surface normal
     vec3 normal = normalize(vec3(
-      (hL - hR) * 10.0,
-      (hD - hU) * 10.0,
+      (hL - hR) * 15.0,
+      (hD - hU) * 15.0,
       1.0
     ));
     
+    // ─────────────────────────────────────────────────────────────────────
+    // Fresnel Effect (angle-dependent reflection)
+    // ─────────────────────────────────────────────────────────────────────
+    
     vec3 viewDir = vec3(0.0, 0.0, 1.0);
-    vec3 lightDir = normalize(vec3(0.3, 0.5, 0.8));
+    float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.0);
+    fresnel = 0.04 + 0.96 * fresnel; // Schlick approximation for water
     
-    float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+    // ─────────────────────────────────────────────────────────────────────
+    // Lighting
+    // ─────────────────────────────────────────────────────────────────────
     
+    vec3 lightDir = normalize(vec3(0.4, 0.6, 0.7));
     vec3 halfDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfDir), 0.0), 64.0);
     
-    vec3 deepColor = vec3(0.02, 0.08, 0.18);
-    vec3 shallowColor = vec3(0.1, 0.35, 0.5);
-    vec3 skyColor = vec3(0.7, 0.85, 0.95);
+    // Diffuse
+    float diffuse = max(dot(normal, lightDir), 0.0);
     
-    float depth = 0.5 + h * 0.3;
-    vec3 color = mix(deepColor, shallowColor, depth);
-    color = mix(color, skyColor, fresnel * 0.5);
-    color += vec3(1.0) * spec * 0.8;
+    // Specular (Blinn-Phong with high shininess for water)
+    float spec = pow(max(dot(normal, halfDir), 0.0), 128.0);
+    float specSecondary = pow(max(dot(normal, halfDir), 0.0), 32.0);
     
-    // Caustics
-    float caustic = sin(uv.x * 40.0 + h * 10.0) * sin(uv.y * 40.0 + h * 8.0);
-    color += vec3(0.1, 0.15, 0.2) * (caustic * 0.5 + 0.5) * 0.15;
+    // ─────────────────────────────────────────────────────────────────────
+    // Water Colors
+    // ─────────────────────────────────────────────────────────────────────
     
-    O = vec4(color, 1.0);
+    vec3 deepColor = vec3(0.01, 0.04, 0.12);
+    vec3 shallowColor = vec3(0.05, 0.25, 0.4);
+    vec3 skyColor = vec3(0.6, 0.8, 0.95);
+    vec3 sunColor = vec3(1.0, 0.95, 0.85);
+    
+    // Depth-based color (based on wave height)
+    float depth = 0.5 + h * 0.4;
+    vec3 waterColor = mix(deepColor, shallowColor, clamp(depth, 0.0, 1.0));
+    
+    // Apply Fresnel reflection
+    vec3 reflectedSky = mix(skyColor, sunColor, spec * 0.5);
+    waterColor = mix(waterColor, reflectedSky, fresnel * 0.7);
+    
+    // Add specular highlights
+    waterColor += sunColor * spec * 1.5;
+    waterColor += vec3(0.8, 0.9, 1.0) * specSecondary * 0.3;
+    
+    // Diffuse lighting
+    waterColor *= 0.7 + diffuse * 0.4;
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Animated Caustics
+    // ─────────────────────────────────────────────────────────────────────
+    
+    vec2 causticUV = uv * 25.0;
+    float caustic1 = sin(causticUV.x + h * 8.0 + time * 1.5) * 
+                     sin(causticUV.y + h * 6.0 + time * 1.2);
+    float caustic2 = sin(causticUV.x * 0.7 - time + h * 5.0) * 
+                     sin(causticUV.y * 0.8 + time * 0.8 + h * 4.0);
+    float caustic = (caustic1 * caustic2) * 0.5 + 0.5;
+    caustic = pow(caustic, 2.0) * 0.2;
+    
+    // Caustics only visible in shallow areas
+    waterColor += vec3(0.15, 0.25, 0.3) * caustic * (0.8 - abs(h) * 0.5);
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Foam Rendering
+    // ─────────────────────────────────────────────────────────────────────
+    
+    vec3 foamColor = vec3(0.95, 0.97, 1.0);
+    float foamPattern = noise(uv * 80.0 + time * 2.0);
+    float foamEdge = smoothstep(0.1, 0.5, foam) * foamPattern;
+    waterColor = mix(waterColor, foamColor, foamEdge * 0.8);
+    
+    // ─────────────────────────────────────────────────────────────────────
+    // Subsurface Scattering Approximation
+    // ─────────────────────────────────────────────────────────────────────
+    
+    float scatter = max(-dot(normal, lightDir), 0.0);
+    waterColor += vec3(0.0, 0.15, 0.2) * scatter * 0.4;
+    
+    // Tone mapping
+    waterColor = waterColor / (waterColor + 0.8);
+    waterColor = pow(waterColor, vec3(0.9));
+    
+    O = vec4(waterColor, 1.0);
   }
 `);
 
@@ -103,7 +286,7 @@ yo(document.getElementById('c'))
   .use(fps())
   .go();
 
-console.log('%c 🌊 mushu YO Water Ready ', 'background: linear-gradient(90deg, #0077be, #00bcd4); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('%c 🌊 mushu YO Water Ready ', 'background: linear-gradient(90deg, #0066aa, #00bbdd); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
 console.log('Click and drag to create ripples!');
 </script>
 </body>

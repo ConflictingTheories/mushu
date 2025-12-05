@@ -2,200 +2,122 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>mushu — Realistic Fire Demo</title>
-  <style>body{margin:0;overflow:hidden;background:#000}</style>
+  <title>mushu — glsl() Fire Demo</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #000; overflow: hidden; }
+    .info { position: fixed; top: 10px; left: 10px; color: #fff; font: 14px monospace; 
+            background: rgba(0,0,0,0.7); padding: 10px 16px; border-radius: 6px; z-index: 100; }
+    .info code { color: #ff6b9d; }
+  </style>
 </head>
 <body>
+<div class="info">🎨 <code>glsl()</code> Fire | Move mouse to interact</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { yo, simulation, fps } from '../src/core/yo.js';
+import { glsl } from '../src/core/yo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Realistic Fire Simulation
-// Features: Fuel consumption, heat diffusion, turbulence, smoke generation
-// Hold & drag mouse to add fuel and ignite flames!
+// GLSL Helper - Simple One-Liner Fire Effect
+// This uses the glsl() helper for non-simulation effects
 // ═══════════════════════════════════════════════════════════════════════════
 
-const sim = simulation({ scale: 0.5, iterations: 2 });
-
-// Simulation: Physics-based fire with fuel/heat/smoke model
-sim.simulate(`
-  // Pseudo-random for turbulence
+glsl(`
+  // Noise functions for realistic fire
   float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
   }
   
   float noise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
+    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
     return mix(
       mix(hash(i), hash(i + vec2(1,0)), f.x),
       mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
       f.y
     );
   }
-
-  void mainImage(out vec4 O, vec2 C) {
-    vec2 uv = C / resolution;
-    vec4 data = sample(vec2(0));
-    
-    float fuel = data.r;
-    float heat = data.g;
-    float smoke = data.b;
-    float velocity = data.a;
-    
-    // Sample neighbors for diffusion and advection
-    vec4 up = sample(vec2(0, 1));
-    vec4 down = sample(vec2(0, -1));
-    vec4 left = sample(vec2(-1, 0));
-    vec4 right = sample(vec2(1, 0));
-    
-    // Turbulence-based offset for more chaotic fire
-    float turb = noise(uv * 20.0 + time * 2.0) * 2.0 - 1.0;
-    vec4 turbLeft = sample(vec2(-1.0 + turb * 0.5, 0));
-    vec4 turbRight = sample(vec2(1.0 + turb * 0.5, 0));
-    
-    // Heat diffusion (spreads laterally)
-    float diffusion = 0.15;
-    heat += diffusion * (up.g + down.g + left.g + right.g - 4.0 * heat);
-    
-    // Strong buoyancy - heat rises aggressively
-    float buoyancy = 0.25 + heat * 0.1; // More heat = faster rise
-    heat = mix(heat, down.g, buoyancy);
-    
-    // Lateral turbulent mixing
-    heat = mix(heat, (turbLeft.g + turbRight.g) * 0.5, 0.08);
-    
-    // Fuel rises slower but still moves up
-    fuel = mix(fuel, down.r, 0.1);
-    fuel += 0.03 * (up.r + down.r + left.r + right.r - 4.0 * fuel);
-    
-    // Combustion: fuel + heat = more heat + smoke
-    float ignitionTemp = 0.3;
-    float combustion = 0.0;
-    if (heat > ignitionTemp && fuel > 0.01) {
-      combustion = min(fuel, (heat - ignitionTemp) * 0.8);
-      heat += combustion * 1.2;   // Combustion releases heat
-      fuel -= combustion;          // Fuel is consumed
-      smoke += combustion * 0.6;   // Smoke is produced
+  
+  float fbm(vec2 p, int octaves) {
+    float f = 0.0;
+    float amp = 0.5;
+    for (int i = 0; i < 8; i++) {
+      if (i >= octaves) break;
+      f += amp * noise(p);
+      p *= 2.0;
+      amp *= 0.5;
     }
-    
-    // Decay rates
-    fuel *= 0.985;
-    heat *= 0.975;  // Heat dissipates
-    smoke *= 0.995; // Smoke lingers
-    
-    // Smoke rises and spreads
-    smoke = mix(smoke, down.b, 0.08);
-    smoke += 0.02 * (left.b + right.b - 2.0 * smoke);
-    
-    // Mouse interaction - add fuel and heat
-    vec2 mouseUV = mouse;
-    float d = length(uv - mouseUV);
-    if (mouseDown > 0.5 && d < 0.1) {
-      float intensity = (1.0 - d / 0.1);
-      intensity *= intensity; // Quadratic falloff
-      fuel += intensity * 6.0;
-      heat += intensity * 3.0;
-    }
-    
-    // Fire source at bottom with animated pattern
-    if (uv.y < 0.12) {
-      float edge = 1.0 - uv.y / 0.12;
-      
-      // Multiple frequency patterns for natural look
-      float p1 = sin(uv.x * 25.0 + time * 3.0) * 0.5 + 0.5;
-      float p2 = sin(uv.x * 8.0 - time * 1.5) * 0.5 + 0.5;
-      float p3 = noise(vec2(uv.x * 50.0, time * 5.0));
-      float pattern = p1 * p2 * (0.5 + p3 * 0.5);
-      
-      if (pattern > 0.25) {
-        float intensity = pattern * edge * 2.0;
-        fuel += intensity * 1.5;
-        heat += intensity * 2.5;
-      }
-    }
-    
-    // Random sparks/embers
-    float sparkChance = noise(vec2(C.x * 0.1, time * 10.0));
-    if (sparkChance > 0.998 && uv.y < 0.3) {
-      heat += 3.0;
-      fuel += 1.0;
-    }
-    
-    O = vec4(
-      clamp(fuel, 0.0, 20.0),
-      clamp(heat, 0.0, 20.0),
-      clamp(smoke, 0.0, 15.0),
-      clamp(velocity, -50.0, 50.0)
-    );
+    return f;
   }
-`);
-
-// Display: Physically-inspired fire coloring
-sim.display(`
+  
   void mainImage(out vec4 O, vec2 C) {
     vec2 uv = C / resolution;
-    vec4 data = texture(backbuffer, uv);
+    vec2 p = (C - resolution * 0.5) / resolution.y;
     
-    float fuel = data.r;
-    float heat = data.g;
-    float smoke = data.b;
+    // Fire base shape - tapers upward
+    float fireShape = 1.0 - uv.y;
+    fireShape *= smoothstep(0.5, 0.0, abs(p.x) - 0.15 + uv.y * 0.3);
+    
+    // Animated turbulence
+    float t = time;
+    vec2 turbUV = vec2(p.x * 3.0, p.y * 2.0 - t * 1.5);
+    float turb = fbm(turbUV * 4.0, 5);
+    float turb2 = fbm(turbUV * 8.0 + vec2(100.0), 4);
+    
+    // Distort the fire shape
+    float distortedShape = fireShape;
+    distortedShape += (turb - 0.5) * 0.8 * fireShape;
+    distortedShape += (turb2 - 0.5) * 0.3 * fireShape;
+    
+    // Add rising wisps
+    float wisps = noise(vec2(p.x * 20.0, p.y * 5.0 - t * 3.0));
+    wisps *= smoothstep(0.3, 0.0, abs(p.x));
+    distortedShape += wisps * 0.3 * (1.0 - uv.y);
+    
+    // Mouse interaction
+    vec2 mouseP = mouse - 0.5;
+    mouseP.x *= resolution.x / resolution.y;
+    float mouseDist = length(p - mouseP);
+    float mouseInfluence = exp(-mouseDist * 5.0) * 0.5;
+    distortedShape += mouseInfluence;
+    
+    // Fire color gradient (blackbody-inspired)
+    float intensity = clamp(distortedShape, 0.0, 1.0);
     
     vec3 color = vec3(0.0);
     
-    // Fire color ramp based on blackbody radiation approximation
-    // Very hot: white/blue-white
-    color += vec3(1.0, 1.0, 1.0) * pow(heat, 4.0) * 3.0;
+    // White-hot core
+    color += vec3(1.0, 1.0, 0.95) * pow(intensity, 4.0) * 3.0;
+    // Bright yellow
+    color += vec3(1.0, 0.9, 0.5) * pow(intensity, 2.5) * 2.0;
+    // Orange
+    color += vec3(1.0, 0.5, 0.1) * pow(intensity, 1.5) * 1.5;
+    // Red
+    color += vec3(0.9, 0.2, 0.05) * pow(intensity, 0.8) * 1.0;
+    // Deep red edges
+    color += vec3(0.4, 0.05, 0.0) * pow(intensity, 0.4) * 0.5;
     
-    // Hot: bright yellow
-    color += vec3(1.0, 0.95, 0.7) * pow(heat, 3.0) * 2.5;
+    // Flickering
+    float flicker = noise(vec2(t * 10.0, 0.0)) * 0.1 + 0.95;
+    color *= flicker;
     
-    // Medium: orange
-    color += vec3(1.0, 0.6, 0.1) * pow(heat, 2.0) * 2.0;
+    // Tone mapping
+    color = 1.0 - exp(-color * 0.8);
+    color = pow(color, vec3(0.9));
     
-    // Cooler: red
-    color += vec3(1.0, 0.25, 0.0) * pow(heat, 1.2) * 1.5;
-    
-    // Deep red at edges
-    color += vec3(0.6, 0.05, 0.0) * pow(heat, 0.6) * 0.8;
-    
-    // Glowing embers from unburned fuel
-    float embers = fuel * (1.0 - heat * 0.15);
-    color += vec3(1.0, 0.3, 0.0) * embers * 0.5;
-    
-    // Smoke - dark with slight blue tint (atmospheric scattering)
-    vec3 smokeColor = vec3(0.03, 0.03, 0.04);
-    float smokeOpacity = 1.0 - exp(-smoke * 0.3);
-    color = mix(color, smokeColor, smokeOpacity * 0.85);
-    
-    // Subtle ambient glow from fire below
-    float ambientGlow = heat * 0.05;
-    color += vec3(0.2, 0.05, 0.0) * ambientGlow;
-    
-    // HDR tone mapping
-    color = 1.0 - exp(-color * 0.6);
-    
-    // Slight contrast boost
-    color = pow(color, vec3(0.92));
-    
-    // Add subtle noise for organic feel
-    float n = fract(sin(dot(C, vec2(12.9898, 78.233))) * 43758.5453);
-    color += (n - 0.5) * 0.015;
+    // Subtle vignette
+    float vignette = 1.0 - length(uv - 0.5) * 0.3;
+    color *= vignette;
     
     O = vec4(color, 1.0);
   }
-`);
+`, document.getElementById('c'));
 
-yo(document.getElementById('c'))
-  .scale(1)
-  .use(sim)
-  .use(fps())
-  .go();
-
-console.log('%c 🔥 mushu Fire Ready ', 'background: linear-gradient(90deg, #ff4500, #ff8c00); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-console.log('Hold & drag mouse to ignite flames!');
+console.log('%c 🔥 glsl() Fire ', 'background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('Simple shader-only fire effect using the glsl() one-liner helper');
 </script>
 </body>
 </html>

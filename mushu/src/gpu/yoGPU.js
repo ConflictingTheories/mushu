@@ -471,6 +471,19 @@ export function yoGPU(canvasOrSelector) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // gpu() — Simplified Compute + Render Pattern
+// 
+// Usage:
+//   gpu(computeCode, renderCode, { canvas, scale })
+// 
+// The compute shader should define: fn compute(C: vec2<i32>, uv: vec2<f32>)
+// The render shader should define: fn render(data: vec4<f32>, uv: vec2<f32>) -> vec4<f32>
+// 
+// Available uniforms in shaders via u.* struct:
+//   u.time, u.width, u.height, u.mouseX, u.mouseY, u.mouseDown, u.prevMouseX, u.prevMouseY
+// 
+// Helper functions available in compute shader:
+//   sample(C) - load from source texture at pixel coordinates
+//   sampleOffset(C, offset) - load with offset
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function gpu(computeCode, renderCode, options = {}) {
@@ -495,75 +508,105 @@ export async function gpu(computeCode, renderCode, options = {}) {
   const format = navigator.gpu.getPreferredCanvasFormat();
   
   let width, height;
+  let stateA, stateB;
+  
+  const createStateTexture = (w, h) => device.createTexture({
+    size: [w, h],
+    format: 'rgba16float',
+    usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+  });
   
   const resize = () => {
-    const d = (window.devicePixelRatio || 1) * scale;
-    width = Math.floor(window.innerWidth * d);
-    height = Math.floor(window.innerHeight * d);
-    canvas.width = width;
-    canvas.height = height;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    width = Math.floor(rect.width * dpr * scale);
+    height = Math.floor(rect.height * dpr * scale);
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
     context.configure({ device, format, alphaMode: 'premultiplied' });
+    
+    // Recreate state textures on resize
+    stateA = createStateTexture(width, height);
+    stateB = createStateTexture(width, height);
   };
   
   resize();
   window.addEventListener('resize', resize);
   
-  // Mouse tracking
-  const mouse = [0.5, 0.5, 0.5, 0.5]; // x, y, prevX, prevY
-  let mouseDown = false;
+  // Mouse tracking (consistent with yoGPU)
+  const mouse = { x: 0.5, y: 0.5, px: 0.5, py: 0.5, down: false };
   
-  window.addEventListener('mousemove', e => {
-    mouse[2] = mouse[0];
-    mouse[3] = mouse[1];
-    mouse[0] = e.clientX / window.innerWidth;
-    mouse[1] = e.clientY / window.innerHeight;  // No flip - shaders flip when needed
+  const updateMouse = (x, y) => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.px = mouse.x;
+    mouse.py = mouse.y;
+    mouse.x = (x - rect.left) / rect.width;
+    mouse.y = (y - rect.top) / rect.height;
+  };
+  
+  canvas.addEventListener('mousemove', e => updateMouse(e.clientX, e.clientY));
+  canvas.addEventListener('mousedown', () => mouse.down = true);
+  canvas.addEventListener('mouseup', () => mouse.down = false);
+  canvas.addEventListener('mouseleave', () => mouse.down = false);
+  
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length > 0) {
+      updateMouse(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchstart', e => {
+    mouse.down = true;
+    if (e.touches.length > 0) {
+      updateMouse(e.touches[0].clientX, e.touches[0].clientY);
+    }
   });
-  window.addEventListener('mousedown', () => mouseDown = true);
-  window.addEventListener('mouseup', () => mouseDown = false);
+  canvas.addEventListener('touchend', () => mouse.down = false);
   
-  // Create state textures
-  const createStateTexture = () => device.createTexture({
-    size: [width, height],
-    format: 'rgba16float',
-    usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
-  });
-  
-  let stateA = createStateTexture();
-  let stateB = createStateTexture();
-  
-  // Uniform buffer
+  // Uniform buffer (matches yoGPU layout - 48 bytes, 16-byte aligned)
+  // Layout: time(4) + pad(4) + width(4) + height(4) + mouseX(4) + mouseY(4) + mouseDown(4) + pad(4) + prevMouseX(4) + prevMouseY(4) + pad(8)
   const uniformBuffer = device.createBuffer({
     size: 48,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
   });
   
-  // Compute pipeline
+  // Compute pipeline - wraps user code with compute() function call
   const computeModule = device.createShaderModule({
     code: /* wgsl */`
       struct Uniforms {
         time: f32,
+        _pad0: f32,
+        width: f32,
+        height: f32,
         mouseX: f32,
         mouseY: f32,
         mouseDown: f32,
+        _pad1: f32,
         prevMouseX: f32,
         prevMouseY: f32,
-        width: f32,
-        height: f32,
       }
       
       @group(0) @binding(0) var<uniform> u: Uniforms;
       @group(0) @binding(1) var src: texture_storage_2d<rgba16float, read>;
       @group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
 
-      fn sample(c: vec2<i32>) -> vec4<f32> {
+      // Sample helper for storage texture
+      fn sample(C: vec2<i32>) -> vec4<f32> {
         let dims = vec2<i32>(textureDimensions(src));
-        let p = clamp(c, vec2<i32>(0), dims - vec2<i32>(1));
+        let p = clamp(C, vec2<i32>(0), dims - vec2<i32>(1));
+        return textureLoad(src, p);
+      }
+      
+      // Sample with offset helper
+      fn sampleOffset(C: vec2<i32>, offset: vec2<i32>) -> vec4<f32> {
+        let dims = vec2<i32>(textureDimensions(src));
+        let p = clamp(C + offset, vec2<i32>(0), dims - vec2<i32>(1));
         return textureLoad(src, p);
       }
 
       ${computeCode}
 
-      @compute @workgroup_size(16, 16)
+      @compute @workgroup_size(8, 8)
       fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let C = vec2<i32>(id.xy);
         let dims = textureDimensions(src);
@@ -592,13 +635,15 @@ export async function gpu(computeCode, renderCode, options = {}) {
     code: /* wgsl */`
       struct Uniforms {
         time: f32,
+        _pad0: f32,
+        width: f32,
+        height: f32,
         mouseX: f32,
         mouseY: f32,
         mouseDown: f32,
+        _pad1: f32,
         prevMouseX: f32,
         prevMouseY: f32,
-        width: f32,
-        height: f32,
       }
       
       struct VertexOutput {
@@ -651,16 +696,23 @@ export async function gpu(computeCode, renderCode, options = {}) {
   const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
   
   let running = true;
+  const startTime = performance.now();
   
   const loop = () => {
     if (!running) return;
     
-    const time = performance.now() * 0.001;
+    const time = (performance.now() - startTime) * 0.001;
     
-    // Note: Mouse Y is flipped to match GL coordinate system (Y=0 at bottom)
+    // Uniform buffer layout (matches yoGPU):
+    // time, pad, width, height, mouseX, mouseY, mouseDown, pad, prevMouseX, prevMouseY, pad, pad
+    // Mouse Y is flipped to match GL coordinate system (Y=0 at bottom)
     device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([
-      time, mouse[0], 1.0 - mouse[1], mouseDown ? 1.0 : 0.0,
-      mouse[2], 1.0 - mouse[3], width, height
+      time, 0,
+      width, height,
+      mouse.x, 1.0 - mouse.y,
+      mouse.down ? 1 : 0, 0,
+      mouse.px, 1.0 - mouse.py,
+      0, 0
     ]));
     
     const encoder = device.createCommandEncoder();
@@ -676,7 +728,7 @@ export async function gpu(computeCode, renderCode, options = {}) {
         { binding: 2, resource: stateB.createView() }
       ]
     }));
-    computePass.dispatchWorkgroups(Math.ceil(width / 16), Math.ceil(height / 16));
+    computePass.dispatchWorkgroups(Math.ceil(width / 8), Math.ceil(height / 8));
     computePass.end();
     
     // Render pass

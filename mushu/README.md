@@ -229,4 +229,4 @@ MIT © 2024
 
 ---
 
-Made with 🍡 by the mushu team
+Made with 🍡

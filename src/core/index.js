@@ -3,7 +3,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 export {
-  yo,
+  flow,
+  yo,  // Legacy alias
   clear,
   quad,
   shader,
@@ -11,6 +12,6 @@ export {
   fps,
   simulation,
   glsl
-} from './yo.js';
+} from './flow.js';
 
-export { default } from './yo.js';
+export { default } from './flow.js';

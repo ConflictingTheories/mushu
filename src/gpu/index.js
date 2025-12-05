@@ -2,5 +2,5 @@
 // mushu/gpu — WebGPU Module Exports
 // ═══════════════════════════════════════════════════════════════════════════
 
-export { yoGPU, hasWebGPU, gpu, wgsl } from './yoGPU.js';
-export { default } from './yoGPU.js';
+export { gpuFlow, yoGPU, hasWebGPU, gpu, wgsl } from './gpuFlow.js';
+export { default } from './gpuFlow.js';

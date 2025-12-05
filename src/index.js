@@ -1,13 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu — The Hookable Fluent Pattern for Creative Coding
 // 
-// One import for everything:
-//   import { yo, yoGPU, shader, simulation, glsl } from 'mushu';
+// Unified entry point:
+//   mushu(canvas).glsl(code)           — Simple shader
+//   mushu(canvas).flow()               — WebGL2 with plugin system
+//   mushu(canvas).gpu()                — WebGPU simple render
+//   mushu(canvas).gpu().flow()         — WebGPU with simulation
 //
 // Or import specific modules:
-//   import { yo, shader } from 'mushu/core';
+//   import { flow, shader } from 'mushu/core';
+//   import { gpuFlow, gpu } from 'mushu/gpu';
 //   import { noise, fbm } from 'mushu/glsl';
-//   import { yoGPU, compute } from 'mushu/gpu';
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Core WebGL runtime
@@ -18,3 +21,73 @@ export * from './glsl/index.js';
 
 // WebGPU runtime
 export * from './gpu/index.js';
+
+// Import for mushu() unified API
+import { flow, glsl, shader } from './core/index.js';
+import { gpuFlow, gpu as gpuSimple } from './gpu/index.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// mushu() — The Unified Entry Point
+// 
+// Usage:
+//   mushu(canvas).glsl(code)           — Quick shader (auto-start)
+//   mushu(canvas).flow()               — WebGL2 plugin system
+//   mushu(canvas).gpu()                — WebGPU simple display
+//   mushu(canvas).gpu().flow()         — WebGPU with simulation
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function mushu(canvasOrSelector) {
+  let canvas;
+  
+  if (!canvasOrSelector) {
+    canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
+    document.body.appendChild(canvas);
+  } else if (typeof canvasOrSelector === 'string') {
+    canvas = document.querySelector(canvasOrSelector);
+  } else {
+    canvas = canvasOrSelector;
+  }
+  
+  return {
+    // Quick shader helper - auto starts
+    glsl(fragSource) {
+      return flow(canvas)
+        .use(shader(fragSource))
+        .go();
+    },
+    
+    // WebGL2 fluent runtime with plugin system
+    flow() {
+      return flow(canvas);
+    },
+    
+    // WebGPU API
+    gpu(computeCode, renderCode, options) {
+      // If called with arguments, use the simple gpu() helper
+      if (computeCode !== undefined || renderCode !== undefined) {
+        return gpuSimple(computeCode, renderCode, { canvas, ...options });
+      }
+      
+      // Otherwise return chainable GPU builder
+      return {
+        // WebGPU fluent runtime with simulation
+        flow() {
+          return gpuFlow(canvas);
+        },
+        
+        // WebGPU simple display/compute
+        display(code) {
+          return gpuFlow(canvas).display(code);
+        },
+        
+        simulate(code) {
+          return gpuFlow(canvas).simulate(code);
+        }
+      };
+    }
+  };
+}
+
+// Default export
+export default mushu;

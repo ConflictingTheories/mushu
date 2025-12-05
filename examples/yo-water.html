@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>mushu — YO Water Demo</title>
+  <title>mushu — Flow Water Demo</title>
   <style>
     * { margin: 0; padding: 0; }
     body { background: #000; overflow: hidden; }
@@ -12,10 +12,10 @@
   </style>
 </head>
 <body>
-<div class="info">🌊 <code>yo().use(shader()).use(fps()).go()</code> Water | Move mouse to interact</div>
+<div class="info">🌊 <code>mushu().flow().use(shader()).use(fps()).go()</code> Water | Move mouse to interact</div>
 <canvas id="c" style="position:fixed;inset:0;width:100%;height:100%"></canvas>
 <script type="module">
-import { yo, shader, fps } from '../src/core/yo.js';
+import { mushu, shader, fps } from '../src/index.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // YO Water - Procedural Gerstner Waves (WebGL2)
@@ -32,7 +32,7 @@ import { yo, shader, fps } from '../src/core/yo.js';
 // Move mouse to create ripples!
 // ═══════════════════════════════════════════════════════════════════════════
 
-yo(document.getElementById('c'))
+mushu('#c').flow()
   .use(shader(`
     // ─────────────────────────────────────────────────────────────────────
     // Noise Functions
@@ -192,7 +192,7 @@ yo(document.getElementById('c'))
   .use(fps())
   .go();
 
-console.log('%c 🌊 mushu YO Water Ready ', 'background: linear-gradient(90deg, #0066aa, #00bbdd); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+console.log('%c 🌊 mushu Flow Water Ready ', 'background: linear-gradient(90deg, #0066aa, #00bbdd); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
 console.log('Move mouse to create ripples!');
 </script>
 </body>

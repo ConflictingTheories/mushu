@@ -2,7 +2,7 @@
 // mushu/gpu — WebGPU Hookable Runtime
 // 
 // Usage:
-//   yoGPU(canvas)
+//   mushu(canvas).gpu().flow()
 //     .simulate(computeWGSL)
 //     .display(fragmentWGSL)
 //     .go()
@@ -21,10 +21,10 @@ export function hasWebGPU() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// yoGPU — Fluent WebGPU Runtime
+// gpuFlow — Fluent WebGPU Runtime
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function yoGPU(canvasOrSelector) {
+export function gpuFlow(canvasOrSelector) {
   let canvas;
   
   if (typeof canvasOrSelector === 'string') {
@@ -834,6 +834,11 @@ export const wgsl = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Legacy alias for backwards compatibility
+// ─────────────────────────────────────────────────────────────────────────────
+export const yoGPU = gpuFlow;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Default export
 // ─────────────────────────────────────────────────────────────────────────────
-export default yoGPU;
+export default gpuFlow;

@@ -8,7 +8,7 @@
 //   • Hot-reloadable — change anything at runtime
 //
 // Usage:
-//   yo(canvas)
+//   mushu(canvas).flow()
 //     .use(shader(myCode))
 //     .use(uniform('time', ctx => ctx.time))
 //     .go()
@@ -16,10 +16,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Core: The Hookable Runtime
+// Core: The Hookable Runtime (flow)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function yo(canvasOrGl) {
+export function flow(canvasOrGl) {
   // Accept either canvas element, selector, or WebGL context
   let canvas, gl;
   
@@ -670,12 +670,17 @@ export function glsl(fragSource, canvasOrSelector) {
     canvas = canvasOrSelector;
   }
   
-  return yo(canvas)
+  return flow(canvas)
     .use(shader(fragSource))
     .go();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Legacy alias for backwards compatibility
+// ─────────────────────────────────────────────────────────────────────────────
+export const yo = flow;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Default export
 // ─────────────────────────────────────────────────────────────────────────────
-export default yo;
+export default flow;

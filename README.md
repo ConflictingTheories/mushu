@@ -1,25 +1,5 @@
 # 🍡 mushu
 
-A delightfully simple WebGL2 & WebGPU library with a hookable plugin architecture to get rid of boilerplate.
-
-
-## Features
-
-### GLSL Utilities
-
-Pre-built shader snippets you can inject:
-
-```javascript
-import { GLSL, PRESET_SHADERS } from './mushu/src/glsl/shaders.js';
-
-// Use noise functions
-const myShader = `
-  ${GLSL.NOISE}
-  
-  void mainImage(out vec4 O, vec2 C) {
-    float n = fbm(C * 0.01, 4);
-# 🍡 mushu
-
 A delightfully simple **WebGL2 & WebGPU** creative-coding library with a hookable plugin architecture to eliminate boilerplate.
 
 Perfect for building generative art, interactive visualizations, particle systems, fluid simulations, and real-time graphics with minimal code.

@@ -161,7 +161,7 @@ gpu(
       // Mouse Ignition
       // ─────────────────────────────────────────────────────────────────
       
-      let mouse = vec2<f32>(u.mouseX, 1.0 - u.mouseY);
+      let mouse = vec2<f32>(u.mouseX, u.mouseY);
       let d = length(uv - mouse);
       
       if (u.mouseDown > 0.5 && d < 0.12) {

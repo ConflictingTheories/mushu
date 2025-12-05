@@ -353,8 +353,9 @@ export function shader(fragSource, options = {}) {
       gl.uniform1f(gl.getUniformLocation(program, 'delta'), ctx.delta);
       gl.uniform1i(gl.getUniformLocation(program, 'frame'), ctx.frame);
       gl.uniform2f(gl.getUniformLocation(program, 'resolution'), ctx.width, ctx.height);
-      gl.uniform2f(gl.getUniformLocation(program, 'mouse'), ctx.mouse[0], ctx.mouse[1]);
-      gl.uniform2f(gl.getUniformLocation(program, 'mouseVelocity'), ctx.mouseVelocity[0], ctx.mouseVelocity[1]);
+      // Flip mouse Y to match GL coordinate system (Y=0 at bottom)
+      gl.uniform2f(gl.getUniformLocation(program, 'mouse'), ctx.mouse[0], 1.0 - ctx.mouse[1]);
+      gl.uniform2f(gl.getUniformLocation(program, 'mouseVelocity'), ctx.mouseVelocity[0], -ctx.mouseVelocity[1]);
       gl.uniform1f(gl.getUniformLocation(program, 'mouseDown'), ctx.mouseDown ? 1 : 0);
       
       // Set custom uniforms

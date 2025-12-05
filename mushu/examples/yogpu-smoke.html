@@ -63,13 +63,13 @@ yoGPU(document.getElementById('c'))
       if (C.x >= dims.x || C.y >= dims.y) { return; }
       
       let uv = vec2<f32>(C) / vec2<f32>(dims);
-      var data = textureLoad(src, C, 0);
+      var data = sample(C);
       
-      // Sample neighbors
-      let up = textureLoad(src, clamp(C + vec2<i32>(0, -1), vec2<i32>(0), dims - 1), 0);
-      let down = textureLoad(src, clamp(C + vec2<i32>(0, 1), vec2<i32>(0), dims - 1), 0);
-      let left = textureLoad(src, clamp(C + vec2<i32>(-1, 0), vec2<i32>(0), dims - 1), 0);
-      let right = textureLoad(src, clamp(C + vec2<i32>(1, 0), vec2<i32>(0), dims - 1), 0);
+      // Sample neighbors using helper
+      let up = sampleOffset(C, vec2<i32>(0, -1));
+      let down = sampleOffset(C, vec2<i32>(0, 1));
+      let left = sampleOffset(C, vec2<i32>(-1, 0));
+      let right = sampleOffset(C, vec2<i32>(1, 0));
       
       // State: R = density, G = temperature, BA = velocity
       var density = data.r;
@@ -120,7 +120,7 @@ yoGPU(document.getElementById('c'))
       // Mouse Emission
       // ─────────────────────────────────────────────────────────────────
       
-      let mousePos = vec2<f32>(u.mouseX, 1.0 - u.mouseY);
+      let mousePos = vec2<f32>(u.mouseX, u.mouseY);
       let d = length(uv - mousePos);
       
       if (u.mouseDown > 0.5 && d < 0.1) {

@@ -169,9 +169,8 @@ sim.simulate(`
       density += falloff * 0.6;
       temp += falloff * 0.8;
       
-      // Add velocity based on mouse movement
-      vec2 mouseVel = (mouse - mousePrev) * 10.0;
-      vel += mouseVel * falloff * 0.3;
+      // Add velocity based on mouse movement (mouseVelocity is already provided)
+      vel += mouseVelocity * falloff * 3.0;
     }
     
     // ─────────────────────────────────────────────────────────────────────

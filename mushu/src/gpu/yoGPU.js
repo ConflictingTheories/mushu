@@ -206,13 +206,21 @@ export function yoGPU(canvasOrSelector) {
       @group(0) @binding(1) var src: texture_storage_2d<rgba16float, read>;
       @group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
       
-      // Convenience aliases - these are private copies set at the start of main
+      // Convenience aliases for user code
       var<private> time: f32;
       var<private> resolution: vec2<f32>;
       var<private> mouse: vec2<f32>;
       var<private> mouseDown: f32;
       
-      fn sample(offset: vec2<i32>, C: vec2<i32>) -> vec4<f32> {
+      // Sample helper for storage texture (no mip level)
+      fn sample(C: vec2<i32>) -> vec4<f32> {
+        let dims = vec2<i32>(textureDimensions(src));
+        let p = clamp(C, vec2<i32>(0), dims - vec2<i32>(1));
+        return textureLoad(src, p);
+      }
+      
+      // Sample with offset helper
+      fn sampleOffset(C: vec2<i32>, offset: vec2<i32>) -> vec4<f32> {
         let dims = vec2<i32>(textureDimensions(src));
         let p = clamp(C + offset, vec2<i32>(0), dims - vec2<i32>(1));
         return textureLoad(src, p);
@@ -295,12 +303,13 @@ export function yoGPU(canvasOrSelector) {
       
       // Update unified uniform buffer
       // Layout: time, pad, width, height, mouseX, mouseY, mouseDown, pad, prevMouseX, prevMouseY, pad, pad
+      // Note: Mouse Y is flipped to match GL coordinate system (Y=0 at bottom)
       device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([
         time, 0,
         simWidth, simHeight,
-        mouse.x, mouse.y,
+        mouse.x, 1.0 - mouse.y,
         mouse.down ? 1 : 0, 0,
-        mouse.px, mouse.py,
+        mouse.px, 1.0 - mouse.py,
         0, 0
       ]));
       
@@ -648,9 +657,10 @@ export async function gpu(computeCode, renderCode, options = {}) {
     
     const time = performance.now() * 0.001;
     
+    // Note: Mouse Y is flipped to match GL coordinate system (Y=0 at bottom)
     device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([
-      time, mouse[0], mouse[1], mouseDown ? 1.0 : 0.0,
-      mouse[2], mouse[3], width, height
+      time, mouse[0], 1.0 - mouse[1], mouseDown ? 1.0 : 0.0,
+      mouse[2], 1.0 - mouse[3], width, height
     ]));
     
     const encoder = device.createCommandEncoder();

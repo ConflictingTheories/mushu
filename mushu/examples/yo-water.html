@@ -117,9 +117,8 @@ sim.simulate(`
       // Create ripple
       height += falloff * 0.5;
       
-      // Transfer mouse velocity to water
-      vec2 mouseVel = (mouse - mousePrev) * 15.0;
-      float pushStrength = length(mouseVel) * falloff * 0.3;
+      // Transfer mouse velocity to water (mouseVelocity is already normalized per frame)
+      float pushStrength = length(mouseVelocity) * falloff * 15.0;
       velocity += pushStrength;
       
       // Generate foam from interaction

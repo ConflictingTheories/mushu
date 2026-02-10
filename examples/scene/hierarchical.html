@@ -106,9 +106,11 @@
 
         // Camera is handled by the camera plugin
 
-        // Initialize camera
+        // Initialize and register camera
         cam.init(scene.ctx);
         controls.init(scene.ctx);
+        scene.use(cam);
+        scene.use(controls);
 
         // ═══════════════════════════════════════════════════════════════════════
         // Create a hierarchical "robot arm" structure

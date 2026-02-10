@@ -106,9 +106,11 @@
 
 
 
-        // Initialize camera
+        // Initialize and register camera
         cam.init(scene.ctx);
         controls.init(scene.ctx);
+        scene.use(cam);
+        scene.use(controls);
 
         // Add objects with different materials
         // Central gold cube

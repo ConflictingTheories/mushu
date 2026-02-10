@@ -19,6 +19,8 @@
  * @module mushu/core/scene
  */
 
+import { mat4 } from './transforms.js';
+
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/core/scene — Scene Graph System
 // ═══════════════════════════════════════════════════════════════════════════
@@ -544,14 +546,28 @@ export class SceneObject {
     /**
      * Compute normal matrix from world matrix.
      */
+    /**
+     * Compute normal matrix from world matrix.
+     */
     _computeNormalMatrix() {
-        // Copy rotation part for normal matrix
-        this.normalMatrix.set([
-            this.worldMatrix[0], this.worldMatrix[1], this.worldMatrix[2], 0,
-            this.worldMatrix[4], this.worldMatrix[5], this.worldMatrix[6], 0,
-            this.worldMatrix[8], this.worldMatrix[9], this.worldMatrix[10], 0,
-            0, 0, 0, 1
-        ]);
+        // Normal Matrix = Transpose(Inverse(WorldMatrix))
+        // This handles non-uniform scaling correctly.
+
+        if (!this._tempMat4) {
+            this._tempMat4 = new Float32Array(16);
+        }
+
+        // Try to invert
+        if (mat4.invert(this._tempMat4, this.worldMatrix)) {
+            // Transpose the inverse
+            mat4.transpose(this.normalMatrix, this._tempMat4);
+        } else {
+            // Fallback (e.g. scale 0) - just copy rotation part
+            this.normalMatrix.set(this.worldMatrix);
+            this.normalMatrix[12] = 0;
+            this.normalMatrix[13] = 0;
+            this.normalMatrix[14] = 0;
+        }
     }
 
     /**

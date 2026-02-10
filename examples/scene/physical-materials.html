@@ -153,9 +153,11 @@
 
 
 
-        // Initialize camera
+        // Initialize and register camera
         cam.init(scene.ctx);
         controls.init(scene.ctx);
+        scene.use(cam);
+        scene.use(controls);
 
         // Central glass sphere with live-updatable material
         const glassMaterial = material('physical', {

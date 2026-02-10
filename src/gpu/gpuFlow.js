@@ -335,8 +335,16 @@ export function gpuFlow(canvasOrSelector) {
 
     const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
 
+    const renderBindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } }
+      ]
+    });
+
     const renderPipeline = device.createRenderPipeline({
-      layout: 'auto',
+      layout: device.createPipelineLayout({ bindGroupLayouts: [renderBindGroupLayout] }),
       vertex: { module: renderModule, entryPoint: 'vs' },
       fragment: { module: renderModule, entryPoint: 'main', targets: [{ format }] },
       primitive: { topology: 'triangle-list' }
@@ -476,7 +484,7 @@ export function gpuFlow(canvasOrSelector) {
     });
 
     const pipeline = device.createRenderPipeline({
-      layout: 'auto',
+      layout: device.createPipelineLayout({ bindGroupLayouts: [renderBindGroupLayout] }),
       vertex: { module: shaderModule, entryPoint: 'vs' },
       fragment: { module: shaderModule, entryPoint: 'main', targets: [{ format }] },
       primitive: { topology: 'triangle-list' }

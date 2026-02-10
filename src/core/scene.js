@@ -430,6 +430,9 @@ export class SceneObject {
             }
         }
 
+        // Initialize geometry if needed
+        this.initGeometry(ctx);
+
         // Set camera uniforms
         if (ctx.program && ctx.state.camera) {
             const gl = ctx.gl;

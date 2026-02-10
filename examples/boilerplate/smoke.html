@@ -31,6 +31,7 @@
       padding: 10px 16px;
       border-radius: 6px;
       z-index: 100;
+      pointer-events: none;
     }
 
     .info code {
@@ -40,11 +41,12 @@
 </head>
 
 <body>
-  <div class="info">📝 <code>Boilerplate</code> - Vanilla WebGL2 Smoke | Click & drag to emit smoke</div>
+  <div class="info">📝 <code>Boilerplate</code> - Vanilla WebGL2 Smoke | Move mouse to interact</div>
   <canvas id="canvas"></canvas>
   <script>
     // ═══════════════════════════════════════════════════════════════════════════
     // VANILLA WEBGL2 SMOKE - BOILERPLATE EXAMPLE
+    // procedural one-shader effect (matches glsl/smoke.html logic)
     // ═══════════════════════════════════════════════════════════════════════════
 
     const canvas = document.getElementById('canvas');
@@ -55,24 +57,19 @@
       throw new Error('WebGL2 not supported');
     }
 
-    gl.getExtension('EXT_color_buffer_float');
-
     const vertexShaderSource = `#version 300 es
 void main() {
   vec2 pos[3] = vec2[](vec2(-1,-1), vec2(3,-1), vec2(-1,3));
   gl_Position = vec4(pos[gl_VertexID], 0, 1);
 }`;
 
-    const simulationFragSource = `#version 300 es
+    const fragmentShaderSource = `#version 300 es
 precision highp float;
 out vec4 fragColor;
 
-uniform sampler2D uState;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform vec2 uMouse;
-uniform vec2 uPrevMouse;
-uniform float uMouseDown;
 
 float hash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -84,22 +81,21 @@ float noise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
   f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-  
-  float a = hash(i);
-  float b = hash(i + vec2(1.0, 0.0));
-  float c = hash(i + vec2(0.0, 1.0));
-  float d = hash(i + vec2(1.0, 1.0));
-  
-  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  return mix(
+    mix(hash(i), hash(i + vec2(1,0)), f.x),
+    mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
+    f.y
+  );
 }
 
 float fbm(vec2 p, int octaves) {
   float f = 0.0;
   float amp = 0.5;
-  for (int i = 0; i < 6; i++) {
+  mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+  for (int i = 0; i < 8; i++) {
     if (i >= octaves) break;
     f += amp * noise(p);
-    p *= 2.0;
+    p = rot * p * 2.0;
     amp *= 0.5;
   }
   return f;
@@ -107,153 +103,81 @@ float fbm(vec2 p, int octaves) {
 
 void main() {
   vec2 uv = gl_FragCoord.xy / uResolution;
-  vec2 texel = 1.0 / uResolution;
+  vec2 p = (gl_FragCoord.xy - uResolution * 0.5) / uResolution.y;
+  float t = uTime * 0.4;
   
-  // State: r=density, g=velocity.x, b=velocity.y, a=vorticity
-  vec4 state = texture(uState, uv);
-  float density = state.r;
-  vec2 velocity = state.gb;
-  float vorticity = state.a;
+  // Base smoke columns
+  float smoke = 0.0;
   
-  // Sample neighbors
-  vec4 up = texture(uState, uv + vec2(0, texel.y));
-  vec4 down = texture(uState, uv - vec2(0, texel.y));
-  vec4 left = texture(uState, uv - vec2(texel.x, 0));
-  vec4 right = texture(uState, uv + vec2(texel.x, 0));
-  
-  // Curl/vorticity calculation for realistic swirls
-  float curl = (right.b - left.b) - (up.g - down.g);
-  vorticity = mix(vorticity, curl * 5.0, 0.1);
-  
-  // Turbulent flow field
-  float turb = fbm(uv * 8.0 + uTime * 0.3, 4) * 2.0 - 1.0;
-  float turb2 = fbm(uv * 15.0 - uTime * 0.5, 3) * 2.0 - 1.0;
-  
-  // Advect with velocity field
-  vec2 advectUV = uv - velocity * texel * 3.0;
-  vec4 advected = texture(uState, advectUV);
-  density = mix(density, advected.r, 0.95);
-  
-  // Buoyancy - smoke rises
-  velocity.y += density * 0.002;
-  velocity.y += 0.0008; // Base upward drift
-  
-  // Vorticity confinement (adds swirly details)
-  vec2 vortForce = vec2(
-    abs(up.a) - abs(down.a),
-    abs(right.a) - abs(left.a)
-  );
-  float vortLen = length(vortForce);
-  if (vortLen > 0.0001) {
-    vortForce = normalize(vortForce);
-    velocity += vortForce * vorticity * 0.0015;
+  // Multiple smoke streams
+  for (int i = 0; i < 5; i++) {
+    float fi = float(i);
+    float xOffset = sin(fi * 1.3) * 0.3;
+    vec2 smokePos = vec2(p.x - xOffset, p.y + 0.4);
+    
+    // Rising motion with turbulence
+    float rise = fbm(vec2(smokePos.x * 2.0, t + fi), 4);
+    smokePos.y += rise * 0.3;
+    smokePos.x += sin(smokePos.y * 3.0 + t + fi) * 0.08;
+    
+    // Turbulent distortion
+    float turb = fbm(smokePos * 4.0 + t * 0.5 + fi, 5);
+    smokePos += (turb - 0.5) * 0.15;
+    
+    // Smoke density falloff
+    float dist = length(smokePos * vec2(3.0, 1.0));
+    float column = exp(-dist * 2.5);
+    
+    // Add wispy tendrils
+    float tendrils = fbm(smokePos * 8.0 - vec2(0, t), 3);
+    column *= (0.5 + tendrils * 0.8);
+    
+    smoke += column * (0.3 + 0.2 * sin(fi));
   }
   
-  // Turbulent mixing
-  velocity.x += turb * 0.001;
-  velocity.y += turb2 * 0.0005;
+  // Add swirling vortices
+  float swirl = fbm(p * 3.0 + t * 0.3, 4);
+  smoke += swirl * 0.2 * (1.0 - uv.y);
   
-  // Diffusion
-  density += 0.08 * (up.r + down.r + left.r + right.r - 4.0 * density);
-  
-  // Velocity diffusion
-  velocity += 0.1 * (up.gb + down.gb + left.gb + right.gb - 4.0 * velocity);
-  
-  // Decay
-  density *= 0.995;
-  velocity *= 0.98;
-  vorticity *= 0.95;
-  
-  // Mouse interaction
-  float d = length(uv - uMouse);
-  if (uMouseDown > 0.5 && d < 0.15) {
-    float intensity = pow(1.0 - d / 0.15, 2.0);
-    density += intensity * 3.0;
-    
-    // Add velocity based on mouse movement
-    vec2 mouseVel = (uMouse - uPrevMouse) * 15.0;
-    velocity += mouseVel * intensity;
-    
-    // Add some randomness
-    velocity.x += (noise(uv * 100.0 + uTime * 10.0) - 0.5) * intensity * 0.1;
-  }
-  
-  // Smoke source at bottom
-  if (uv.y < 0.08) {
-    float edge = 1.0 - uv.y / 0.08;
-    float pattern = noise(vec2(uv.x * 20.0, uTime * 2.0));
-    
-    // Create discrete smoke columns
-    float columns = sin(uv.x * 15.0) * 0.5 + 0.5;
-    columns *= sin(uv.x * 7.0 + uTime) * 0.5 + 0.5;
-    
-    if (pattern > 0.4 && columns > 0.3) {
-      density += edge * pattern * 2.0;
-      velocity.y += edge * 0.02;
-      velocity.x += (noise(vec2(uv.x * 30.0, uTime * 5.0)) - 0.5) * edge * 0.02;
-    }
-  }
-  
-  fragColor = vec4(
-    clamp(density, 0.0, 10.0),
-    clamp(velocity.x, -1.0, 1.0),
-    clamp(velocity.y, -1.0, 1.0),
-    clamp(vorticity, -5.0, 5.0)
-  );
-}`;
+  // Mouse interaction - disperse smoke
+  vec2 mouseP = (uMouse - 0.5) * vec2(uResolution.x / uResolution.y, 1.0);
+  // Match mushu mouse coord system
+  vec2 m = (uMouse - 0.5); 
+  m.x *= uResolution.x / uResolution.y;
 
-    const displayFragSource = `#version 300 es
-precision highp float;
-out vec4 fragColor;
-
-uniform sampler2D uState;
-uniform vec2 uResolution;
-uniform float uTime;
-
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-void main() {
-  vec2 uv = gl_FragCoord.xy / uResolution;
-  vec4 data = texture(uState, uv);
+  float mouseDist = length(p - m);
+  float mouseInfluence = exp(-mouseDist * 6.0);
+  smoke += mouseInfluence * 0.5;
+  smoke *= 1.0 - mouseInfluence * 0.4; // Dispersal effect
   
-  float density = data.r;
+  // Volumetric lighting
+  vec3 smokeColorLight = vec3(0.65, 0.68, 0.72);
+  vec3 smokeColorDark = vec3(0.15, 0.15, 0.18);
   
-  // Multi-layered smoke with depth
-  float smoke1 = density;
-  float smoke2 = texture(uState, uv + vec2(0.002, 0.001)).r;
-  float smoke3 = texture(uState, uv - vec2(0.001, 0.002)).r;
+  // Light from above
+  float topLight = uv.y * 0.3;
+  vec3 smokeColor = mix(smokeColorDark, smokeColorLight, topLight + smoke * 0.3);
   
-  // Volumetric look with light scattering
-  vec3 smokeColor = vec3(0.65, 0.68, 0.72); // Slightly blue-gray
-  vec3 lightColor = vec3(1.0, 0.95, 0.9);   // Warm light from above
+  // Rim lighting
+  float rim = pow(smoke, 0.5) * 0.3;
+  smokeColor += vec3(0.2, 0.22, 0.25) * rim;
   
-  // Density-based opacity with exponential falloff
-  float alpha = 1.0 - exp(-density * 0.8);
-  float alpha2 = 1.0 - exp(-smoke2 * 0.6);
-  float alpha3 = 1.0 - exp(-smoke3 * 0.5);
+  // Beer-Lambert absorption
+  float density = clamp(smoke, 0.0, 1.0);
+  float transmittance = exp(-density * 2.0);
   
-  // Layer the smoke
-  vec3 color = vec3(0.02, 0.02, 0.03); // Dark background
+  // Background gradient
+  vec3 bgColor = mix(vec3(0.02, 0.02, 0.04), vec3(0.08, 0.08, 0.12), uv.y);
   
-  // Back layer (darker, more diffuse)
-  color = mix(color, smokeColor * 0.4, alpha3 * 0.5);
+  // Composite smoke over background
+  vec3 color = mix(smokeColor, bgColor, transmittance);
   
-  // Middle layer
-  color = mix(color, smokeColor * 0.6, alpha2 * 0.6);
+  // Add subtle glow at source
+  float sourceGlow = exp(-length(p + vec2(0, 0.5)) * 3.0) * 0.5;
+  color += vec3(1.0, 0.6, 0.3) * sourceGlow * (1.0 - transmittance);
   
-  // Front layer with light scattering at edges
-  float edgeLight = pow(density, 0.3) * 0.3;
-  vec3 frontSmoke = mix(smokeColor, lightColor, edgeLight);
-  color = mix(color, frontSmoke, alpha * 0.85);
-  
-  // Subtle top lighting
-  float topLight = uv.y * 0.15;
-  color += lightColor * topLight * alpha * 0.2;
-  
-  // Film grain for texture
-  float grain = (hash(uv * uResolution + uTime) - 0.5) * 0.03;
+  // Film grain
+  float grain = (hash(gl_FragCoord.xy + uTime) - 0.5) * 0.03;
   color += grain;
   
   // Vignette
@@ -289,65 +213,30 @@ void main() {
       return program;
     }
 
-    const simProgram = createProgram(vertexShaderSource, simulationFragSource);
-    const displayProgram = createProgram(vertexShaderSource, displayFragSource);
-
-    let width, height;
-    let fboA, fboB, texA, texB;
-
-    function createFBO(w, h) {
-      const tex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-      const fb = gl.createFramebuffer();
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-
-      return { fb, tex };
-    }
+    const program = createProgram(vertexShaderSource, fragmentShaderSource);
 
     function resize() {
       const dpr = window.devicePixelRatio || 1;
-      width = Math.floor(window.innerWidth * dpr * 0.5);
-      height = Math.floor(window.innerHeight * dpr * 0.5);
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
-
-      const a = createFBO(width, height);
-      const b = createFBO(width, height);
-      fboA = a.fb; texA = a.tex;
-      fboB = b.fb; texB = b.tex;
+      gl.viewport(0, 0, canvas.width, canvas.height);
     }
 
     resize();
     window.addEventListener('resize', resize);
 
     let mouse = [0.5, 0.5];
-    let prevMouse = [0.5, 0.5];
-    let mouseDown = false;
 
     canvas.addEventListener('mousemove', e => {
-      prevMouse = [...mouse];
       mouse[0] = e.clientX / window.innerWidth;
       mouse[1] = 1.0 - e.clientY / window.innerHeight;
     });
-    canvas.addEventListener('mousedown', () => mouseDown = true);
-    canvas.addEventListener('mouseup', () => mouseDown = false);
     canvas.addEventListener('touchmove', e => {
-      e.preventDefault();
       if (e.touches.length > 0) {
-        prevMouse = [...mouse];
         mouse[0] = e.touches[0].clientX / window.innerWidth;
         mouse[1] = 1.0 - e.touches[0].clientY / window.innerHeight;
       }
-    }, { passive: false });
-    canvas.addEventListener('touchstart', () => mouseDown = true);
-    canvas.addEventListener('touchend', () => mouseDown = false);
+    }, { passive: true });
 
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
@@ -355,39 +244,12 @@ void main() {
     function render(time) {
       time *= 0.001;
 
-      // Simulation pass
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fboB);
-      gl.viewport(0, 0, width, height);
-      gl.useProgram(simProgram);
-
-      gl.uniform2f(gl.getUniformLocation(simProgram, 'uResolution'), width, height);
-      gl.uniform1f(gl.getUniformLocation(simProgram, 'uTime'), time);
-      gl.uniform2f(gl.getUniformLocation(simProgram, 'uMouse'), mouse[0], mouse[1]);
-      gl.uniform2f(gl.getUniformLocation(simProgram, 'uPrevMouse'), prevMouse[0], prevMouse[1]);
-      gl.uniform1f(gl.getUniformLocation(simProgram, 'uMouseDown'), mouseDown ? 1 : 0);
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texA);
-      gl.uniform1i(gl.getUniformLocation(simProgram, 'uState'), 0);
+      gl.useProgram(program);
+      gl.uniform2f(gl.getUniformLocation(program, 'uResolution'), canvas.width, canvas.height);
+      gl.uniform1f(gl.getUniformLocation(program, 'uTime'), time);
+      gl.uniform2f(gl.getUniformLocation(program, 'uMouse'), mouse[0], mouse[1]);
 
       gl.bindVertexArray(vao);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-
-      [fboA, fboB] = [fboB, fboA];
-      [texA, texB] = [texB, texA];
-
-      // Display pass
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.useProgram(displayProgram);
-
-      gl.uniform2f(gl.getUniformLocation(displayProgram, 'uResolution'), canvas.width, canvas.height);
-      gl.uniform1f(gl.getUniformLocation(displayProgram, 'uTime'), time);
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texA);
-      gl.uniform1i(gl.getUniformLocation(displayProgram, 'uState'), 0);
-
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
       requestAnimationFrame(render);

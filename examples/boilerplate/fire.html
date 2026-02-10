@@ -5,10 +5,33 @@
   <meta charset="utf-8">
   <title>Vanilla WebGL2 Fire - Boilerplate</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000;
+      overflow: hidden;
+    }
+
     canvas {
       display: block;
       width: 100vw;
       height: 100vh;
+    }
+
+    .info {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: #fff;
+      font: 14px monospace;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 16px;
+      border-radius: 6px;
+      z-index: 100;
+      pointer-events: none;
     }
 
     .info code {
@@ -18,12 +41,12 @@
 </head>
 
 <body>
-  <div class="info">📝 <code>Boilerplate</code> - Vanilla WebGL2 Fire | Click & drag to add flames</div>
+  <div class="info">📝 <code>Boilerplate</code> - Vanilla WebGL2 Fire | Move mouse to interact</div>
   <canvas id="canvas"></canvas>
   <script>
     // ═══════════════════════════════════════════════════════════════════════════
     // VANILLA WEBGL2 FIRE - BOILERPLATE EXAMPLE
-    // This shows exactly how much code you need WITHOUT any helpers
+    // procedural one-shader effect (matches glsl/fire.html logic)
     // ═══════════════════════════════════════════════════════════════════════════
 
     const canvas = document.getElementById('canvas');
@@ -34,30 +57,21 @@
       throw new Error('WebGL2 not supported');
     }
 
-    // Enable float textures
-    gl.getExtension('EXT_color_buffer_float');
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Shader sources
-    // ─────────────────────────────────────────────────────────────────────────────
-
     const vertexShaderSource = `#version 300 es
 void main() {
   vec2 pos[3] = vec2[](vec2(-1,-1), vec2(3,-1), vec2(-1,3));
   gl_Position = vec4(pos[gl_VertexID], 0, 1);
 }`;
 
-    const simulationFragSource = `#version 300 es
+    const fragmentShaderSource = `#version 300 es
 precision highp float;
 out vec4 fragColor;
 
-uniform sampler2D uState;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform vec2 uMouse;
-uniform float uMouseDown;
 
-// Improved noise for more realistic turbulence
+// Noise functions for realistic fire
 float hash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
@@ -67,24 +81,21 @@ float hash(vec2 p) {
 float noise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
-  f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0); // Quintic interpolation
-  
-  float a = hash(i);
-  float b = hash(i + vec2(1.0, 0.0));
-  float c = hash(i + vec2(0.0, 1.0));
-  float d = hash(i + vec2(1.0, 1.0));
-  
-  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+  return mix(
+    mix(hash(i), hash(i + vec2(1,0)), f.x),
+    mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
+    f.y
+  );
 }
 
 float fbm(vec2 p, int octaves) {
   float f = 0.0;
   float amp = 0.5;
-  float freq = 1.0;
   for (int i = 0; i < 8; i++) {
     if (i >= octaves) break;
-    f += amp * noise(p * freq);
-    freq *= 2.0;
+    f += amp * noise(p);
+    p *= 2.0;
     amp *= 0.5;
   }
   return f;
@@ -92,145 +103,60 @@ float fbm(vec2 p, int octaves) {
 
 void main() {
   vec2 uv = gl_FragCoord.xy / uResolution;
-  vec2 texel = 1.0 / uResolution;
+  vec2 p = (gl_FragCoord.xy - uResolution * 0.5) / uResolution.y;
   
-  // Sample current state: r=fuel, g=heat, b=smoke, a=velocity
-  vec4 state = texture(uState, uv);
-  float fuel = state.r;
-  float heat = state.g;
-  float smoke = state.b;
-  float velocity = state.a;
+  // Fire base shape - tapers upward
+  float fireShape = 1.0 - uv.y;
+  fireShape *= smoothstep(0.5, 0.0, abs(p.x) - 0.15 + uv.y * 0.3);
   
-  // Sample neighbors
-  vec4 up = texture(uState, uv + vec2(0, texel.y));
-  vec4 down = texture(uState, uv - vec2(0, texel.y));
-  vec4 left = texture(uState, uv - vec2(texel.x, 0));
-  vec4 right = texture(uState, uv + vec2(texel.x, 0));
+  // Animated turbulence
+  float t = uTime;
+  vec2 turbUV = vec2(p.x * 3.0, p.y * 2.0 - t * 1.5);
+  float turb = fbm(turbUV * 4.0, 5);
+  float turb2 = fbm(turbUV * 8.0 + vec2(100.0), 4);
   
-  // Turbulence field for chaotic fire movement
-  float turb = fbm(uv * 12.0 + uTime * 1.5, 4) * 2.0 - 1.0;
-  float turb2 = fbm(uv * 25.0 - uTime * 2.0, 3) * 2.0 - 1.0;
+  // Distort the fire shape
+  float distortedShape = fireShape;
+  distortedShape += (turb - 0.5) * 0.8 * fireShape;
+  distortedShape += (turb2 - 0.5) * 0.3 * fireShape;
   
-  // Advection with turbulent offset
-  vec2 turbOffset = vec2(turb * 0.008, turb2 * 0.004);
-  vec4 advected = texture(uState, uv - vec2(0, texel.y * 8.0) + turbOffset);
+  // Add rising wisps
+  float wisps = noise(vec2(p.x * 20.0, p.y * 5.0 - t * 3.0));
+  wisps *= smoothstep(0.3, 0.0, abs(p.x));
+  distortedShape += wisps * 0.3 * (1.0 - uv.y);
   
-  // Heat diffusion (spreads sideways more than vertically)
-  float diffusion = 0.12;
-  heat += diffusion * (up.g * 0.8 + down.g * 1.2 + left.g + right.g - 4.0 * heat);
+  // Mouse interaction
+  vec2 mouseP = (uMouse - 0.5) * vec2(uResolution.x / uResolution.y, 1.0);
+  // Match mushu coordinate system: mouse is 0..1, p is centered
+  vec2 m = (uMouse - 0.5);
+  m.x *= uResolution.x / uResolution.y;
   
-  // Strong buoyancy - heat rises aggressively
-  float buoyancy = 0.35 + heat * 0.15;
-  heat = mix(heat, down.g, buoyancy);
+  float mouseDist = length(p - m);
+  float mouseInfluence = exp(-mouseDist * 5.0) * 0.5;
+  distortedShape += mouseInfluence;
   
-  // Lateral turbulent mixing
-  vec4 turbLeft = texture(uState, uv + vec2(-texel.x + turb * 0.01, 0));
-  vec4 turbRight = texture(uState, uv + vec2(texel.x + turb * 0.01, 0));
-  heat = mix(heat, (turbLeft.g + turbRight.g) * 0.5, 0.1);
-  
-  // Fuel behavior - rises slower, spreads
-  fuel = mix(fuel, down.r, 0.08);
-  fuel += 0.025 * (up.r + down.r + left.r + right.r - 4.0 * fuel);
-  
-  // Combustion reaction: fuel + heat = more heat + smoke
-  float ignitionTemp = 0.25;
-  if (heat > ignitionTemp && fuel > 0.01) {
-    float combustion = min(fuel, (heat - ignitionTemp) * 0.9);
-    heat += combustion * 1.4;
-    fuel -= combustion;
-    smoke += combustion * 0.7;
-  }
-  
-  // Decay rates
-  fuel *= 0.988;
-  heat *= 0.965;
-  smoke *= 0.992;
-  
-  // Smoke rises and spreads
-  smoke = mix(smoke, down.b, 0.12);
-  smoke += 0.03 * (left.b + right.b - 2.0 * smoke);
-  
-  // Mouse interaction - add fuel and heat
-  float d = length(uv - uMouse);
-  if (uMouseDown > 0.5 && d < 0.12) {
-    float intensity = pow(1.0 - d / 0.12, 2.5);
-    fuel += intensity * 8.0;
-    heat += intensity * 5.0;
-  }
-  
-  // Fire source at bottom with realistic flickering
-  if (uv.y < 0.15) {
-    float edge = pow(1.0 - uv.y / 0.15, 1.5);
-    
-    // Multiple frequency patterns for natural look
-    float p1 = sin(uv.x * 30.0 + uTime * 4.0) * 0.5 + 0.5;
-    float p2 = sin(uv.x * 12.0 - uTime * 2.5) * 0.5 + 0.5;
-    float p3 = fbm(vec2(uv.x * 40.0, uTime * 6.0), 3);
-    float p4 = noise(vec2(uv.x * 80.0, uTime * 10.0));
-    float pattern = p1 * p2 * (0.4 + p3 * 0.4 + p4 * 0.2);
-    
-    if (pattern > 0.2) {
-      float intensity = pattern * edge * 2.5;
-      fuel += intensity * 2.0;
-      heat += intensity * 3.5;
-    }
-  }
-  
-  // Random sparks
-  if (noise(vec2(gl_FragCoord.x * 0.05, uTime * 15.0)) > 0.995 && uv.y < 0.35) {
-    heat += 4.0;
-    fuel += 2.0;
-  }
-  
-  fragColor = vec4(
-    clamp(fuel, 0.0, 25.0),
-    clamp(heat, 0.0, 25.0),
-    clamp(smoke, 0.0, 20.0),
-    clamp(velocity, -50.0, 50.0)
-  );
-}`;
-
-    const displayFragSource = `#version 300 es
-precision highp float;
-out vec4 fragColor;
-
-uniform sampler2D uState;
-uniform vec2 uResolution;
-uniform float uTime;
-
-void main() {
-  vec2 uv = gl_FragCoord.xy / uResolution;
-  vec4 data = texture(uState, uv);
-  
-  float fuel = data.r;
-  float heat = data.g;
-  float smoke = data.b;
+  // Fire color gradient (blackbody-inspired)
+  float intensity = clamp(distortedShape, 0.0, 1.0);
   
   vec3 color = vec3(0.0);
   
-  // Physically-inspired blackbody radiation colors
-  // Very hot core: white/yellow-white
-  color += vec3(1.0, 1.0, 0.95) * pow(heat, 4.5) * 4.0;
-  // Hot: bright yellow
-  color += vec3(1.0, 0.95, 0.7) * pow(heat, 3.5) * 3.0;
-  // Warm: orange
-  color += vec3(1.0, 0.6, 0.15) * pow(heat, 2.2) * 2.5;
-  // Cooling: red-orange
-  color += vec3(1.0, 0.3, 0.05) * pow(heat, 1.4) * 2.0;
-  // Cool: deep red
-  color += vec3(0.7, 0.1, 0.02) * pow(heat, 0.7) * 1.0;
+  // White-hot core
+  color += vec3(1.0, 1.0, 0.95) * pow(intensity, 4.0) * 3.0;
+  // Bright yellow
+  color += vec3(1.0, 0.9, 0.5) * pow(intensity, 2.5) * 2.0;
+  // Orange
+  color += vec3(1.0, 0.5, 0.1) * pow(intensity, 1.5) * 1.5;
+  // Red
+  color += vec3(0.9, 0.2, 0.05) * pow(intensity, 0.8) * 1.0;
+  // Deep red edges
+  color += vec3(0.4, 0.05, 0.0) * pow(intensity, 0.4) * 0.5;
   
-  // Glowing embers from unburnt fuel
-  float embers = fuel * (1.0 - heat * 0.12);
-  color += vec3(1.0, 0.35, 0.05) * embers * 0.6;
+  // Flickering
+  float flicker = noise(vec2(t * 10.0, 0.0)) * 0.1 + 0.95;
+  color *= flicker;
   
-  // Smoke overlay with subtle blue-gray tint
-  vec3 smokeColor = vec3(0.025, 0.025, 0.035);
-  float smokeOpacity = 1.0 - exp(-smoke * 0.35);
-  color = mix(color, smokeColor, smokeOpacity * 0.9);
-  
-  // Tone mapping and gamma
-  color = 1.0 - exp(-color * 0.55);
+  // Tone mapping
+  color = 1.0 - exp(-color * 0.8);
   color = pow(color, vec3(0.9));
   
   // Subtle vignette
@@ -239,10 +165,6 @@ void main() {
   
   fragColor = vec4(color, 1.0);
 }`;
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Shader compilation helper
-    // ─────────────────────────────────────────────────────────────────────────────
 
     function createShader(type, source) {
       const shader = gl.createShader(type);
@@ -269,122 +191,43 @@ void main() {
       return program;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Create programs
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    const simProgram = createProgram(vertexShaderSource, simulationFragSource);
-    const displayProgram = createProgram(vertexShaderSource, displayFragSource);
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Create framebuffers for ping-pong rendering
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    let width, height;
-    let fboA, fboB, texA, texB;
-
-    function createFBO(w, h) {
-      const tex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-      const fb = gl.createFramebuffer();
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-
-      return { fb, tex };
-    }
+    const program = createProgram(vertexShaderSource, fragmentShaderSource);
 
     function resize() {
       const dpr = window.devicePixelRatio || 1;
-      width = Math.floor(window.innerWidth * dpr * 0.5);
-      height = Math.floor(window.innerHeight * dpr * 0.5);
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
-
-      const a = createFBO(width, height);
-      const b = createFBO(width, height);
-      fboA = a.fb; texA = a.tex;
-      fboB = b.fb; texB = b.tex;
+      gl.viewport(0, 0, canvas.width, canvas.height);
     }
 
     resize();
     window.addEventListener('resize', resize);
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Mouse tracking
-    // ─────────────────────────────────────────────────────────────────────────────
-
     let mouse = [0.5, 0.5];
-    let mouseDown = false;
 
     canvas.addEventListener('mousemove', e => {
       mouse[0] = e.clientX / window.innerWidth;
       mouse[1] = 1.0 - e.clientY / window.innerHeight;
     });
-    canvas.addEventListener('mousedown', () => mouseDown = true);
-    canvas.addEventListener('mouseup', () => mouseDown = false);
     canvas.addEventListener('touchmove', e => {
-      e.preventDefault();
       if (e.touches.length > 0) {
         mouse[0] = e.touches[0].clientX / window.innerWidth;
         mouse[1] = 1.0 - e.touches[0].clientY / window.innerHeight;
       }
-    }, { passive: false });
-    canvas.addEventListener('touchstart', () => mouseDown = true);
-    canvas.addEventListener('touchend', () => mouseDown = false);
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Create VAO
-    // ─────────────────────────────────────────────────────────────────────────────
+    }, { passive: true }); // Passive, no preventDefault needed for this simple demo
 
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Render loop
-    // ─────────────────────────────────────────────────────────────────────────────
-
     function render(time) {
       time *= 0.001;
 
-      // Simulation pass
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fboB);
-      gl.viewport(0, 0, width, height);
-      gl.useProgram(simProgram);
-
-      gl.uniform2f(gl.getUniformLocation(simProgram, 'uResolution'), width, height);
-      gl.uniform1f(gl.getUniformLocation(simProgram, 'uTime'), time);
-      gl.uniform2f(gl.getUniformLocation(simProgram, 'uMouse'), mouse[0], mouse[1]);
-      gl.uniform1f(gl.getUniformLocation(simProgram, 'uMouseDown'), mouseDown ? 1 : 0);
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texA);
-      gl.uniform1i(gl.getUniformLocation(simProgram, 'uState'), 0);
+      gl.useProgram(program);
+      gl.uniform2f(gl.getUniformLocation(program, 'uResolution'), canvas.width, canvas.height);
+      gl.uniform1f(gl.getUniformLocation(program, 'uTime'), time);
+      gl.uniform2f(gl.getUniformLocation(program, 'uMouse'), mouse[0], mouse[1]);
 
       gl.bindVertexArray(vao);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-
-      // Swap buffers
-      [fboA, fboB] = [fboB, fboA];
-      [texA, texB] = [texB, texA];
-
-      // Display pass
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.useProgram(displayProgram);
-
-      gl.uniform2f(gl.getUniformLocation(displayProgram, 'uResolution'), canvas.width, canvas.height);
-      gl.uniform1f(gl.getUniformLocation(displayProgram, 'uTime'), time);
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texA);
-      gl.uniform1i(gl.getUniformLocation(displayProgram, 'uState'), 0);
-
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
       requestAnimationFrame(render);
@@ -411,8 +254,6 @@ void main() {
     })();
 
     console.log('%c 🔥 Vanilla WebGL2 Fire ', 'background: #3b82f6; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
-    console.log('This is the BOILERPLATE version - see how much code is needed!');
-    console.log('Compare with glsl(), gpu(), yo(), and yoGPU() for cleaner alternatives.');
   </script>
 </body>
 

@@ -438,6 +438,8 @@ export class SceneObject {
             if (viewLoc) gl.uniformMatrix4fv(viewLoc, false, cam.view);
             const projLoc = gl.getUniformLocation(ctx.program, 'projectionMatrix');
             if (projLoc) gl.uniformMatrix4fv(projLoc, false, cam.projection);
+
+            const camPosLoc = gl.getUniformLocation(ctx.program, 'cameraPosition');
             if (camPosLoc && cam.position && cam.position.length === 3) {
                 gl.uniform3fv(camPosLoc, cam.position);
             }
@@ -723,8 +725,8 @@ export class Scene {
                 this.ctx.mouse[0] = (e.touches[0].clientX - rect.left) / rect.width;
                 this.ctx.mouse[1] = (e.touches[0].clientY - rect.top) / rect.height;
             }
-        });
-        this.canvas.addEventListener('touchstart', onMouseDown);
+        }, { passive: true });
+        this.canvas.addEventListener('touchstart', onMouseDown, { passive: true });
         this.canvas.addEventListener('touchend', onMouseUp);
 
         this._cleanupListeners = () => {

@@ -881,23 +881,23 @@ export async function gpu(computeCode, renderCode, options = {}) {
   };
 }
 
-  /**
-   * Create and return a canvas element sized to cover the full window.
-   * Used when no canvas selector is provided to `gpuFlow()`.
-   * @returns {HTMLCanvasElement} The created canvas element.
-   */
-  function createFullscreenCanvas() {
+/**
+ * Create and return a canvas element sized to cover the full window.
+ * Used when no canvas selector is provided to `gpuFlow()`.
+ * @returns {HTMLCanvasElement} The created canvas element.
+ */
+function createFullscreenCanvas() {
   const canvas = document.createElement('canvas');
   canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
   document.body.appendChild(canvas);
   return canvas;
 }
 
-  /**
-   * Show a simple DOM-level alert instructing the user that WebGPU isn't available.
-   * @param {string} [message] Message to display in the created notice element.
-   */
-  function showGPUError(message = 'WebGPU is not supported in this browser. Try Chrome 113+ or Edge 113+.') {
+/**
+ * Show a simple DOM-level alert instructing the user that WebGPU isn't available.
+ * @param {string} [message] Message to display in the created notice element.
+ */
+function showGPUError(message = 'WebGPU is not supported in this browser. Try Chrome 113+ or Edge 113+.') {
   document.body.innerHTML = `
     <div style="color:#fff;font-family:system-ui;padding:40px;text-align:center;background:#111;position:fixed;inset:0;display:flex;align-items:center;justify-content:center">
       <div>

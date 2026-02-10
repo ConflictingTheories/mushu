@@ -497,10 +497,11 @@ export class SceneObject {
         const r20 = cx * sy * cz + sx_ * sz_, r21 = cx * sy * sz_ - sx_ * cz, r22 = cx * cy;
 
         // Apply scale and rotation, then translation
+        // Apply scale and rotation, then translation (Column-Major)
         this.localMatrix.set([
-            r00 * sx, r10 * sy, r20 * sz, 0,
-            r01 * sx, r11 * sy, r21 * sz, 0,
-            r02 * sx, r12 * sy, r22 * sz, 0,
+            r00 * sx, r01 * sx, r02 * sx, 0,
+            r10 * sy, r11 * sy, r12 * sy, 0,
+            r20 * sz, r21 * sz, r22 * sz, 0,
             x, y, z, 1
         ]);
     }
@@ -752,6 +753,13 @@ export class Scene {
         this.ctx.height = this.canvas.height;
         this.ctx.aspect = this.canvas.width / this.canvas.height;
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+
+        // Notify plugins of resize
+        for (const plugin of this._plugins) {
+            if (plugin.resize) {
+                plugin.resize(this.ctx);
+            }
+        }
     }
 
     /**

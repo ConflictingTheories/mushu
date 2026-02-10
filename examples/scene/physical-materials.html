@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mushu Scene - Physical Materials</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font: 14px monospace;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 16px;
+            border-radius: 6px;
+            z-index: 100;
+        }
+
+        .info code {
+            color: #44aaff;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-family: monospace;
+            font-size: 13px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 100;
+        }
+
+        .controls label {
+            display: block;
+            margin: 8px 0;
+        }
+
+        .controls input[type="range"] {
+            width: 150px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="info">⚡ <code>mushu().scene()</code> Physical Materials | Drag to rotate</div>
+
+    <div class="controls">
+        <h4 style="margin-bottom: 10px;">Glass Settings</h4>
+        <label>
+            Transmission: <input type="range" id="transmission" min="0" max="1" step="0.01" value="0.9">
+            <span id="transmissionVal">0.90</span>
+        </label>
+        <label>
+            Roughness: <input type="range" id="roughness" min="0" max="1" step="0.01" value="0.05">
+            <span id="roughnessVal">0.05</span>
+        </label>
+        <label>
+            IOR: <input type="range" id="ior" min="1" max="2.5" step="0.01" value="1.5">
+            <span id="iorVal">1.50</span>
+        </label>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { mushu, material, materials, mushuScene } from '../../src/index.js';
+        import { camera, orbitControls } from '../../src/core/index.js';
+        import { cube, sphere, torus } from '../../src/core/geometry.js';
+
+        // UI Controls
+        const transmissionInput = document.getElementById('transmission');
+        const roughnessInput = document.getElementById('roughness');
+        const iorInput = document.getElementById('ior');
+
+        const transmissionVal = document.getElementById('transmissionVal');
+        const roughnessVal = document.getElementById('roughnessVal');
+        const iorVal = document.getElementById('iorVal');
+
+        transmissionInput.addEventListener('input', (e) => {
+            transmissionVal.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        roughnessInput.addEventListener('input', (e) => {
+            roughnessVal.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        iorInput.addEventListener('input', (e) => {
+            iorVal.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        // Create materials
+        const gold = material('pbr', {
+            name: 'gold',
+            albedo: [1.0, 0.84, 0.0],
+            metallic: 1.0,
+            roughness: 0.2
+        });
+
+        const chrome = material('pbr', {
+            name: 'chrome',
+            albedo: [0.95, 0.95, 0.95],
+            metallic: 1.0,
+            roughness: 0.1
+        });
+
+        // Create the scene
+        const scene = mushuScene('#canvas', {
+            clearColor: [0.1, 0.1, 0.15, 1]
+        });
+
+        // Register geometry presets
+        scene.useGeometries({
+            cube: () => cube(),
+            sphere: () => sphere({ radius: 0.6, widthSegments: 32, heightSegments: 16 }),
+            torus: () => torus({ radius: 0.5, tube: 0.2, radialSegments: 32, tubularSegments: 24 })
+        });
+
+        // Create camera with orbit controls
+        const cam = camera({
+            position: [0, 3, 8],
+            target: [0, 0, 0],
+            fov: 45
+        });
+
+        const controls = orbitControls(cam, {
+            rotateSpeed: 0.005,
+            minDistance: 3,
+            maxDistance: 20
+        });
+
+
+
+        // Initialize camera
+        cam.init(scene.ctx);
+        controls.init(scene.ctx);
+
+        // Central glass sphere with live-updatable material
+        const glassMaterial = material('physical', {
+            name: 'glass',
+            albedo: [1, 1, 1],
+            metallic: 0.0,
+            roughness: 0.05,
+            transmission: 0.9,
+            ior: 1.5,
+            opacity: 0.3
+        });
+
+        scene.add('glassSphere', {
+            geometry: 'sphere',
+            material: glassMaterial,
+            position: [0, 0, 0],
+            scale: [1.2, 1.2, 1.2],
+            userData: {
+                update: (obj, ctx) => {
+                    obj.rotateY(ctx.delta * 0.4);
+                    obj.rotateX(ctx.delta * 0.1);
+                }
+            }
+        });
+
+        // Inner rotating gold core
+        scene.add('core', {
+            geometry: 'torus',
+            material: gold,
+            position: [0, 0, 0],
+            scale: [0.6, 0.6, 0.6],
+            userData: {
+                update: (obj, ctx) => {
+                    obj.rotateY(-ctx.delta * 1);
+                    obj.rotateX(ctx.delta * 0.5);
+                }
+            }
+        });
+
+        // Orbiting chrome spheres
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2;
+            const radius = 3;
+
+            scene.add(`orb${i}`, {
+                geometry: 'sphere',
+                material: chrome,
+                position: [Math.cos(angle) * radius, 0, Math.sin(angle) * radius],
+                scale: [0.4, 0.4, 0.4],
+                userData: {
+                    angle,
+                    radius,
+                    update: (obj, ctx) => {
+                        const t = ctx.time;
+                        obj.setPosition(
+                            Math.cos(obj.userData.angle + t * 0.3) * obj.userData.radius,
+                            Math.sin(t * 0.5 + i) * 0.5,
+                            Math.sin(obj.userData.angle + t * 0.3) * obj.userData.radius
+                        );
+                        obj.rotateY(ctx.delta * 2);
+                        obj.rotateX(ctx.delta);
+                    }
+                }
+            });
+        }
+
+        // Update material from UI
+        scene.use({
+            update: () => {
+                glassMaterial.setUniform('transmission', parseFloat(transmissionInput.value));
+                glassMaterial.setUniform('roughness', parseFloat(roughnessInput.value));
+                glassMaterial.setUniform('ior', parseFloat(iorInput.value));
+            }
+        });
+
+        // Start the scene
+        scene.go();
+
+        console.log('%c 💎 mushu Scene Ready ', 'background: linear-gradient(90deg, #44aaff, #44ffaa); color: #000; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+        console.log('Physical materials with transmission (glass effect)');
+    </script>
+</body>
+
+</html>

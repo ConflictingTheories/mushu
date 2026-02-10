@@ -32,6 +32,7 @@
     import {
       flow,
       cube,
+      simulation,
       shader3d,
       camera,
       orbitControls,
@@ -127,19 +128,22 @@
     let rotationY = 0;
     const modelMatrix = mat4.create();
 
+    const plasma3dMushu =
+      flow('#canvas')
+        .use(cam)
+        .use(controls)
+        .use(fps())
+        .use(shader3d(vertexShader, fragmentShader, {
+          depthTest: true,
+          cullFace: 'BACK'
+        }));
+
     // Start the render loop
-    flow('#canvas')
-      .use(clear([0.05, 0.05, 0.08, 1]))
-      .use(cam)
-      .use(controls)
-      .use(shader3d(vertexShader, fragmentShader, {
-        depthTest: true,
-        cullFace: 'BACK'
-      }))
+    plasma3dMushu
       .use({
         render(ctx) {
           // Rotate the model
-          rotationY += ctx.delta * 0.5;
+          rotationY += ctx.delta * 0.7;
           mat4.rotateY(modelMatrix, rotationY);
 
           // Update shader uniform
@@ -149,8 +153,25 @@
           }
         }
       })
-      .use(cube({ size: 1.5 }))
-      .use(fps())
+      .use(cube({ size: 1.5 }));
+
+    rotationY = 0;
+
+    plasma3dMushu
+      .use({
+        render(ctx) {
+          // Rotate the model ccw
+          rotationY += ctx.delta * -0.2;
+          mat4.rotateY(modelMatrix, rotationY);
+
+          // Update shader uniform
+          const shader = ctx.state.shader3d;
+          if (shader) {
+            shader.setModelMatrix(modelMatrix);
+          }
+        }
+      })
+      .use(cube({ size: 2.5 }))
       .go();
   </script>
 </body>

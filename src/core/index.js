@@ -82,4 +82,24 @@ export {
   wireframeFragment,
 } from './shader3d.js';
 
+// Material System
+export {
+  Material,
+  BuiltInMaterial,
+  PBRMaterial,
+  PhysicalMaterial,
+  ShaderMaterial,
+  material,
+  materials,
+} from './material.js';
+
+// Scene Graph
+export {
+  Scene,
+  mushuScene,
+  yoScene,
+  SceneObject,
+  object,
+} from './scene.js';
+
 export { default } from './flow.js';

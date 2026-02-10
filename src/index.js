@@ -25,6 +25,7 @@ export * from './gpu/index.js';
 // Import for mushu() unified API
 import { flow, shader } from './core/index.js';
 import { gpuFlow, gpu as gpuSimple } from './gpu/index.js';
+import { mushuScene } from './core/scene.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // mushu() — The Unified Entry Point
@@ -32,6 +33,7 @@ import { gpuFlow, gpu as gpuSimple } from './gpu/index.js';
 // Usage:
 //   mushu(canvas).glsl(code)           — Quick shader (auto-start)
 //   mushu(canvas).flow()               — WebGL2 plugin system
+//   mushu(canvas).scene()              — Scene graph with multi-object support
 //   mushu(canvas).gpu()                — WebGPU simple display
 //   mushu(canvas).gpu().flow()         — WebGPU with simulation
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,7 +41,7 @@ import { gpuFlow, gpu as gpuSimple } from './gpu/index.js';
 /**
  * Unified entry point for mushu.
  * @param {HTMLElement|string=} canvasOrSelector - Canvas element or CSS selector. If omitted, a fullscreen canvas is created.
- * @returns {{glsl: function(string=), gl: function(string=), flow: function(): *, gpu: function(*=, *=, *=): *}}
+ * @returns {{glsl: function(string=), gl: function(string=), flow: function(): *, scene: function(): *, gpu: function(*=, *=, *=): *}}
  */
 /**
  * Convenience entry to create a mushu rendering flow for a canvas.
@@ -87,6 +89,11 @@ export function mushu(canvasOrSelector) {
     // WebGL2 fluent runtime with plugin system
     flow() {
       return flow(canvas);
+    },
+
+    // Scene graph for multi-object 3D scenes
+    scene(settings) {
+      return mushuScene(canvas, settings);
     },
 
     // WebGPU API

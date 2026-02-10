@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mushu Scene - Hierarchical Objects</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font: 14px monospace;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 16px;
+            border-radius: 6px;
+            z-index: 100;
+        }
+
+        .info code {
+            color: #ffaa44;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="info">⚡ <code>mushu().scene()</code> Hierarchical Objects | Drag to rotate</div>
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { mushu, material, materials, mushuScene } from '../../src/index.js';
+        import { camera, orbitControls } from '../../src/core/index.js';
+        import { cube, sphere, cylinder } from '../../src/core/geometry.js';
+
+        // Create materials
+        const metal = material('pbr', {
+            name: 'metal',
+            albedo: [0.8, 0.8, 0.8],
+            metallic: 0.9,
+            roughness: 0.2
+        });
+
+        const redPlastic = material('pbr', {
+            name: 'redPlastic',
+            albedo: [0.9, 0.1, 0.1],
+            metallic: 0.0,
+            roughness: 0.5
+        });
+
+        const yellowPlastic = material('pbr', {
+            name: 'yellowPlastic',
+            albedo: [1.0, 0.9, 0.1],
+            metallic: 0.0,
+            roughness: 0.4
+        });
+
+        const greenPlastic = material('pbr', {
+            name: 'greenPlastic',
+            albedo: [0.1, 0.9, 0.2],
+            metallic: 0.0,
+            roughness: 0.5
+        });
+
+        // Create the scene
+        const scene = mushuScene('#canvas', {
+            clearColor: [0.05, 0.05, 0.1, 1]
+        });
+
+        // Register geometry presets
+        scene.useGeometries({
+            cube: () => cube(),
+            sphere: () => sphere({ radius: 0.5, widthSegments: 32, heightSegments: 16 }),
+            cylinder: () => cylinder({ radiusTop: 0.3, radiusBottom: 0.3, height: 0.8, radialSegments: 24 })
+        });
+
+        // Create camera with orbit controls
+        const cam = camera({
+            position: [0, 4, 10],
+            target: [0, 0, 0],
+            fov: 50
+        });
+
+        const controls = orbitControls(cam, {
+            rotateSpeed: 0.005,
+            minDistance: 3,
+            maxDistance: 30
+        });
+
+        // Camera is handled by the camera plugin
+
+        // Initialize camera
+        cam.init(scene.ctx);
+        controls.init(scene.ctx);
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // Create a hierarchical "robot arm" structure
+        // ═══════════════════════════════════════════════════════════════════════
+
+        // Base platform
+        scene.add('base', {
+            geometry: 'cylinder',
+            material: metal,
+            position: [0, -1.5, 0],
+            scale: [2, 0.5, 2],
+            userData: {
+                update: (obj, ctx) => {
+                    obj.rotateY(ctx.delta * 0.3);  // Slow rotation of base
+                }
+            }
+        });
+
+        // Turret (child of base)
+        scene.add('turret', {
+            geometry: 'cylinder',
+            material: yellowPlastic,
+            position: [0, 0.5, 0],
+            scale: [1.2, 0.8, 1.2],
+            parent: 'base',
+            userData: {
+                update: (obj, ctx) => {
+                    // Turret tilts slightly
+                    obj.rotateZ(Math.sin(ctx.time * 0.5) * 0.1);
+                }
+            }
+        });
+
+        // Lower arm (child of turret)
+        scene.add('lowerArm', {
+            geometry: 'cylinder',
+            material: redPlastic,
+            position: [0, 0.8, 0],
+            scale: [0.4, 1.5, 0.4],
+            parent: 'turret',
+            userData: {
+                update: (obj, ctx) => {
+                    // Arm swings back and forth
+                    obj.rotateX(Math.sin(ctx.time * 0.7) * 0.3 + 0.3);
+                }
+            }
+        });
+
+        // Elbow joint (child of lower arm)
+        scene.add('elbow', {
+            geometry: 'sphere',
+            material: metal,
+            position: [0, 0.9, 0],
+            scale: [0.6, 0.6, 0.6],
+            parent: 'lowerArm'
+        });
+
+        // Upper arm (child of elbow)
+        scene.add('upperArm', {
+            geometry: 'cylinder',
+            material: greenPlastic,
+            position: [0, 0.7, 0],
+            scale: [0.3, 1.2, 0.3],
+            parent: 'elbow',
+            userData: {
+                update: (obj, ctx) => {
+                    // Upper arm moves independently
+                    obj.rotateX(Math.sin(ctx.time * 0.9 + 1) * 0.4 - 0.2);
+                }
+            }
+        });
+
+        // Wrist (child of upper arm)
+        scene.add('wrist', {
+            geometry: 'sphere',
+            material: metal,
+            position: [0, 0.7, 0],
+            scale: [0.4, 0.4, 0.4],
+            parent: 'upperArm',
+            userData: {
+                update: (obj, ctx) => {
+                    // Wrist rotates
+                    obj.rotateY(ctx.delta * 2);
+                }
+            }
+        });
+
+        // Claw left
+        scene.add('clawLeft', {
+            geometry: 'cube',
+            material: redPlastic,
+            position: [-0.25, 0.5, 0],
+            scale: [0.15, 0.4, 0.2],
+            rotation: [0, 0, 0.3],
+            parent: 'wrist'
+        });
+
+        // Claw right
+        scene.add('clawRight', {
+            geometry: 'cube',
+            material: redPlastic,
+            position: [0.25, 0.5, 0],
+            scale: [0.15, 0.4, 0.2],
+            rotation: [0, 0, -0.3],
+            parent: 'wrist'
+        });
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // Add some orbiting satellites
+        // ═══════════════════════════════════════════════════════════════════════
+
+        // Satellite container
+        scene.add('satellite1', {
+            geometry: 'cube',
+            material: metal,
+            position: [4, 0, 0],
+            scale: [0.3, 0.3, 0.3],
+            userData: {
+                update: (obj, ctx) => {
+                    const angle = ctx.time * 0.5;
+                    obj.setPosition(
+                        Math.cos(angle) * 4,
+                        Math.sin(angle * 0.3) * 1,
+                        Math.sin(angle) * 4
+                    );
+                    obj.rotateX(ctx.delta);
+                    obj.rotateY(ctx.delta * 1.5);
+                }
+            }
+        });
+
+        scene.add('satellite2', {
+            geometry: 'sphere',
+            material: yellowPlastic,
+            position: [-4, 2, 0],
+            scale: [0.4, 0.4, 0.4],
+            userData: {
+                update: (obj, ctx) => {
+                    const angle = ctx.time * 0.4 + Math.PI;
+                    obj.setPosition(
+                        Math.cos(angle) * 4,
+                        Math.sin(angle * 0.5) * 2 + 1,
+                        Math.sin(angle) * 4
+                    );
+                    obj.rotateY(ctx.delta * 2);
+                }
+            }
+        });
+
+        // Start the scene
+        scene.go();
+
+        console.log('%c 🤖 mushu Scene Ready ', 'background: linear-gradient(90deg, #ffaa44, #ff8844); color: #000; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+        console.log('Hierarchical robot arm with parent-child relationships');
+    </script>
+</body>
+
+</html>

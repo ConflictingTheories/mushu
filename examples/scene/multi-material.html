@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mushu Scene - Multi-Material Objects</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font: 14px monospace;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 16px;
+            border-radius: 6px;
+            z-index: 100;
+        }
+
+        .info code {
+            color: #44ffaa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="info">⚡ <code>mushu().scene()</code> Multi-Material Scene | Drag to rotate</div>
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { mushu, material, materials, mushuScene } from '../../src/index.js';
+        import { camera, orbitControls } from '../../src/core/index.js';
+        import { cube, sphere, torus } from '../../src/core/geometry.js';
+
+        // Create materials
+        const gold = material('pbr', {
+            name: 'gold',
+            albedo: [1.0, 0.84, 0.0],
+            metallic: 1.0,
+            roughness: 0.2
+        });
+
+        const chrome = material('pbr', {
+            name: 'chrome',
+            albedo: [0.9, 0.9, 0.9],
+            metallic: 1.0,
+            roughness: 0.05
+        });
+
+        const plasticRed = material('pbr', {
+            name: 'plasticRed',
+            albedo: [0.8, 0.1, 0.1],
+            metallic: 0.0,
+            roughness: 0.4
+        });
+
+        const plasticBlue = material('pbr', {
+            name: 'plasticBlue',
+            albedo: [0.1, 0.3, 0.9],
+            metallic: 0.0,
+            roughness: 0.3
+        });
+
+        // Create the scene
+        const scene = mushuScene('#canvas', {
+            clearColor: [0.05, 0.05, 0.08, 1]
+        });
+
+        // Register geometry presets
+        scene.useGeometries({
+            cube: () => cube(),
+            sphere: () => sphere({ radius: 0.5, widthSegments: 32, heightSegments: 16 }),
+            torus: () => torus({ radius: 0.4, tube: 0.15, radialSegments: 32, tubularSegments: 24 })
+        });
+
+        // Create camera with orbit controls
+        const cam = camera({
+            position: [0, 2, 6],
+            target: [0, 0, 0],
+            fov: 50
+        });
+
+        const controls = orbitControls(cam, {
+            rotateSpeed: 0.005,
+            minDistance: 2,
+            maxDistance: 20
+        });
+
+
+
+        // Initialize camera
+        cam.init(scene.ctx);
+        controls.init(scene.ctx);
+
+        // Add objects with different materials
+        // Central gold cube
+        scene.add('center', {
+            geometry: 'cube',
+            material: gold,
+            position: [0, 0, 0],
+            scale: [0.8, 0.8, 0.8],
+            userData: {
+                update: (obj, ctx) => {
+                    obj.rotateY(ctx.delta * 0.5);
+                }
+            }
+        });
+
+        // Rotating chrome spheres
+        scene.add('sphere1', {
+            geometry: 'sphere',
+            material: chrome,
+            position: [2, 0, 0],
+            scale: [0.5, 0.5, 0.5],
+            userData: {
+                update: (obj, ctx) => {
+                    obj.rotateY(ctx.delta * 0.8);
+                    obj.rotateX(ctx.delta * 0.3);
+                }
+            }
+        });
+
+        scene.add('sphere2', {
+            geometry: 'sphere',
+            material: chrome,
+            position: [-2, 0, 0],
+            scale: [0.5, 0.5, 0.5],
+            userData: {
+                update: (obj, ctx) => {
+                    obj.rotateY(-ctx.delta * 0.8);
+                    obj.rotateZ(ctx.delta * 0.3);
+                }
+            }
+        });
+
+        // Red and blue plastic objects
+        scene.add('top', {
+            geometry: 'sphere',
+            material: plasticRed,
+            position: [0, 2, 0],
+            scale: [0.4, 0.4, 0.4],
+            userData: {
+                update: (obj, ctx) => {
+                    obj.rotateX(ctx.delta * 0.6);
+                }
+            }
+        });
+
+        scene.add('bottom', {
+            geometry: 'cube',
+            material: plasticBlue,
+            position: [0, -2, 0],
+            scale: [0.5, 0.5, 0.5],
+            userData: {
+                update: (obj, ctx) => {
+                    obj.rotateZ(ctx.delta * 0.4);
+                }
+            }
+        });
+
+        // Torus ring
+        scene.add('ring', {
+            geometry: 'torus',
+            material: chrome,
+            position: [0, 0, 0],
+            rotation: [Math.PI / 4, 0, 0],
+            scale: [1.5, 1.5, 1.5],
+            userData: {
+                update: (obj, ctx) => {
+                    obj.rotateY(ctx.delta * 0.2);
+                }
+            }
+        });
+
+        // Start the scene
+        scene.go();
+
+        console.log('%c 🌟 mushu Scene Ready ', 'background: linear-gradient(90deg, #44ffaa, #00ff88); color: #000; padding: 8px 16px; border-radius: 4px; font-weight: bold;');
+        console.log('Multi-material 3D scene with PBR materials');
+    </script>
+</body>
+
+</html>

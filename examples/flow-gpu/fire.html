@@ -77,6 +77,19 @@
     // ═══════════════════════════════════════════════════════════════════════════
 
     mushu('#c').gpu().flow()
+      .scale(1.0)
+      .simulate(`
+    @compute @workgroup_size(8, 8)
+    fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+      let dims = vec2<i32>(textureDimensions(src));
+      let C = vec2<i32>(id.xy);
+      if (C.x >= dims.x || C.y >= dims.y) { return; }
+      
+      // Pass-through simulation for now, just to keep pipeline active
+      // In a real simulation, we'd update state here
+      textureStore(dst, C, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+    }
+      `)
       .display(`
     fn hash(p: vec2<f32>) -> f32 {
       var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -109,11 +122,11 @@
     }
 
     @fragment fn main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-      let aspect = resolution.x / resolution.y;
-      let t = time;
+      let aspect = u.width / u.height;
+      let t = u.time;
       
       // Mouse position is the flame base
-      var flameBase = mouse;
+      var flameBase = vec2<f32>(u.mouseX, u.mouseY);
       flameBase.y = 1.0 - flameBase.y;
       
       // Position relative to flame base
@@ -232,7 +245,7 @@
       
       return vec4<f32>(finalColor, 1.0);
     }
-  `)
+      `)
       .go();
 
     // FPS Counter

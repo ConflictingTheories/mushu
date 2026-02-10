@@ -102,15 +102,36 @@ gpuFlow(canvas)
   .go();
 ```
 
+### Scene Graph (Multi-Object 3D)
+
+```javascript
+import { mushu, material } from '/src/index.js';
+import { camera, orbitControls } from '/src/core/index.js';
+
+mushu('#c').scene()
+  .add('base', {
+    geometry: 'cube',
+    material: material('pbr', { albedo: [0.5, 0.5, 0.5] }),
+    position: [0, -1, 0]
+  })
+  .add('ball', {
+    geometry: 'sphere',
+    parent: 'base',
+    position: [0, 2, 0]
+  })
+  .use(camera())
+  .use(orbitControls())
+  .go();
+```
+
 ## 📚 Demos
 
 Check out the `/examples/` folder for full demos:
 
 - **GLSL Effects**: Fire, water, plasma, smoke
 - **3D Graphics**: Textured torus, PBR sphere, cube
+- **Scene Graph**: Hierarchical objects, multiple materials, physical glass
 - **Boilerplate Templates**: Starter files for your own projects
-
-Live demos: https://mushu-shader.netlify.app/examples/
 
 ## 📖 API Documentation
 
@@ -121,6 +142,7 @@ Main entry point. Returns an object with runtime methods:
 ```javascript
 mushu('#c').flow()        // WebGL2 with plugin system
 mushu('#c').gl(code)      // WebGL2 direct shader
+mushu('#c').scene()       // WebGL2 scene graph (multi-object)
 mushu('#c').gpu()         // WebGPU runtime
 ```
 
@@ -136,7 +158,7 @@ mushu('#c').flow()
   .go();
 ```
 
-Available plugins in `src/core/flow.js` and `src/gpu/gpuFlow.js`.
+Available plugins in `src/core/index.js` (camera, orbitControls) and standalone ones like `fps()`.
 
 ### GLSL Snippets
 
@@ -153,11 +175,23 @@ const code = `${GLSL.NOISE} void mainImage(...) { ... }`;
 
 ```javascript
 import { 
+  material,      // Material system (pbr, physical)
   geometry,      // Box, sphere, torus, plane
-  shader3d,      // 3D shader setup
   transforms,    // Matrices, rotations
   textures       // Load and create textures
 } from '/src/core/index.js';
+```
+
+### Using Scenegraph
+The scene graph allows for hierarchical parent-child relationships and consistent world matrix updates.
+
+```javascript
+const scene = mushu('#c').scene();
+scene.add('myObj', { 
+  geometry: 'cube', 
+  material: myMat,
+  position: [0, 1, 0] 
+});
 ```
 
 ## 🎨 Browser Support

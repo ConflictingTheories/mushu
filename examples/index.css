@@ -166,6 +166,14 @@ body {
     background-clip: text;
 }
 
+.section-desc {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+    color: #888;
+    font-size: 1.1rem;
+}
+
 .tabs {
     display: flex;
     justify-content: center;
@@ -215,6 +223,11 @@ body {
     border-color: var(--accent3);
 }
 
+.tab.active.scene {
+    color: #22d3ee;
+    border-color: #22d3ee;
+}
+
 .tab.active.gpuFlow {
     color: var(--accent4);
     border-color: var(--accent4);
@@ -225,6 +238,10 @@ body {
     border: 1px solid var(--border);
     border-radius: 0 12px 12px 12px;
     overflow: hidden;
+}
+
+.code-panels.single {
+    border-radius: 12px;
 }
 
 .code-panel {
@@ -290,6 +307,11 @@ body {
 .code-label.flow {
     background: rgba(255, 170, 0, 0.2);
     color: var(--accent3);
+}
+
+.code-label.scene {
+    background: rgba(34, 211, 238, 0.2);
+    color: #22d3ee;
 }
 
 .code-label.gpuFlow {

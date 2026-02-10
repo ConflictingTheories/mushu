@@ -63,8 +63,8 @@
 
       <div class="tabs">
         <button class="tab glsl active" onclick="showTab('glsl')">mushu().gl()</button>
-        <button class="tab gpu" onclick="showTab('gpu')">mushu().gpu()</button>
         <button class="tab flow" onclick="showTab('flow')">mushu().gl().flow()</button>
+        <button class="tab gpu" onclick="showTab('gpu')">mushu().gpu()</button>
         <button class="tab gpuFlow" onclick="showTab('gpuFlow')">mushu().gpu().flow()</button>
       </div>
 
@@ -72,75 +72,80 @@
         <!-- GLSL Tab -->
         <div class="code-panel active" id="panel-glsl">
           <span class="code-label glsl">WebGL2 • One-liner</span>
-          <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+          <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'/src/index.js'</span>;
 
-<span class="comment">// That's it. Seriously. One line.</span>
+<span class="comment">// Quick shader sketch</span>
 <span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gl</span>(<span class="string">`
   void mainImage(out vec4 O, vec2 C) {
     vec2 uv = C / resolution;
-    float t = time * 0.5;
-    
-    // Your shader magic here
-    vec3 col = 0.5 + 0.5 * cos(t + uv.xyx + vec3(0,2,4));
-    
+    vec3 col = 0.5 + 0.5 * cos(time + uv.xyx + vec3(0,2,4));
     O = vec4(col, 1.0);
   }
 `</span>);</code></pre>
         </div>
 
-        <!-- GPU Tab -->
-        <div class="code-panel" id="panel-gpu">
-          <span class="code-label gpu">WebGPU • Compute + Render</span>
-          <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
-
-<span class="comment">// WebGPU with optional compute shader</span>
-<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gpu</span>(
-  <span class="comment">// Compute shader (or null for render-only)</span>
-  <span class="string">`@compute fn main(@builtin(global_invocation_id) id: vec3u) {
-      // Parallel computation here
-  }`</span>,
-  
-  <span class="comment">// Render shader</span>
-  <span class="string">`fn render(data: vec4f, uv: vec2f) -> vec4f {
-      return vec4f(uv, sin(u.time), 1.0);
-  }`</span>
-);</code></pre>
-        </div>
-
         <!-- Flow Tab -->
         <div class="code-panel" id="panel-flow">
           <span class="code-label flow">WebGL2 • Fluent Builder</span>
-          <pre><code><span class="keyword">import</span> { mushu, shader, fps } <span class="keyword">from</span> <span class="string">'mushu'</span>;
-
+          <pre><code><span class="keyword">import</span> { mushu, shader, fps } <span class="keyword">from</span> <span class="string">'/src/index.js'</span>;
+            
 <span class="comment">// Chainable, pluggable, beautiful</span>
-<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gl</span>().<span class="function">flow</span>()
-  .<span class="function">use</span>(<span class="function">shader</span>(<span class="string">`
-    void mainImage(out vec4 O, vec2 C) {
-      vec2 uv = C / resolution;
-      O = vec4(uv, 0.5 + 0.5 * sin(time), 1.0);
-    }
-  `</span>))
-  .<span class="function">use</span>(<span class="function">fps</span>())  <span class="comment">// Add FPS counter plugin</span>
-  .<span class="function">go</span>();      <span class="comment">// Start the render loop</span></code></pre>
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">flow</span>()
+  .<span class="function">use</span>(<span class="function">shader</span>(<span class="string">`void mainImage(out vec4 O, vec2 C) { ... }`</span>))
+  .<span class="function">use</span>(<span class="function">fps</span>())
+  .<span class="function">go</span>();</code></pre>
+        </div>
+
+        <!-- GPU Tab -->
+        <div class="code-panel" id="panel-gpu">
+          <span class="code-label gpu">WebGPU • Compute + Render</span>
+          <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'/src/index.js'</span>;
+
+<span class="comment">// High-performance compute + render</span>
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">gpu</span>(
+  <span class="string">`@compute @workgroup_size(8,8)
+   fn main(@builtin(global_invocation_id) id: vec3u) {
+     // Parallel magic...
+   }`</span>,
+  <span class="string">`fn render(data: vec4f, uv: vec2f) -> vec4f {
+     return vec4f(uv, sin(time), 1.0);
+   }`</span>
+);</code></pre>
         </div>
 
         <!-- GPU Flow Tab -->
         <div class="code-panel" id="panel-gpuFlow">
           <span class="code-label gpuFlow">WebGPU • Fluent Builder</span>
-          <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'mushu'</span>;
+          <pre><code><span class="keyword">import</span> { mushu } <span class="keyword">from</span> <span class="string">'/src/index.js'</span>;
 
-<span class="comment">// WebGPU with fluent API</span>
-<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">gpu</span>().<span class="function">flow</span>()
-  .<span class="function">compute</span>(<span class="string">`
-    @compute fn main(@builtin(global_invocation_id) id: vec3u) {
-      // Physics simulation
-    }
-  `</span>)
-  .<span class="function">display</span>(<span class="string">`
-    @fragment fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
-      return vec4f(uv, sin(time), 1.0);
-    }
-  `</span>)
+<span class="comment">// WebGPU with fluent simulation API</span>
+<span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">gpu</span>().<span class="function">flow</span>()
+  .<span class="function">simulate</span>(<span class="string">`...`</span>)
+  .<span class="function">display</span>(<span class="string">`...`</span>)
+  .<span class="function">go</span>();</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scene Graph Section -->
+    <section class="code-section">
+      <h2>Scene <span>Graph</span></h2>
+      <p class="section-desc">Manage complex 3D scenes with hierarchical transforms and PBR materials.</p>
+
+      <div class="code-panels single">
+        <div class="code-panel active">
+          <span class="code-label scene">WebGL2 • Hierarchical 3D</span>
+          <pre><code><span class="keyword">import</span> { mushu, material } <span class="keyword">from</span> <span class="string">'/src/index.js'</span>;
+<span class="keyword">import</span> { camera, orbitControls } <span class="keyword">from</span> <span class="string">'/src/core/index.js'</span>;
+
+<span class="comment">// Multi-object 3D scene graph 🎬</span>
+<span class="function">mushu</span>(<span class="string">'#canvas'</span>).<span class="function">scene</span>()
+  .<span class="function">add</span>(<span class="string">'cube'</span>, {
+    geometry: <span class="string">'cube'</span>,
+    material: <span class="function">material</span>(<span class="string">'pbr'</span>, { albedo: [<span class="number">1, 0, 0</span>] })
+  })
+  .<span class="function">use</span>(<span class="function">camera</span>({ position: [<span class="number">0, 2, 5</span>] }))
+  .<span class="function">use</span>(<span class="function">orbitControls</span>())
   .<span class="function">go</span>();</code></pre>
         </div>
       </div>

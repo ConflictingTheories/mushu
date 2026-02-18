@@ -208,6 +208,7 @@
         const fragmentShader = `
             precision highp float;
             ${GLSL.noise}
+            ${GLSL.voronoi}
             ${GLSL.color}
             
             in vec3 vPosition;
@@ -230,25 +231,46 @@
                 vec3 N = normalize(vNormal);
                 vec3 V = normalize(cameraPosition - vWorldPosition);
                 
-                float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+                float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.5);
                 
-                // Internal glow based on verticality and center distance
-                float distFromCenter = length(vPosition.xz);
-                float internalGlow = exp(-distFromCenter * 5.0) * smoothstep(0.0, 0.5, vPosition.y);
+                // Internal "cracks" using Voronoi
+                vec3 v = voronoi(vPosition.xy * 8.0 + vPosition.z * 5.0);
+                float crack = smoothstep(0.02, 0.0, v.z);
                 
-                vec3 color = mix(crystalColor, coreColor, internalGlow * glowIntensity);
-                color += coreColor * fresnel * glowIntensity * 0.5;
+                // Pulsing energy core
+                float pulse = 0.8 + 0.2 * sin(time * 2.0 + vPosition.y * 10.0);
                 
+                // Vertical glow
+                float vertGlow = smoothstep(-0.1, 0.4, vPosition.y) * smoothstep(1.0, 0.6, vPosition.y);
+                float internalGlow = exp(-length(vPosition.xz) * 6.0) * vertGlow;
+                
+                // Combine colors
+                vec3 color = crystalColor;
+                
+                // Core energy
+                color = mix(color, coreColor, internalGlow * glowIntensity * pulse);
+                
+                // Cracks highlight
+                color += coreColor * crack * 0.4 * glowIntensity;
+                
+                // Fresnel Highlight
+                color += coreColor * fresnel * glowIntensity * 0.8;
+                
+                // "Sparkle" effect
+                float sparkle = pow(noise3D(vWorldPosition * 20.0 + time * 0.5), 10.0);
+                color += vec3(1.0) * sparkle * glowIntensity;
+
                 if (uSimulation > 0.5) {
-                    float mask = noise3D(vWorldPosition * 2.0 + time);
-                    color = mix(color, vec3(1.0, 0.4, 0.8), mask * 0.6);
-                    color += vec3(0.5, 0.8, 1.0) * pow(mask, 4.0) * 2.0;
+                    float mask = noise3D(vWorldPosition * 1.5 + time * 1.2);
+                    color = mix(color, vec3(0.1, 0.8, 1.0), mask * 0.7);
+                    color += coreColor * pow(mask, 3.0) * 3.0;
                 }
                 
-                float alpha = mix(translucency, 1.0, internalGlow + fresnel * 0.8);
+                float alpha = mix(translucency, 1.0, internalGlow + fresnel + crack * 0.3);
                 
-                // Tone mapped output
-                color = 1.0 - exp(-color * 1.5);
+                // Tone mapped output (Filmic)
+                color = 1.0 - exp(-color * 1.8);
+                
                 fragColor = vec4(color, alpha);
             }
         `;
@@ -300,21 +322,21 @@
         });
 
         // Add Rock Base
-        scene.add('rock_base', {
+        const rockBase = scene.add('rock_base', {
             geometry: 'rock',
             material: rockMat,
-            scale: [2.5, 0.8, 2.0],
-            position: [0, -0.4, 0]
+            scale: [3.2, 1.2, 2.8],
+            position: [0, -0.6, 0]
         });
 
         // Add Crystals
         function spawnCluster() {
-            const count = 15;
+            const count = 22;
             for (let i = 0; i < count; i++) {
-                const angle = (i / count) * Math.PI * 2 + Math.random();
-                const dist = 0.4 + Math.random() * 0.8;
-                const h = 1.0 + Math.random() * 2.0;
-                const r = 0.15 + Math.random() * 0.2;
+                const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+                const dist = 0.5 + Math.random() * 1.5;
+                const h = 1.0 + Math.random() * 2.8;
+                const r = 0.12 + Math.random() * 0.22;
 
                 const x = Math.cos(angle) * dist;
                 const z = Math.sin(angle) * dist;
@@ -322,16 +344,31 @@
                 const id = `c_${i}`;
                 scene.add(id, {
                     geometry: 'crystal',
-                    geometryOpts: { radius: r, height: h, taper: (Math.random() - 0.5) * 0.2 },
+                    geometryOpts: {
+                        radius: r,
+                        height: h,
+                        midRadius: r * (1.2 + Math.random() * 0.4),
+                        taper: (Math.random() - 0.5) * 0.4
+                    },
                     material: crystalMat,
-                    position: [x, 0, z]
+                    position: [x, -0.2, z]
                 });
 
                 const obj = scene.get(id);
                 obj.rotateY(angle);
-                obj.rotateZ((Math.random() - 0.5) * 0.8);
-                obj.rotateX((Math.random() - 0.5) * 0.4);
+                // Aggressive tilting coming "out" from center
+                obj.rotateZ(angle); // Tilt based on angle
+                obj.rotateX((Math.random() - 0.5) * 0.6);
+                obj.rotateZ((Math.random() - 0.5) * 1.5);
             }
+
+            // Central "Spire" Mother Crystal
+            scene.add('main_spire', {
+                geometry: 'crystal',
+                geometryOpts: { radius: 0.4, height: 4.5, midRadius: 0.5, sides: 8, taper: 0.1 },
+                material: crystalMat,
+                position: [0, -0.2, 0]
+            });
         }
 
         spawnCluster();

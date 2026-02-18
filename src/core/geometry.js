@@ -746,6 +746,8 @@ export function crystal(options = {}) {
     height = 1.0,
     sides = 6,
     taper = 0.1,
+    midRatio = 0.4,
+    midRadius = 0.25,
   } = options;
 
   const positions = [];
@@ -753,62 +755,50 @@ export function crystal(options = {}) {
   const uvs = [];
   const indices = [];
 
-  // Bottom Center
-  positions.push(0, 0, 0);
-  normals.push(0, -1, 0);
-  uvs.push(0.5, 0.5);
+  const addTriangle = (v0, v1, v2, u0, u1, u2) => {
+    const start = positions.length / 3;
+    positions.push(...v0, ...v1, ...v2);
 
-  // Bottom Ring
-  for (let i = 0; i < sides; i++) {
-    const ang = (i / sides) * Math.PI * 2;
-    const x = Math.cos(ang) * radius;
-    const z = Math.sin(ang) * radius;
-    positions.push(x, 0, z);
-    normals.push(0, -1, 0);
-    uvs.push(Math.cos(ang) * 0.5 + 0.5, Math.sin(ang) * 0.5 + 0.5);
-
-    // Bottom cap indices
-    indices.push(0, i + 1, ((i + 1) % sides) + 1);
-  }
-
-  // Top Point (slightly offset for "Starcraft" look)
-  const topIdx = positions.length / 3;
-  positions.push(taper, height, taper);
-  normals.push(0, 1, 0);
-  uvs.push(0.5, 0.5);
-
-  // Side faces
-  for (let i = 0; i < sides; i++) {
-    const ang1 = (i / sides) * Math.PI * 2;
-    const ang2 = ((i + 1) / sides) * Math.PI * 2;
-
-    const x1 = Math.cos(ang1) * radius;
-    const z1 = Math.sin(ang1) * radius;
-    const x2 = Math.cos(ang2) * radius;
-    const z2 = Math.sin(ang2) * radius;
-
-    // We need new vertices for distinct normals (faceted look)
-    const startIdx = positions.length / 3;
-
-    // Triangle: base1, base2, top
-    positions.push(x1, 0, z1);
-    positions.push(x2, 0, z2);
-    positions.push(taper, height, taper);
-
-    // Calculate face normal
-    const v1 = [x2 - x1, 0, z2 - z1];
-    const v2 = [taper - x1, height, taper - z1];
+    const d1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
+    const d2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
     const n = [
-      v1[1] * v2[2] - v1[2] * v2[1],
-      v1[2] * v2[0] - v1[0] * v2[2],
-      v1[0] * v2[1] - v1[1] * v2[0]
+      d1[1] * d2[2] - d1[2] * d2[1],
+      d1[2] * d2[0] - d1[0] * d2[2],
+      d1[0] * d2[1] - d1[1] * d2[0]
     ];
-    const len = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-    const norm = [n[0] / len, n[1] / len, n[2] / len];
+    const l = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+    const norm = [n[0] / l, n[1] / l, n[2] / l];
 
     normals.push(...norm, ...norm, ...norm);
-    uvs.push(0, 0, 1, 0, 0.5, 1);
-    indices.push(startIdx, startIdx + 1, startIdx + 2);
+    uvs.push(...u0, ...u1, ...u2);
+    indices.push(start, start + 1, start + 2);
+  };
+
+  const addQuad = (v0, v1, v2, v3, u0, u1, u2, u3) => {
+    addTriangle(v0, v1, v2, u0, u1, u2);
+    addTriangle(v1, v3, v2, u1, u3, u2);
+  };
+
+  // Build the crystal with discrete triangles for perfect faceting
+  for (let i = 0; i < sides; i++) {
+    const a1 = (i / sides) * Math.PI * 2;
+    const a2 = ((i + 1) / sides) * Math.PI * 2;
+
+    const b1 = [Math.cos(a1) * radius, 0, Math.sin(a1) * radius];
+    const b2 = [Math.cos(a2) * radius, 0, Math.sin(a2) * radius];
+    const m1 = [Math.cos(a1) * midRadius, height * midRatio, Math.sin(a1) * midRadius];
+    const m2 = [Math.cos(a2) * midRadius, height * midRatio, Math.sin(a2) * midRadius];
+    const top = [taper, height, taper];
+    const bot = [0, 0, 0];
+
+    // Bottom Cap
+    addTriangle(bot, b2, b1, [0.5, 0.5], [1, 1], [0, 0]);
+
+    // Lower Sides
+    addQuad(b1, b2, m1, m2, [0, 0], [1, 0], [0, 0.5], [1, 0.5]);
+
+    // Upper Sides
+    addTriangle(m1, m2, top, [0, 0.5], [1, 0.5], [0.5, 1]);
   }
 
   return vao({ positions, normals, uvs, indices });

@@ -20,6 +20,7 @@
  */
 
 import { mat4 } from './transforms.js';
+import { Loader } from './loader.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // mushu/core/scene — Scene Graph System
@@ -325,6 +326,16 @@ export class SceneObject {
         if (typeof geom === 'function') {
             geom = geom();
             this.geometry = geom; // Cache the result
+        }
+
+        // Check if geometry is a Promise (async loading)
+        if (geom instanceof Promise) {
+            geom.then(data => {
+                this.geometry = data;
+                this._geometryInitialized = false;
+                this.initGeometry(ctx);
+            });
+            return;
         }
 
         // Check if geometry is a plugin (has init method)
@@ -811,6 +822,8 @@ export class Scene {
             if (preset) {
                 obj.geometry = preset;
             }
+        } else if (options.geometry instanceof Promise) {
+            obj.geometry = options.geometry;
         }
 
         this._objects.set(id, obj);
@@ -891,6 +904,36 @@ export class Scene {
      */
     useGeometries(presets) {
         this._geometryPresets = { ...this._geometryPresets, ...presets };
+        return this;
+    }
+
+    /**
+     * Load an asset and register it as a geometry preset.
+     * @param {string} id - Asset identifier
+     * @param {string} url - Asset URL
+     * @param {string} [type] - Asset type ('obj', 'gltf')
+     * @returns {this}
+     */
+    load(id, url, type) {
+        let promise;
+        const extension = url.split('.').pop().toLowerCase();
+        const assetType = type || (extension === 'obj' ? 'obj' : extension === 'gltf' ? 'gltf' : 'text');
+
+        switch (assetType) {
+            case 'obj':
+                promise = Loader.obj(url);
+                break;
+            case 'gltf':
+                promise = Loader.gltf(url);
+                break;
+            default:
+                promise = fetch(url).then(r => r.text());
+        }
+
+        this.useGeometries({
+            [id]: () => promise
+        });
+
         return this;
     }
 

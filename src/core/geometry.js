@@ -334,8 +334,8 @@ export function fullscreenQuad() {
   return vao({
     positions: [
       -1, -1, 0,
-       3, -1, 0,
-      -1,  3, 0,
+      3, -1, 0,
+      -1, 3, 0,
     ],
     uvs: [
       0, 0,
@@ -418,31 +418,31 @@ export function cube(options = {}) {
   // prettier-ignore
   const positions = [
     // Front
-    -s, -s,  s,   s, -s,  s,   s,  s,  s,  -s,  s,  s,
+    -s, -s, s, s, -s, s, s, s, s, -s, s, s,
     // Back
-     s, -s, -s,  -s, -s, -s,  -s,  s, -s,   s,  s, -s,
+    s, -s, -s, -s, -s, -s, -s, s, -s, s, s, -s,
     // Top
-    -s,  s,  s,   s,  s,  s,   s,  s, -s,  -s,  s, -s,
+    -s, s, s, s, s, s, s, s, -s, -s, s, -s,
     // Bottom
-    -s, -s, -s,   s, -s, -s,   s, -s,  s,  -s, -s,  s,
+    -s, -s, -s, s, -s, -s, s, -s, s, -s, -s, s,
     // Right
-     s, -s,  s,   s, -s, -s,   s,  s, -s,   s,  s,  s,
+    s, -s, s, s, -s, -s, s, s, -s, s, s, s,
     // Left
-    -s, -s, -s,  -s, -s,  s,  -s,  s,  s,  -s,  s, -s,
+    -s, -s, -s, -s, -s, s, -s, s, s, -s, s, -s,
   ];
 
   // prettier-ignore
   const normals = [
     // Front
-    0, 0, 1,  0, 0, 1,  0, 0, 1,  0, 0, 1,
+    0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
     // Back
     0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1,
     // Top
-    0, 1, 0,  0, 1, 0,  0, 1, 0,  0, 1, 0,
+    0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
     // Bottom
     0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0,
     // Right
-    1, 0, 0,  1, 0, 0,  1, 0, 0,  1, 0, 0,
+    1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0,
     // Left
     -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0,
   ];
@@ -450,27 +450,27 @@ export function cube(options = {}) {
   // prettier-ignore
   const uvs = [
     // Front
-    0, 0,  1, 0,  1, 1,  0, 1,
+    0, 0, 1, 0, 1, 1, 0, 1,
     // Back
-    0, 0,  1, 0,  1, 1,  0, 1,
+    0, 0, 1, 0, 1, 1, 0, 1,
     // Top
-    0, 0,  1, 0,  1, 1,  0, 1,
+    0, 0, 1, 0, 1, 1, 0, 1,
     // Bottom
-    0, 0,  1, 0,  1, 1,  0, 1,
+    0, 0, 1, 0, 1, 1, 0, 1,
     // Right
-    0, 0,  1, 0,  1, 1,  0, 1,
+    0, 0, 1, 0, 1, 1, 0, 1,
     // Left
-    0, 0,  1, 0,  1, 1,  0, 1,
+    0, 0, 1, 0, 1, 1, 0, 1,
   ];
 
   // prettier-ignore
   const indices = [
-     0,  1,  2,   0,  2,  3,  // Front
-     4,  5,  6,   4,  6,  7,  // Back
-     8,  9, 10,   8, 10, 11,  // Top
-    12, 13, 14,  12, 14, 15,  // Bottom
-    16, 17, 18,  16, 18, 19,  // Right
-    20, 21, 22,  20, 22, 23,  // Left
+    0, 1, 2, 0, 2, 3,  // Front
+    4, 5, 6, 4, 6, 7,  // Back
+    8, 9, 10, 8, 10, 11,  // Top
+    12, 13, 14, 12, 14, 15,  // Bottom
+    16, 17, 18, 16, 18, 19,  // Right
+    20, 21, 22, 20, 22, 23,  // Left
   ];
 
   return vao({ positions, normals, uvs, indices });
@@ -731,6 +731,89 @@ export function cone(options = {}) {
   });
 }
 
+/**
+ * Generate a stylized crystal geometry (pointed, faceted prism).
+ * @param {Object} [options]
+ * @param {number} [options.radius=0.2]
+ * @param {number} [options.height=1.0]
+ * @param {number} [options.sides=6]
+ * @param {number} [options.taper=0.2] - how much the top point is offset
+ * @returns {Object} vao plugin
+ */
+export function crystal(options = {}) {
+  const {
+    radius = 0.2,
+    height = 1.0,
+    sides = 6,
+    taper = 0.1,
+  } = options;
+
+  const positions = [];
+  const normals = [];
+  const uvs = [];
+  const indices = [];
+
+  // Bottom Center
+  positions.push(0, 0, 0);
+  normals.push(0, -1, 0);
+  uvs.push(0.5, 0.5);
+
+  // Bottom Ring
+  for (let i = 0; i < sides; i++) {
+    const ang = (i / sides) * Math.PI * 2;
+    const x = Math.cos(ang) * radius;
+    const z = Math.sin(ang) * radius;
+    positions.push(x, 0, z);
+    normals.push(0, -1, 0);
+    uvs.push(Math.cos(ang) * 0.5 + 0.5, Math.sin(ang) * 0.5 + 0.5);
+
+    // Bottom cap indices
+    indices.push(0, i + 1, ((i + 1) % sides) + 1);
+  }
+
+  // Top Point (slightly offset for "Starcraft" look)
+  const topIdx = positions.length / 3;
+  positions.push(taper, height, taper);
+  normals.push(0, 1, 0);
+  uvs.push(0.5, 0.5);
+
+  // Side faces
+  for (let i = 0; i < sides; i++) {
+    const ang1 = (i / sides) * Math.PI * 2;
+    const ang2 = ((i + 1) / sides) * Math.PI * 2;
+
+    const x1 = Math.cos(ang1) * radius;
+    const z1 = Math.sin(ang1) * radius;
+    const x2 = Math.cos(ang2) * radius;
+    const z2 = Math.sin(ang2) * radius;
+
+    // We need new vertices for distinct normals (faceted look)
+    const startIdx = positions.length / 3;
+
+    // Triangle: base1, base2, top
+    positions.push(x1, 0, z1);
+    positions.push(x2, 0, z2);
+    positions.push(taper, height, taper);
+
+    // Calculate face normal
+    const v1 = [x2 - x1, 0, z2 - z1];
+    const v2 = [taper - x1, height, taper - z1];
+    const n = [
+      v1[1] * v2[2] - v1[2] * v2[1],
+      v1[2] * v2[0] - v1[0] * v2[2],
+      v1[0] * v2[1] - v1[1] * v2[0]
+    ];
+    const len = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+    const norm = [n[0] / len, n[1] / len, n[2] / len];
+
+    normals.push(...norm, ...norm, ...norm);
+    uvs.push(0, 0, 1, 0, 0.5, 1);
+    indices.push(startIdx, startIdx + 1, startIdx + 2);
+  }
+
+  return vao({ positions, normals, uvs, indices });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // OBJ Loader (simple parser)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -818,6 +901,8 @@ export function loadOBJ(objString) {
   return { positions, normals, uvs, indices };
 }
 
+import { Loader } from './loader.js';
+
 // OBJ loader plugin (loads from URL)
 /**
  * OBJ loader plugin — fetches an OBJ file and creates a VAO plugin from it.
@@ -838,10 +923,7 @@ export function obj(url, options = {}) {
     name: 'obj',
 
     async init(ctx) {
-      const response = await fetch(url);
-      const text = await response.text();
-      const geometry = loadOBJ(text);
-
+      const geometry = await Loader.obj(url);
       vaoPlugin = vao({ ...geometry, ...options });
       vaoPlugin.init(ctx);
     },
@@ -854,6 +936,16 @@ export function obj(url, options = {}) {
       if (vaoPlugin) vaoPlugin.destroy(ctx);
     }
   };
+}
+
+/**
+ * Custom geometry helper — creates a VAO plugin from raw geometry data.
+ * @param {Object} data - { positions, normals, uvs, indices, ... }
+ * @param {Object} [options] - Additional vao options
+ * @returns {Object} vao plugin
+ */
+export function custom(data, options = {}) {
+  return vao({ ...data, ...options });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

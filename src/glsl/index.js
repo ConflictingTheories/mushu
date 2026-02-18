@@ -10,40 +10,40 @@
 export {
   // Hash functions
   hash1, hash2, hash3, hash2to2, hash,
-  
+
   // Noise
   noise2D, noise3D, noise,
   simplex2D,
-  
+
   // FBM
   fbm2D, fbm3D, fbm,
-  
+
   // Voronoi
   voronoi,
-  
+
   // Domain warping
   warp,
-  
+
   // 3D Lighting
   lighting,
   pbr,
-  
+
   // 3D Math
   math3d,
   normalMapping,
-  
+
   // SDF
   sdf,
-  
+
   // Colors
   color,
-  
+
   // Post-processing
   tonemapping,
-  
+
   // Raymarching
   raymarching,
-  
-  // All combined
+
   all,
+  GLSL,
 } from './shaders.js';

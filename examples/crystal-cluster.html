@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mushu - Ethereal Crystal Cluster</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #050508;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            color: rgba(255, 255, 255, 0.9);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #a0d8ff, #e28aff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(160, 216, 255, 0.3);
+        }
+
+        .description {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(12px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px border rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 13px;
+            width: 280px;
+            z-index: 100;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #a0d8ff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(160, 216, 255, 0.5);
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn.active {
+            background: rgba(160, 216, 255, 0.2);
+            border-color: #a0d8ff;
+            color: #a0d8ff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay">
+        <h1>Ethereal Crystals</h1>
+        <p class="description">Intricate 3D crystal cluster rendered with custom translucent shaders and internal glow
+            logic.</p>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <div class="control-label">
+                <span>Glow Intensity</span>
+                <span id="glowVal">1.5</span>
+            </div>
+            <input type="range" id="glow" min="0" max="4" step="0.1" value="1.5">
+        </div>
+        <div class="control-group">
+            <div class="control-label">
+                <span>Translucency</span>
+                <span id="transVal">0.7</span>
+            </div>
+            <input type="range" id="translucency" min="0" max="1" step="0.01" value="0.7">
+        </div>
+        <div class="control-group">
+            <button id="blendMode" class="toggle-btn">Blended Shader Mode: OFF</button>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { mushu, material, mushuScene, GLSL } from '../src/index.js';
+        import { camera, orbitControls, crystal, sphere } from '../src/core/index.js';
+
+        // --- CONFIG & STATE ---
+        const state = {
+            glow: 1.5,
+            translucency: 0.7,
+            blendedMode: false,
+            time: 0
+        };
+
+        // --- UI SETUP ---
+        const glowInput = document.getElementById('glow');
+        const transInput = document.getElementById('translucency');
+        const blendBtn = document.getElementById('blendMode');
+
+        glowInput.oninput = (e) => {
+            state.glow = parseFloat(e.target.value);
+            document.getElementById('glowVal').textContent = state.glow.toFixed(1);
+        };
+        transInput.oninput = (e) => {
+            state.translucency = parseFloat(e.target.value);
+            document.getElementById('transVal').textContent = state.translucency.toFixed(2);
+        };
+        blendBtn.onclick = () => {
+            state.blendedMode = !state.blendedMode;
+            blendBtn.classList.toggle('active');
+            blendBtn.textContent = `Blended Shader Mode: ${state.blendedMode ? 'ON' : 'OFF'}`;
+        };
+
+        const vertexShader = `
+            layout(location = 0) in vec3 position;
+            layout(location = 1) in vec3 normal;
+            layout(location = 2) in vec2 uv;
+            
+            uniform mat4 modelMatrix;
+            uniform mat4 viewMatrix;
+            uniform mat4 projectionMatrix;
+            
+            out vec3 vPosition;
+            out vec3 vNormal;
+            out vec2 vUv;
+            out vec3 vWorldPosition;
+
+            void main() {
+                vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPos.xyz;
+                vPosition = position;
+                vNormal = normalize(mat3(modelMatrix) * normal);
+                vUv = uv;
+                gl_Position = projectionMatrix * viewMatrix * worldPos;
+            }
+        `;
+
+        const fragmentShader = `
+            precision highp float;
+            ${GLSL.noise}
+            ${GLSL.color}
+            
+            in vec3 vPosition;
+            in vec3 vNormal;
+            in vec2 vUv;
+            in vec3 vWorldPosition;
+            
+            uniform vec3 cameraPosition;
+            uniform float time;
+            uniform float glowIntensity;
+            uniform float translucency;
+            uniform float uSimulation;
+            
+            uniform vec3 crystalColor;
+            uniform vec3 coreColor;
+            
+            out vec4 fragColor;
+
+            void main() {
+                vec3 N = normalize(vNormal);
+                vec3 V = normalize(cameraPosition - vWorldPosition);
+                
+                float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+                
+                // Internal glow based on verticality and center distance
+                float distFromCenter = length(vPosition.xz);
+                float internalGlow = exp(-distFromCenter * 5.0) * smoothstep(0.0, 0.5, vPosition.y);
+                
+                vec3 color = mix(crystalColor, coreColor, internalGlow * glowIntensity);
+                color += coreColor * fresnel * glowIntensity * 0.5;
+                
+                if (uSimulation > 0.5) {
+                    float mask = noise3D(vWorldPosition * 2.0 + time);
+                    color = mix(color, vec3(1.0, 0.4, 0.8), mask * 0.6);
+                    color += vec3(0.5, 0.8, 1.0) * pow(mask, 4.0) * 2.0;
+                }
+                
+                float alpha = mix(translucency, 1.0, internalGlow + fresnel * 0.8);
+                
+                // Tone mapped output
+                color = 1.0 - exp(-color * 1.5);
+                fragColor = vec4(color, alpha);
+            }
+        `;
+
+        // --- SCENE SETUP ---
+        const scene = mushuScene('#canvas', {
+            clearColor: [0.01, 0.01, 0.02, 1]
+        });
+
+        // Register custom geometries
+        scene.useGeometries({
+            rock: () => sphere({ radius: 1, widthSegments: 6, heightSegments: 4 }),
+            crystal: (opts) => crystal({
+                radius: opts?.radius || 0.25,
+                height: opts?.height || 1.2,
+                sides: 6,
+                taper: opts?.taper || 0.05
+            })
+        });
+
+        const cam = camera({ position: [0, 3, 7], target: [0, 0, 0] });
+        const controls = orbitControls(cam, { autoRotate: true, autoRotateSpeed: 0.1 });
+
+        cam.init(scene.ctx);
+        controls.init(scene.ctx);
+        scene.use(cam).use(controls);
+
+        // Materials
+        const crystalMat = material('shader', {
+            vertex: vertexShader,
+            fragment: fragmentShader,
+            transparent: true,
+            depthWrite: false,
+            cullFace: 'NONE'
+        });
+
+        crystalMat.setUniform('crystalColor', [0.1, 0.4, 0.9])
+            .setUniform('coreColor', [0.6, 0.9, 1.0])
+            .setUniform('glowIntensity', state.glow)
+            .setUniform('translucency', state.translucency);
+
+        const rockMat = material('shader', {
+            vertex: vertexShader,
+            fragment: `
+                precision highp float;
+                out vec4 fragColor;
+                void main() { fragColor = vec4(0.1, 0.1, 0.12, 1.0); }
+            `
+        });
+
+        // Add Rock Base
+        scene.add('rock_base', {
+            geometry: 'rock',
+            material: rockMat,
+            scale: [2.5, 0.8, 2.0],
+            position: [0, -0.4, 0]
+        });
+
+        // Add Crystals
+        function spawnCluster() {
+            const count = 15;
+            for (let i = 0; i < count; i++) {
+                const angle = (i / count) * Math.PI * 2 + Math.random();
+                const dist = 0.4 + Math.random() * 0.8;
+                const h = 1.0 + Math.random() * 2.0;
+                const r = 0.15 + Math.random() * 0.2;
+
+                const x = Math.cos(angle) * dist;
+                const z = Math.sin(angle) * dist;
+
+                const id = `c_${i}`;
+                scene.add(id, {
+                    geometry: 'crystal',
+                    geometryOpts: { radius: r, height: h, taper: (Math.random() - 0.5) * 0.2 },
+                    material: crystalMat,
+                    position: [x, 0, z]
+                });
+
+                const obj = scene.get(id);
+                obj.rotateY(angle);
+                obj.rotateZ((Math.random() - 0.5) * 0.8);
+                obj.rotateX((Math.random() - 0.5) * 0.4);
+            }
+        }
+
+        spawnCluster();
+
+        scene.use({
+            update: (ctx) => {
+                crystalMat.setUniform('glowIntensity', state.glow);
+                crystalMat.setUniform('translucency', state.translucency);
+                crystalMat.setUniform('uSimulation', state.blendedMode ? 1.0 : 0.0);
+                crystalMat.setUniform('time', ctx.time);
+                crystalMat.setUniform('cameraPosition', cam.position);
+            }
+        });
+
+        scene.go();
+    </script>
+</body>
+
+</html>

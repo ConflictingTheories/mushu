@@ -578,3 +578,27 @@ ${sdf}
 ${color}
 ${tonemapping}
 `;
+
+export const GLSL = {
+  hash,
+  noise2D,
+  noise3D,
+  noise,
+  simplex2D,
+  fbm2D,
+  fbm3D,
+  fbm,
+  voronoi,
+  warp,
+  lighting,
+  pbr,
+  math3d,
+  normalMapping,
+  sdf,
+  color,
+  tonemapping,
+  raymarching,
+  all
+};
+
+export default GLSL;

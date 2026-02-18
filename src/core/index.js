@@ -20,6 +20,8 @@ export {
   glsl
 } from './flow.js';
 
+export { Loader } from './loader.js';
+
 // 3D Geometry and VAO utilities
 export {
   vao,
@@ -29,10 +31,12 @@ export {
   sphere,
   cylinder,
   cone,
+  crystal,
   torus,
   fullscreenQuad,
   loadOBJ,
   obj,
+  custom,
   lines,
   lineSegments,
   points,

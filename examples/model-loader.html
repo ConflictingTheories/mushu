@@ -110,6 +110,29 @@
             box-shadow: 0 0 8px rgba(160, 216, 255, 0.5);
         }
 
+        input[type="file"] {
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+        }
+
+        input[type="text"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 4px;
+            width: 100%;
+            font-size: 12px;
+            font-family: inherit;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: rgba(160, 216, 255, 0.5);
+            background: rgba(160, 216, 255, 0.05);
+        }
+
         .btn {
             background: rgba(160, 216, 255, 0.1);
             border: 1px solid rgba(160, 216, 255, 0.3);
@@ -172,9 +195,20 @@
         <div class="controls">
             <div class="control-group">
                 <label class="label">
-                    <span>Model URL</span>
+                    <span>Load from File or URL</span>
                 </label>
-                <input type="text" id="modelUrl" placeholder="path/to/model.obj" value="">
+                <input type="file" id="modelFile" accept=".obj,.gltf,.glb"
+                    style="width: 100%; padding: 8px; font-size: 12px;">
+            </div>
+
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0; padding: 12px 0;">
+                <span style="font-size: 11px; color: rgba(255,255,255,0.4);">
+                    — OR —
+                </span>
+            </div>
+
+            <div class="control-group">
+                <label class="label">
             </div>
 
             <div class="control-group">
@@ -263,6 +297,7 @@
         };
 
         const ui = {
+            modelFile: document.getElementById('modelFile'),
             modelUrl: document.getElementById('modelUrl'),
             mtlUrl: document.getElementById('mtlUrl'),
             texturePath: document.getElementById('texturePath'),
@@ -309,8 +344,10 @@
         // ─────────────────────────────────────────────────────────────────────────
 
         async function loadModel() {
-            if (!state.modelUrl) {
-                setStatus('Please enter a model URL', 'error');
+            const modelSource = ui.modelFile.files[0] || state.modelUrl;
+
+            if (!modelSource) {
+                setStatus('Please select a file or enter a model URL', 'error');
                 return;
             }
 
@@ -326,31 +363,43 @@
                     state.modelObjects = [];
                 }
 
-                // Create model loader with optional MTL
+                // Create load options
                 const loadOptions = {
                     texturePath: state.texturePath,
                 };
 
-                if (state.mtlUrl) {
-                    loadOptions.mtlUrl = state.mtlUrl;
+                // If file is uploaded, handle MTL from file input too
+                if (modelSource instanceof File) {
+                    // Check if an MTL file is selected
+                    // For now just load the OBJ
+                    const meshObjects = await scene.loadModel(
+                        'loaded-model',
+                        modelSource,
+                        loadOptions
+                    );
+                    state.modelObjects = meshObjects;
+                } else {
+                    // URL-based loading
+                    if (state.mtlUrl) {
+                        loadOptions.mtlUrl = state.mtlUrl;
+                    }
+
+                    const meshObjects = await scene.loadModel(
+                        'loaded-model',
+                        modelSource,
+                        loadOptions
+                    );
+                    state.modelObjects = meshObjects;
                 }
 
-                // Load model directly through scene
-                const meshObjects = await scene.loadModel(
-                    'loaded-model',
-                    state.modelUrl,
-                    loadOptions
-                );
-
-                state.modelObjects = meshObjects;
                 state.modelLoaded = true;
 
                 // Auto-fit camera to model
-                if (meshObjects.length > 0) {
+                if (state.modelObjects.length > 0) {
                     let centerX = 0, centerY = 0, centerZ = 0;
                     let minY = Infinity, maxY = -Infinity;
 
-                    for (const obj of meshObjects) {
+                    for (const obj of state.modelObjects) {
                         if (obj.geometry && obj.geometry.positions) {
                             const pos = obj.geometry.positions;
                             for (let i = 1; i < pos.length; i += 3) {
@@ -367,7 +416,7 @@
                 }
 
                 setStatus(
-                    `✓ Loaded ${meshObjects.length} mesh${meshObjects.length > 1 ? 'es' : ''}`,
+                    `✓ Loaded ${state.modelObjects.length} mesh${state.modelObjects.length > 1 ? 'es' : ''}`,
                     'success'
                 );
             } catch (err) {
@@ -383,6 +432,13 @@
         // ─────────────────────────────────────────────────────────────────────────
 
         ui.loadBtn.addEventListener('click', loadModel);
+
+        ui.modelFile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                setStatus(`Selected: ${fileName}`, 'info');
+            }
+        });
 
         ui.modelUrl.addEventListener('change', (e) => {
             state.modelUrl = e.target.value;

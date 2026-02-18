@@ -14,21 +14,35 @@ import { loadModel, loadMTL, ModelLoader, registerModelFormat } from './model.js
 
 export class Loader {
     /**
-     * Load an OBJ file from URL with optional MTL support.
-     * @param {string} url - URL of the .obj file.
+     * Load an OBJ file from URL or File object with optional MTL support.
+     * @param {string|File|Blob} urlOrFile - URL, File object, or Blob
      * @param {Object} options - Load options
      * @param {string} options.mtlUrl - URL to associated MTL file
+     * @param {File|Blob} options.mtlFile - MTL file object (alternative to mtlUrl)
      * @param {string} options.texturePath - Base path for texture references
      * @returns {Promise<Object>} Complete model data with materials and textures.
      */
-    static async obj(url, options = {}) {
+    static async obj(urlOrFile, options = {}) {
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Failed to load OBJ: ${response.statusText}`);
-            const objContent = await response.text();
+            let objContent;
+
+            // Handle File/Blob objects
+            if (urlOrFile instanceof File || urlOrFile instanceof Blob) {
+                objContent = await urlOrFile.text();
+            } else if (typeof urlOrFile === 'string') {
+                const response = await fetch(urlOrFile);
+                if (!response.ok) throw new Error(`Failed to load OBJ: ${response.statusText}`);
+                objContent = await response.text();
+            } else {
+                throw new Error('obj() requires a URL string, File, or Blob');
+            }
 
             let mtlContent = null;
-            if (options.mtlUrl) {
+
+            // Try to load MTL from options
+            if (options.mtlFile && (options.mtlFile instanceof File || options.mtlFile instanceof Blob)) {
+                mtlContent = await options.mtlFile.text();
+            } else if (options.mtlUrl) {
                 try {
                     const mtlResponse = await fetch(options.mtlUrl);
                     if (mtlResponse.ok) {
@@ -54,15 +68,16 @@ export class Loader {
     /**
      * Load a model file automatically detecting format from extension.
      * Supports: OBJ/MTL, glTF, glB, and extensible formats.
-     * @param {string} url - URL of the model file.
+     * Can load from URL, File object, or Blob.
+     * @param {string|File|Blob} urlOrFile - URL, File object, or Blob
      * @param {Object} options - Load options
      * @param {string} options.texturePath - Base path for textures
      * @param {string} options.format - Explicit format override
      * @returns {Promise<Object>} Parsed model with materials and metadata.
      */
-    static async model(url, options = {}) {
+    static async model(urlOrFile, options = {}) {
         try {
-            return await loadModel(url, options);
+            return await loadModel(urlOrFile, options);
         } catch (err) {
             console.error('Loader.model error:', err);
             throw err;

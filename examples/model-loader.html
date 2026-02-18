@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mushu - OBJ Model Loader Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #fff;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .header {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #a0d8ff, #e28aff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            width: 300px;
+            pointer-events: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            appearance: none;
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #a0d8ff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(160, 216, 255, 0.5);
+        }
+
+        .btn {
+            background: rgba(160, 216, 255, 0.1);
+            border: 1px solid rgba(160, 216, 255, 0.3);
+            color: #a0d8ff;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-family: inherit;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(160, 216, 255, 0.2);
+            border-color: #a0d8ff;
+        }
+
+        .btn.active {
+            background: rgba(160, 216, 255, 0.3);
+            border-color: #a0d8ff;
+        }
+
+        .status {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            pointer-events: auto;
+            min-width: 250px;
+        }
+
+        .status.loading {
+            color: #a0d8ff;
+        }
+
+        .status.error {
+            color: #ff6b6b;
+        }
+
+        .status.success {
+            color: #51cf66;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ui">
+        <div class="header">
+            <h1>Model Loader</h1>
+            <p class="subtitle">OBJ/MTL model loading with textures and materials</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label class="label">
+                    <span>Model URL</span>
+                </label>
+                <input type="text" id="modelUrl" placeholder="path/to/model.obj" value="">
+            </div>
+
+            <div class="control-group">
+                <label class="label">
+                    <span>MTL URL (Optional)</span>
+                </label>
+                <input type="text" id="mtlUrl" placeholder="path/to/model.mtl" value="">
+            </div>
+
+            <div class="control-group">
+                <label class="label">
+                    <span>Texture Path (Optional)</span>
+                </label>
+                <input type="text" id="texturePath" placeholder="path/to/textures/" value="">
+            </div>
+
+            <div class="control-group">
+                <button class="btn" id="loadBtn">Load Model</button>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0;">
+
+            <div class="control-group">
+                <label class="label">
+                    <span>Rotation X</span>
+                    <span id="rotXVal">0.0</span>
+                </label>
+                <input type="range" id="rotX" min="-3.14" max="3.14" step="0.01" value="0">
+            </div>
+
+            <div class="control-group">
+                <label class="label">
+                    <span>Rotation Y</span>
+                    <span id="rotYVal">0.0</span>
+                </label>
+                <input type="range" id="rotY" min="-3.14" max="3.14" step="0.01" value="0">
+            </div>
+
+            <div class="control-group">
+                <label class="label">
+                    <span>Rotation Z</span>
+                    <span id="rotZVal">0.0</span>
+                </label>
+                <input type="range" id="rotZ" min="-3.14" max="3.14" step="0.01" value="0">
+            </div>
+
+            <div class="control-group">
+                <label class="label">
+                    <span>Scale</span>
+                    <span id="scaleVal">1.0</span>
+                </label>
+                <input type="range" id="scale" min="0.1" max="5" step="0.1" value="1">
+            </div>
+
+            <div class="control-group">
+                <label class="label">
+                    <span>Auto Rotate</span>
+                </label>
+                <button class="btn" id="autoRotate">OFF</button>
+            </div>
+        </div>
+
+        <div class="status" id="status">Ready to load a model</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { mushuScene, camera, orbitControls, material, Loader, fps } from '../src/index.js';
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // STATE & UI
+        // ─────────────────────────────────────────────────────────────────────────
+
+        const state = {
+            modelUrl: '',
+            mtlUrl: '',
+            texturePath: '',
+            rotationX: 0,
+            rotationY: 0,
+            rotationZ: 0,
+            scale: 1,
+            autoRotate: false,
+            modelLoaded: false,
+            modelObjects: [],
+        };
+
+        const ui = {
+            modelUrl: document.getElementById('modelUrl'),
+            mtlUrl: document.getElementById('mtlUrl'),
+            texturePath: document.getElementById('texturePath'),
+            loadBtn: document.getElementById('loadBtn'),
+            rotX: document.getElementById('rotX'),
+            rotY: document.getElementById('rotY'),
+            rotZ: document.getElementById('rotZ'),
+            scale: document.getElementById('scale'),
+            autoRotate: document.getElementById('autoRotate'),
+            status: document.getElementById('status'),
+        };
+
+        function setStatus(message, type = 'info') {
+            ui.status.textContent = message;
+            ui.status.className = `status ${type}`;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // SCENE SETUP
+        // ─────────────────────────────────────────────────────────────────────────
+
+        const scene = mushuScene('#canvas', {
+            clearColor: [0.02, 0.02, 0.04, 1],
+            cullFace: 'BACK',
+        });
+
+        const cam = camera({
+            fov: 45,
+            position: [0, 2, 5],
+            target: [0, 0, 0],
+        });
+
+        const controls = orbitControls(cam, {
+            autoRotate: false,
+            autoRotateSpeed: 0.5,
+        });
+
+        cam.init(scene.ctx);
+        controls.init(scene.ctx);
+        scene.use(cam).use(controls).use(fps());
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // MODEL LOADING
+        // ─────────────────────────────────────────────────────────────────────────
+
+        async function loadModel() {
+            if (!state.modelUrl) {
+                setStatus('Please enter a model URL', 'error');
+                return;
+            }
+
+            setStatus('Loading model...', 'loading');
+            ui.loadBtn.disabled = true;
+
+            try {
+                // Clear previous model
+                if (state.modelObjects.length > 0) {
+                    for (const obj of state.modelObjects) {
+                        scene.remove(obj.id);
+                    }
+                    state.modelObjects = [];
+                }
+
+                // Create model loader with optional MTL
+                const loadOptions = {
+                    texturePath: state.texturePath,
+                };
+
+                if (state.mtlUrl) {
+                    loadOptions.mtlUrl = state.mtlUrl;
+                }
+
+                // Load model directly through scene
+                const meshObjects = await scene.loadModel(
+                    'loaded-model',
+                    state.modelUrl,
+                    loadOptions
+                );
+
+                state.modelObjects = meshObjects;
+                state.modelLoaded = true;
+
+                // Auto-fit camera to model
+                if (meshObjects.length > 0) {
+                    let centerX = 0, centerY = 0, centerZ = 0;
+                    let minY = Infinity, maxY = -Infinity;
+
+                    for (const obj of meshObjects) {
+                        if (obj.geometry && obj.geometry.positions) {
+                            const pos = obj.geometry.positions;
+                            for (let i = 1; i < pos.length; i += 3) {
+                                maxY = Math.max(maxY, pos[i]);
+                                minY = Math.min(minY, pos[i]);
+                            }
+                        }
+                    }
+
+                    const height = maxY - minY;
+                    cam.position[1] = minY + height * 0.5;
+                    cam.position[2] = height * 1.2;
+                    cam.update(scene.ctx);
+                }
+
+                setStatus(
+                    `✓ Loaded ${meshObjects.length} mesh${meshObjects.length > 1 ? 'es' : ''}`,
+                    'success'
+                );
+            } catch (err) {
+                console.error(err);
+                setStatus(`Error: ${err.message}`, 'error');
+            } finally {
+                ui.loadBtn.disabled = false;
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // EVENT HANDLERS
+        // ─────────────────────────────────────────────────────────────────────────
+
+        ui.loadBtn.addEventListener('click', loadModel);
+
+        ui.modelUrl.addEventListener('change', (e) => {
+            state.modelUrl = e.target.value;
+        });
+
+        ui.mtlUrl.addEventListener('change', (e) => {
+            state.mtlUrl = e.target.value;
+        });
+
+        ui.texturePath.addEventListener('change', (e) => {
+            state.texturePath = e.target.value;
+        });
+
+        ui.rotX.addEventListener('input', (e) => {
+            state.rotationX = parseFloat(e.target.value);
+            document.getElementById('rotXVal').textContent = state.rotationX.toFixed(2);
+            updateModelTransform();
+        });
+
+        ui.rotY.addEventListener('input', (e) => {
+            state.rotationY = parseFloat(e.target.value);
+            document.getElementById('rotYVal').textContent = state.rotationY.toFixed(2);
+            updateModelTransform();
+        });
+
+        ui.rotZ.addEventListener('input', (e) => {
+            state.rotationZ = parseFloat(e.target.value);
+            document.getElementById('rotZVal').textContent = state.rotationZ.toFixed(2);
+            updateModelTransform();
+        });
+
+        ui.scale.addEventListener('input', (e) => {
+            state.scale = parseFloat(e.target.value);
+            document.getElementById('scaleVal').textContent = state.scale.toFixed(1);
+            updateModelTransform();
+        });
+
+        ui.autoRotate.addEventListener('click', () => {
+            state.autoRotate = !state.autoRotate;
+            ui.autoRotate.textContent = state.autoRotate ? 'ON' : 'OFF';
+            ui.autoRotate.classList.toggle('active');
+            controls.autoRotate = state.autoRotate;
+        });
+
+        function updateModelTransform() {
+            const parent = scene.get('loaded-model');
+            if (parent) {
+                parent.setRotation(state.rotationX, state.rotationY, state.rotationZ);
+                parent.setScale(state.scale, state.scale, state.scale);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // DEMO: Try to load example model if available
+        // ─────────────────────────────────────────────────────────────────────────
+
+        scene.use({
+            update: (ctx) => {
+                if (state.autoRotate && state.modelObjects.length > 0) {
+                    const parent = scene.get('loaded-model');
+                    if (parent) {
+                        parent.rotateY(0.01);
+                    }
+                }
+            },
+        });
+
+        setStatus('Enter model URLs and click "Load Model"', 'info');
+
+        // Make scene available globally for debugging
+        window.scene = scene;
+        window.cam = cam;
+
+        scene.go();
+    </script>
+</body>
+
+</html>

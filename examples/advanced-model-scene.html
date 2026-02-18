@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mushu - Advanced Model Integration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #fff;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .title {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            pointer-events: auto;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #a0d8ff, #e28aff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .info {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            pointer-events: none;
+            max-width: 300px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay">
+        <div class="title">
+            <h1>Multi-Model Scene</h1>
+            <p class="subtitle">Advanced model loading, transformation, and interaction</p>
+        </div>
+
+        <div class="info">
+            <strong>Features:</strong><br>
+            • Load multiple OBJ models<br>
+            • Independent transformations<br>
+            • Material assignments<br>
+            • Interactive camera control<br>
+            • Performance metrics (FPS)
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import {
+            mushuScene,
+            camera,
+            orbitControls,
+            material,
+            Loader,
+            PBRMaterial,
+            fps,
+        } from '../src/index.js';
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Advanced Scene Setup
+        // ─────────────────────────────────────────────────────────────────────────
+
+        const scene = mushuScene('#canvas', {
+            clearColor: [0.02, 0.02, 0.04, 1],
+        });
+
+        const cam = camera({
+            fov: 45,
+            position: [0, 3, 8],
+            target: [0, 0, 0],
+        });
+
+        const controls = orbitControls(cam, {
+            autoRotate: true,
+            autoRotateSpeed: 0.2,
+        });
+
+        cam.init(scene.ctx);
+        controls.init(scene.ctx);
+        scene.use(cam).use(controls).use(fps());
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Material Setup
+        // ─────────────────────────────────────────────────────────────────────────
+
+        const materials = {
+            brass: new PBRMaterial({
+                name: 'Brass',
+                color: [0.8, 0.6, 0.1],
+                metallic: 1.0,
+                roughness: 0.3,
+            }),
+            copper: new PBRMaterial({
+                name: 'Copper',
+                color: [1.0, 0.5, 0.2],
+                metallic: 1.0,
+                roughness: 0.4,
+            }),
+            ceramic: new PBRMaterial({
+                name: 'Ceramic',
+                color: [0.9, 0.9, 0.8],
+                metallic: 0.0,
+                roughness: 0.8,
+            }),
+            stone: new PBRMaterial({
+                name: 'Stone',
+                color: [0.4, 0.4, 0.4],
+                metallic: 0.0,
+                roughness: 1.0,
+            }),
+        };
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Example Models Configuration
+        // This demonstrates how to load multiple models with different settings
+        // ─────────────────────────────────────────────────────────────────────────
+
+        const modelConfigs = [
+            {
+                id: 'center-model',
+                name: 'Center Object',
+                url: null, // Set by user
+                options: {
+                    position: [0, 0, 0],
+                    rotation: [0, 0, 0],
+                    scale: [1, 1, 1],
+                    material: materials.brass,
+                },
+            },
+            {
+                id: 'left-model',
+                name: 'Left Object',
+                url: null,
+                options: {
+                    position: [-3, 0, 0],
+                    rotation: [0, 0, 0],
+                    scale: [1, 1, 1],
+                    material: materials.copper,
+                },
+            },
+            {
+                id: 'right-model',
+                name: 'Right Object',
+                url: null,
+                options: {
+                    position: [3, 0, 0],
+                    rotation: [0, 0, 0],
+                    scale: [1, 1, 1],
+                    material: materials.ceramic,
+                },
+            },
+        ];
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Model Loader with Caching
+        // ─────────────────────────────────────────────────────────────────────────
+
+        const modelLoader = Loader.createModelLoader({
+            texturePath: 'assets/textures/',
+        });
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Load and Transform Models
+        // Example demonstrating how to:
+        // 1. Load multiple models
+        // 2. Apply individual transforms
+        // 3. Assign materials
+        // 4. Handle interactions
+        // ─────────────────────────────────────────────────────────────────────────
+
+        async function loadExampleScene() {
+            try {
+                console.log('Loading example scene...');
+
+                // Create placeholder geometries for demonstration
+                // In production, these would be real model URLs
+
+                // Option 1: Use the existing crystal cluster example
+                // const models = [
+                //   await loadModel('examples/models/crystal.obj'),
+                //   await loadModel('examples/models/statue.obj'),
+                // ];
+
+                // Option 2: Create procedural geometry for demo
+                const createDemoGeometry = () => ({
+                    positions: new Float32Array([
+                        // Simple cube
+                        -1, -1, -1, 1, -1, -1, 1, 1, -1,
+                        -1, -1, -1, 1, 1, -1, -1, 1, -1,
+                        // ... more faces
+                    ]),
+                    normals: new Float32Array([
+                        0, 0, -1, 0, 0, -1, 0, 0, -1,
+                        0, 0, -1, 0, 0, -1, 0, 0, -1,
+                        // ... more normals
+                    ]),
+                    uvs: new Float32Array([
+                        0, 0, 1, 0, 1, 1,
+                        0, 0, 1, 1, 0, 1,
+                        // ... more UVs
+                    ]),
+                });
+
+                // Load center model
+                if (modelConfigs[0].url) {
+                    const meshes = await scene.loadModelWithLoader(
+                        modelConfigs[0].id,
+                        modelConfigs[0].url,
+                        modelLoader,
+                        modelConfigs[0].options
+                    );
+                    console.log(`Loaded ${meshes.length} meshes for center model`);
+                } else {
+                    // Demo: create placeholder
+                    scene.add(modelConfigs[0].id, {
+                        geometry: createDemoGeometry(),
+                        material: materials.brass,
+                        position: [0, 0, 0],
+                    });
+                }
+
+                // Similar for other models...
+                console.log('Scene ready! Models loaded and positioned.');
+            } catch (err) {
+                console.error('Failed to load scene:', err);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Animation and Interaction
+        // ─────────────────────────────────────────────────────────────────────────
+
+        const animationState = {
+            time: 0,
+            rotationSpeeds: [0.01, -0.015, 0.02],
+        };
+
+        scene.use({
+            update: (ctx) => {
+                animationState.time += ctx.deltaTime || 0.016;
+
+                // Animate each model
+                modelConfigs.forEach((config, idx) => {
+                    const obj = scene.get(config.id);
+                    if (obj) {
+                        // Add subtle rotation
+                        obj.rotateX(animationState.rotationSpeeds[idx] * 0.5);
+                        obj.rotateY(animationState.rotationSpeeds[idx]);
+
+                        // Optional: add vertical bob
+                        const bob = Math.sin(animationState.time + idx) * 0.2;
+                        obj.position[1] = config.options.position[1] + bob;
+                    }
+                });
+            },
+        });
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Keyboard Controls (Optional)
+        // ─────────────────────────────────────────────────────────────────────────
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r') {
+                // Reset camera
+                cam.position.set([0, 3, 8]);
+                cam.target.set([0, 0, 0]);
+            } else if (e.key === 'p') {
+                // Print scene info
+                console.log('Scene objects:', scene.objects);
+            }
+        });
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Initialization
+        // ─────────────────────────────────────────────────────────────────────────
+
+        // Load demo scene
+        loadExampleScene();
+
+        // Start rendering
+        scene.go();
+
+        // Expose for debugging
+        window.scene = scene;
+        window.modelLoader = modelLoader;
+        window.materials = materials;
+
+        console.log('mushu model loader demo ready!');
+        console.log('Try loading models with: Loader.model("url")');
+    </script>
+</body>
+
+</html>

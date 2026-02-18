@@ -2,27 +2,49 @@
  * mushu/core/loader — Asset Loading System
  * 
  * Centralized system for loading and parsing external assets:
- * - OBJ models
- * - glTF models (basic support)
+ * - 3D Models (OBJ with MTL, glTF, and extensible format support)
  * - Textures and other resources
+ * - Scene composition from model data
  * 
  * @module mushu/core/loader
  */
 
 import { loadOBJ } from './geometry.js';
+import { loadModel, loadMTL, ModelLoader, registerModelFormat } from './model.js';
 
 export class Loader {
     /**
-     * Load an OBJ file from URL.
+     * Load an OBJ file from URL with optional MTL support.
      * @param {string} url - URL of the .obj file.
-     * @returns {Promise<Object>} Geometry data.
+     * @param {Object} options - Load options
+     * @param {string} options.mtlUrl - URL to associated MTL file
+     * @param {string} options.texturePath - Base path for texture references
+     * @returns {Promise<Object>} Complete model data with materials and textures.
      */
-    static async obj(url) {
+    static async obj(url, options = {}) {
         try {
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Failed to load OBJ: ${response.statusText}`);
-            const text = await response.text();
-            return loadOBJ(text);
+            const objContent = await response.text();
+
+            let mtlContent = null;
+            if (options.mtlUrl) {
+                try {
+                    const mtlResponse = await fetch(options.mtlUrl);
+                    if (mtlResponse.ok) {
+                        mtlContent = await mtlResponse.text();
+                    }
+                } catch (e) {
+                    console.warn('Failed to load MTL:', options.mtlUrl);
+                }
+            }
+
+            return loadModel(objContent, {
+                format: 'obj',
+                mtlContent,
+                texturePath: options.texturePath || '',
+                ...options,
+            });
         } catch (err) {
             console.error('Loader.obj error:', err);
             throw err;
@@ -30,24 +52,71 @@ export class Loader {
     }
 
     /**
-     * Load a glTF file from URL.
-     * Note: This is a basic implementation for glTF JSON.
-     * @param {string} url - URL of the .gltf file.
-     * @returns {Promise<Object>} Parsed glTF object.
+     * Load a model file automatically detecting format from extension.
+     * Supports: OBJ/MTL, glTF, glB, and extensible formats.
+     * @param {string} url - URL of the model file.
+     * @param {Object} options - Load options
+     * @param {string} options.texturePath - Base path for textures
+     * @param {string} options.format - Explicit format override
+     * @returns {Promise<Object>} Parsed model with materials and metadata.
      */
-    static async gltf(url) {
+    static async model(url, options = {}) {
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Failed to load glTF: ${response.statusText}`);
-            const data = await response.json();
+            return await loadModel(url, options);
+        } catch (err) {
+            console.error('Loader.model error:', err);
+            throw err;
+        }
+    }
 
-            // Basic glTF parsing logic would go here
-            // For now, we just return the raw JSON data
-            return data;
+    /**
+     * Load a glTF file from URL (JSON or GLB).
+     * @param {string} url - URL of the .gltf or .glb file.
+     * @param {Object} options - Load options
+     * @returns {Promise<Object>} Parsed glTF model.
+     */
+    static async gltf(url, options = {}) {
+        try {
+            return await loadModel(url, { format: 'gltf', ...options });
         } catch (err) {
             console.error('Loader.gltf error:', err);
             throw err;
         }
+    }
+
+    /**
+     * Load MTL materials file.
+     * @param {string} url - URL of the .mtl file.
+     * @param {string} texturePath - Base path for texture references.
+     * @returns {Promise<Object>} Materials map with properties.
+     */
+    static async mtl(url, texturePath = '') {
+        try {
+            return await loadMTL(url, texturePath);
+        } catch (err) {
+            console.error('Loader.mtl error:', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Create a model loader instance with caching and resource management.
+     * Useful for loading multiple models with shared settings.
+     * @param {Object} options - ModelLoader options
+     * @returns {ModelLoader} Loader instance
+     */
+    static createModelLoader(options = {}) {
+        return new ModelLoader(options);
+    }
+
+    /**
+     * Register a custom model format loader.
+     * Enables support for additional formats like BLEND, FBX, etc.
+     * @param {string} format - File extension (e.g. 'blend', 'fbx')
+     * @param {ModelFormatLoader} loader - Loader instance
+     */
+    static registerFormat(format, loader) {
+        registerModelFormat(format, loader);
     }
 
     /**
@@ -60,7 +129,8 @@ export class Loader {
         const promises = keys.map(key => {
             const url = assets[key];
             if (url.endsWith('.obj')) return this.obj(url);
-            if (url.endsWith('.gltf') || url.endsWith('.json')) return this.gltf(url);
+            if (url.endsWith('.gltf') || url.endsWith('.glb')) return this.gltf(url);
+            if (url.endsWith('.mtl')) return this.mtl(url);
             return fetch(url).then(r => r.blob());
         });
 
@@ -71,5 +141,8 @@ export class Loader {
         }, {});
     }
 }
+
+// Export model utilities for direct use
+export { loadModel, loadMTL, ModelLoader, registerModelFormat };
 
 export default Loader;

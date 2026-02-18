@@ -938,12 +938,137 @@ export class Scene {
     }
 
     /**
+     * Load a 3D model file and add all its meshes to the scene.
+     * Automatically handles OBJ/MTL, glTF, and extensible formats.
+     * 
+     * Usage:
+     *   scene.loadModel('my-model', 'path/to/model.obj', {
+     *     texturePath: 'path/to/textures/',
+     *     material: customMaterial  // Optional: override default material
+     *   })
+     *   
+     * @param {string} id - Model identifier (group name)
+     * @param {string} url - Model file URL
+     * @param {Object} options - Load options
+     * @param {string} options.texturePath - Base path for texture references
+     * @param {Object} options.mtlUrl - MTL file URL (for OBJ)
+     * @param {string} options.format - Explicit format (auto-detected by default)
+     * @param {Object} options.material - Material to apply to all meshes
+     * @param {Array<number>} options.position - Model position
+     * @param {Array<number>} options.rotation - Model rotation
+     * @param {Array<number>} options.scale - Model scale
+     * @returns {Promise<Array<SceneObject>>} Array of created mesh objects
+     */
+    async loadModel(id, url, options = {}) {
+        try {
+            const modelData = await Loader.model(url, {
+                texturePath: options.texturePath || '',
+                ...options,
+            });
+
+            const meshObjects = [];
+            const parentGroup = new SceneObject({
+                id,
+                position: options.position,
+                rotation: options.rotation,
+                scale: options.scale,
+            });
+            this._objects.set(id, parentGroup);
+            this.rootObjects.push(parentGroup);
+
+            // Add each mesh as a child object
+            for (let i = 0; i < modelData.meshes.length; i++) {
+                const meshData = modelData.meshes[i];
+                const meshId = `${id}_mesh_${i}`;
+
+                const meshObj = new SceneObject({
+                    id: meshId,
+                    parent: parentGroup,
+                    material: options.material || null,
+                    geometry: meshData.geometry,
+                    userData: {
+                        meshName: meshData.name,
+                        materialName: meshData.material?.name,
+                        ...meshData.material,
+                    },
+                });
+
+                this._objects.set(meshId, meshObj);
+                parentGroup.addChild(meshObj);
+                meshObjects.push(meshObj);
+            }
+
+            return meshObjects;
+        } catch (err) {
+            console.error('Failed to load model:', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Load a model with a specialized loader instance.
+     * Useful for managing multiple models with shared caching.
+     * 
+     * @param {string} id - Model identifier
+     * @param {string} url - Model URL
+     * @param {ModelLoader} loader - ModelLoader instance
+     * @param {Object} options - Additional options
+     * @returns {Promise<Array<SceneObject>>} Created mesh objects
+     */
+    async loadModelWithLoader(id, url, loader, options = {}) {
+        try {
+            const modelData = await loader.load(url, options);
+
+            const meshObjects = [];
+            const parentGroup = new SceneObject({
+                id,
+                position: options.position,
+                rotation: options.rotation,
+                scale: options.scale,
+            });
+            this._objects.set(id, parentGroup);
+            this.rootObjects.push(parentGroup);
+
+            // Add each mesh as a child object
+            for (let i = 0; i < modelData.meshes.length; i++) {
+                const meshData = modelData.meshes[i];
+                const meshId = `${id}_mesh_${i}`;
+
+                const meshObj = new SceneObject({
+                    id: meshId,
+                    parent: parentGroup,
+                    material: options.material || null,
+                    geometry: meshData.geometry,
+                    userData: {
+                        meshName: meshData.name,
+                        materialName: meshData.material?.name,
+                        ...meshData.material,
+                    },
+                });
+
+                this._objects.set(meshId, meshObj);
+                parentGroup.addChild(meshObj);
+                meshObjects.push(meshObj);
+            }
+
+            return meshObjects;
+        } catch (err) {
+            console.error('Failed to load model:', err);
+            throw err;
+        }
+    }
+
+    /**
      * Add a plugin to the scene.
      * @param {Object|Function} plugin - Plugin object or function
      * @returns {this}
      */
     use(plugin) {
         this._plugins.push(plugin);
+        // If scene is already running, init immediately
+        if (this._running && plugin.init) {
+            plugin.init(this.ctx);
+        }
         return this;
     }
 
@@ -1002,7 +1127,10 @@ export class Scene {
      * @returns {this}
      */
     go() {
-        if (this._running) return this;
+        // Initialize all current plugins
+        for (const plugin of this._plugins) {
+            if (plugin.init) plugin.init(this.ctx);
+        }
 
         this._running = true;
         let lastTime = 0;

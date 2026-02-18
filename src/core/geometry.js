@@ -737,17 +737,19 @@ export function cone(options = {}) {
  * @param {number} [options.radius=0.2]
  * @param {number} [options.height=1.0]
  * @param {number} [options.sides=6]
- * @param {number} [options.taper=0.2] - how much the top point is offset
+ * @param {number} [options.taperTop=0.0] - how much the top point is offset
+ * @param {number} [options.taperBottom=0.0] - how much the bottom point is offset
+ * @param {number} [options.midRatio=0.5] - where the widest point is along the height
  * @returns {Object} vao plugin
  */
 export function crystal(options = {}) {
   const {
-    radius = 0.2,
+    radius = 0.25,
     height = 1.0,
     sides = 6,
-    taper = 0.1,
-    midRatio = 0.4,
-    midRadius = 0.25,
+    taperTop = 0.0,
+    taperBottom = 0.0,
+    midRatio = 0.5,
   } = options;
 
   const positions = [];
@@ -758,7 +760,6 @@ export function crystal(options = {}) {
   const addTriangle = (v0, v1, v2, u0, u1, u2) => {
     const start = positions.length / 3;
     positions.push(...v0, ...v1, ...v2);
-
     const d1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
     const d2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
     const n = [
@@ -766,39 +767,28 @@ export function crystal(options = {}) {
       d1[2] * d2[0] - d1[0] * d2[2],
       d1[0] * d2[1] - d1[1] * d2[0]
     ];
-    const l = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+    const l = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]) || 1;
     const norm = [n[0] / l, n[1] / l, n[2] / l];
-
     normals.push(...norm, ...norm, ...norm);
     uvs.push(...u0, ...u1, ...u2);
     indices.push(start, start + 1, start + 2);
   };
 
-  const addQuad = (v0, v1, v2, v3, u0, u1, u2, u3) => {
-    addTriangle(v0, v1, v2, u0, u1, u2);
-    addTriangle(v1, v3, v2, u1, u3, u2);
-  };
+  const midY = height * midRatio;
+  const top = [taperTop, height, taperTop]; // Apply taper to top point
+  const bot = [taperBottom, 0, taperBottom]; // Apply taper to bottom point
 
-  // Build the crystal with discrete triangles for perfect faceting
   for (let i = 0; i < sides; i++) {
     const a1 = (i / sides) * Math.PI * 2;
     const a2 = ((i + 1) / sides) * Math.PI * 2;
 
-    const b1 = [Math.cos(a1) * radius, 0, Math.sin(a1) * radius];
-    const b2 = [Math.cos(a2) * radius, 0, Math.sin(a2) * radius];
-    const m1 = [Math.cos(a1) * midRadius, height * midRatio, Math.sin(a1) * midRadius];
-    const m2 = [Math.cos(a2) * midRadius, height * midRatio, Math.sin(a2) * midRadius];
-    const top = [taper, height, taper];
-    const bot = [0, 0, 0];
+    const m1 = [Math.cos(a1) * radius, midY, Math.sin(a1) * radius];
+    const m2 = [Math.cos(a2) * radius, midY, Math.sin(a2) * radius];
 
-    // Bottom Cap
-    addTriangle(bot, b2, b1, [0.5, 0.5], [1, 1], [0, 0]);
-
-    // Lower Sides
-    addQuad(b1, b2, m1, m2, [0, 0], [1, 0], [0, 0.5], [1, 0.5]);
-
-    // Upper Sides
+    // Top cone
     addTriangle(m1, m2, top, [0, 0.5], [1, 0.5], [0.5, 1]);
+    // Bottom cone
+    addTriangle(bot, m2, m1, [0.5, 0], [1, 0.5], [0, 0.5]);
   }
 
   return vao({ positions, normals, uvs, indices });

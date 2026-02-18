@@ -80,7 +80,6 @@
             justify-content: space-between;
             margin-bottom: 8px;
             color: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
         }
 
         input[type="range"] {
@@ -111,7 +110,6 @@
             cursor: pointer;
             width: 100%;
             font-family: inherit;
-            font-size: 12px;
             transition: all 0.2s ease;
         }
 
@@ -120,22 +118,14 @@
             border-color: #a0d8ff;
             color: #a0d8ff;
         }
-
-        .help-text {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
     </style>
 </head>
 
 <body>
     <div class="overlay">
         <h1>Ethereal Crystals</h1>
-        <p class="description">Intricate 3D crystal cluster rendered with custom translucent shaders. Cluster rotates
-            automatically or use controls to adjust.</p>
+        <p class="description">Intricate 3D crystal cluster rendered with custom translucent shaders and internal glow
+            logic.</p>
     </div>
 
     <div class="controls">
@@ -154,43 +144,28 @@
             <input type="range" id="translucency" min="0" max="1" step="0.01" value="0.7">
         </div>
         <div class="control-group">
-            <div class="control-label">
-                <span>Rotation Speed</span>
-                <span id="rotSpeedVal">1.0</span>
-            </div>
-            <input type="range" id="rotSpeed" min="0" max="2" step="0.1" value="1.0">
-        </div>
-        <div class="control-group">
-            <button id="simulationMode" class="toggle-btn">Simulation Mode: OFF</button>
-        </div>
-
-        <div class="help-text">
-            <strong>Camera:</strong> Drag to rotate, scroll to zoom.<br>
-            <strong>Cluster:</strong> Rotates continuously. Adjust speed above.
+            <button id="blendMode" class="toggle-btn">Blended Shader Mode: OFF</button>
         </div>
     </div>
 
     <canvas id="canvas"></canvas>
 
     <script type="module">
-        import { mushu, material, mushuScene, GLSL } from '../src/index.js';
-        import { camera, orbitControls, fps, crystal, sphere } from '../src/core/index.js';
+        import { mushu, material, mushuScene, GLSL } from '../../src/index.js';
+        import { camera, orbitControls, fps, crystal, sphere } from '../../src/core/index.js';
 
         // --- CONFIG & STATE ---
         const state = {
             glow: 1.5,
             translucency: 0.7,
-            rotationSpeed: 1.0,
             blendedMode: false,
-            time: 0,
-            clusterRotation: [0, 0, 0]
+            time: 0
         };
 
         // --- UI SETUP ---
         const glowInput = document.getElementById('glow');
         const transInput = document.getElementById('translucency');
-        const rotSpeedInput = document.getElementById('rotSpeed');
-        const simulationBtn = document.getElementById('simulationMode');
+        const blendBtn = document.getElementById('blendMode');
 
         glowInput.oninput = (e) => {
             state.glow = parseFloat(e.target.value);
@@ -200,17 +175,13 @@
             state.translucency = parseFloat(e.target.value);
             document.getElementById('transVal').textContent = state.translucency.toFixed(2);
         };
-        rotSpeedInput.oninput = (e) => {
-            state.rotationSpeed = parseFloat(e.target.value);
-            document.getElementById('rotSpeedVal').textContent = state.rotationSpeed.toFixed(1);
-        };
-        simulationBtn.onclick = () => {
+        blendBtn.onclick = () => {
             state.blendedMode = !state.blendedMode;
-            simulationBtn.classList.toggle('active');
-            simulationBtn.textContent = `Simulation Mode: ${state.blendedMode ? 'ON' : 'OFF'}`;
+            blendBtn.classList.toggle('active');
+            blendBtn.textContent = `Blended Shader Mode: ${state.blendedMode ? 'ON' : 'OFF'}`;
         };
 
-        const vertexShader = `#version 300 es
+        const vertexShader = `
             layout(location = 0) in vec3 position;
             layout(location = 1) in vec3 normal;
             layout(location = 2) in vec2 uv;
@@ -234,7 +205,7 @@
             }
         `;
 
-        const fragmentShader = `#version 300 es
+        const fragmentShader = `
             precision highp float;
             ${GLSL.noise}
             ${GLSL.color}
@@ -248,6 +219,7 @@
             uniform float time;
             uniform float glowIntensity;
             uniform float translucency;
+            
             uniform float uSimulation;
             
             uniform vec3 crystalColor;
@@ -321,21 +293,13 @@
             })
         });
 
-        // Camera setup: positioned to view cluster from good angle
+        // Lower FOV (25) to reduce fish-eye and move back (22) for scale
         const cam = camera({
-            fov: 35,
-            position: [0, 2, 8],
-            target: [0, 0, 0]
+            fov: 25,
+            position: [0, 10, 22],
+            target: [0, 2, 0]
         });
-
-        // Orbit controls allow camera rotation/zoom, not cluster rotation
-        const controls = orbitControls(cam, {
-            autoRotate: false,  // Don't auto-rotate camera
-            autoRotateSpeed: 0.12,
-            enableZoom: true,
-            enablePan: true
-        });
-
+        const controls = orbitControls(cam, { autoRotate: true, autoRotateSpeed: 0.12 });
         cam.init(scene.ctx);
         controls.init(scene.ctx);
         scene.use(cam).use(controls);
@@ -348,8 +312,8 @@
             cullFace: 'NONE'
         });
 
-        gemMat.setUniform('crystalColor', [0.01, 0.05, 0.4])
-            .setUniform('coreColor', [0.2, 0.7, 1.0])
+        gemMat.setUniform('crystalColor', [0.01, 0.05, 0.4]) // Deep Protoss Blue
+            .setUniform('coreColor', [0.2, 0.7, 1.0])    // Energetic Light Blue
             .setUniform('glowIntensity', state.glow)
             .setUniform('translucency', state.translucency)
             .setUniform('uSimulation', 0.0);
@@ -385,85 +349,38 @@
                 obj.rotation = cfg.rot;
             });
 
-            // 3. SUB-SHARDS (Small growths) - Better placement
-            for (let i = 0; i < 12; i++) {
-                const angle = (i / 12) * Math.PI * 2;  // Evenly distributed
-                const ringRadius = 1.2 + (i % 3) * 0.3;  // Multiple rings
-                const heightVar = (i * 0.3) % 1.5;
-
-                const x = Math.cos(angle) * ringRadius;
-                const z = Math.sin(angle) * ringRadius;
-                const y = 0.2 + heightVar;
+            // 3. SUB-SHARDS (Small growths)
+            for (let i = 0; i < 15; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 1.0 + Math.random() * 0.5;
+                const x = Math.cos(angle) * dist;
+                const z = Math.sin(angle) * dist;
 
                 const id = `growth_${i}`;
                 scene.add(id, {
                     geometry: 'gem',
-                    geometryOpts: {
-                        radius: 0.12 + (i % 3) * 0.08,
-                        height: 0.6 + (i % 4) * 0.4,
-                        sides: 5
-                    },
+                    geometryOpts: { radius: 0.1 + Math.random() * 0.1, height: 0.5 + Math.random() * 1.5, sides: 5 },
                     material: gemMat,
-                    position: [x, y, z]
+                    position: [x, 0.1, z]
                 });
 
                 const obj = scene.get(id);
-                obj.rotateZ(angle + 0.5);
-                obj.rotateX(0.3 + heightVar * 0.5);
+                obj.rotateY(angle);
+                obj.rotateZ(1.0 + Math.random() * 0.5); // Lean outwards
             }
         }
 
         spawnNucleus();
 
-        scene.use(fps());
+        scene.use(fps()); // Add FPS monitor
 
-        // --- ANIMATION: Rotate the CLUSTER, not the camera ---
         scene.use({
             update: (ctx) => {
-                // Update shader uniforms
                 gemMat.setUniform('glowIntensity', state.glow);
                 gemMat.setUniform('translucency', state.translucency);
                 gemMat.setUniform('uSimulation', state.blendedMode ? 1.0 : 0.0);
                 gemMat.setUniform('time', ctx.time);
                 gemMat.setUniform('cameraPosition', cam.position);
-
-                // Rotate the CLUSTER itself
-                const clusterRotationAmount = 0.001 * state.rotationSpeed;
-                state.clusterRotation[1] += clusterRotationAmount;
-
-                // Apply rotation to all cluster objects
-                const nucleusObj = scene.get('nucleus');
-                if (nucleusObj) {
-                    nucleusObj.setRotation(
-                        state.clusterRotation[0],
-                        state.clusterRotation[1],
-                        state.clusterRotation[2]
-                    );
-                }
-
-                // Rotate all spires
-                for (let i = 0; i < 5; i++) {
-                    const spire = scene.get(`spire_${i}`);
-                    if (spire) {
-                        spire.setRotation(
-                            state.clusterRotation[0],
-                            state.clusterRotation[1],
-                            state.clusterRotation[2]
-                        );
-                    }
-                }
-
-                // Rotate all growths
-                for (let i = 0; i < 12; i++) {
-                    const growth = scene.get(`growth_${i}`);
-                    if (growth) {
-                        growth.setRotation(
-                            state.clusterRotation[0],
-                            state.clusterRotation[1],
-                            state.clusterRotation[2]
-                        );
-                    }
-                }
             }
         });
 

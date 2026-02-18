@@ -22,6 +22,16 @@ export {
 
 export { Loader } from './loader.js';
 
+// 3D Model Loading System
+export {
+  loadModel,
+  loadMTL,
+  ModelLoader,
+  ModelFormatLoader,
+  registerModelFormat,
+  createMaterialFromMTL,
+} from './model.js';
+
 // 3D Geometry and VAO utilities
 export {
   vao,

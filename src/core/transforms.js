@@ -398,8 +398,7 @@ export const mat4 = {
   // ─────────────────────────────────────────────────────────────────────────
 
   // Perspective projection
-  perspective: (fovY, aspect, near, far) => {
-    const out = mat4.create();
+  perspective: (fovY, aspect, near, far, out = mat4.create()) => {
     const f = 1.0 / Math.tan(fovY * Math.PI / 360);
     const nf = 1 / (near - far);
 
@@ -424,8 +423,7 @@ export const mat4 = {
   },
 
   // Orthographic projection
-  ortho: (left, right, bottom, top, near, far) => {
-    const out = mat4.create();
+  ortho: (left, right, bottom, top, near, far, out = mat4.create()) => {
     const lr = 1 / (left - right);
     const bt = 1 / (bottom - top);
     const nf = 1 / (near - far);
@@ -451,8 +449,7 @@ export const mat4 = {
   },
 
   // Look-at view matrix
-  lookAt: (eye, center, up) => {
-    const out = mat4.create();
+  lookAt: (eye, center, up, out = mat4.create()) => {
 
     const zx = eye[0] - center[0];
     const zy = eye[1] - center[1];
@@ -654,14 +651,14 @@ export function camera(options = {}) {
   const updateProjection = (aspect) => {
     if (type === 'ortho') {
       const hw = orthoSize * aspect;
-      projectionMatrix = mat4.ortho(-hw, hw, -orthoSize, orthoSize, near, far);
+      mat4.ortho(-hw, hw, -orthoSize, orthoSize, near, far, projectionMatrix);
     } else {
-      projectionMatrix = mat4.perspective(fov, aspect, near, far);
+      mat4.perspective(fov, aspect, near, far, projectionMatrix);
     }
   };
 
   const updateView = () => {
-    viewMatrix = mat4.lookAt(pos, tgt, upVec);
+    mat4.lookAt(pos, tgt, upVec, viewMatrix);
   };
 
   const updateViewProjection = () => {
@@ -802,7 +799,8 @@ export function orbitControls(cam, options = {}) {
 
       ctx.canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
-        radius += e.deltaY * zoomSpeed * radius;
+        const factor = Math.exp(e.deltaY * zoomSpeed * 2.0);
+        radius *= factor;
         radius = Math.max(minDistance, Math.min(maxDistance, radius));
         updateCameraPosition();
       }, { passive: false });
@@ -849,6 +847,13 @@ export function orbitControls(cam, options = {}) {
 
       ctx.canvas.addEventListener('touchend', () => { isDragging = false; });
     },
+
+    update(ctx) {
+      if (!isDragging && options.autoRotate) {
+        theta += (options.autoRotateSpeed || 0.1) * ctx.delta;
+        updateCameraPosition();
+      }
+    }
   };
 }
 

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Card Generator - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            color: white;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .feature h3 {
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .feature p {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .btn {
+            padding: 16px 40px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(255, 107, 107, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .info {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 12px;
+            margin-top: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .info h3 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .info ul {
+            list-style-position: inside;
+            opacity: 0.95;
+        }
+
+        .info li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .code-example {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            text-align: left;
+            color: #4ade80;
+        }
+    </style>
+  <script type="module" src="/examples/code-viewer.js"></script>
+</head>
+
+<body>
+    <div class="demo-container">
+        <h1>✨ Holographic 3D Trading Card Generator</h1>
+        <p class="subtitle">Create stunning interactive 3D trading cards powered by mushu 🍡</p>
+
+        <div class="features">
+            <div class="feature">
+                <h3>🎨 Rich Customization</h3>
+                <p>Control colors, effects, layouts, and holographic intensity with an intuitive interface</p>
+            </div>
+            <div class="feature">
+                <h3>🌈 Shader Effects</h3>
+                <p>Advanced holographic shaders with iridescence, shimmer, and scanline effects</p>
+            </div>
+            <div class="feature">
+                <h3>📱 Interactive 3D</h3>
+                <p>Drag to rotate, scroll to zoom, with auto-rotation and card flipping</p>
+            </div>
+            <div class="feature">
+                <h3>🔗 Embeddable</h3>
+                <p>Generate iframe embed codes to display cards anywhere on the web</p>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <a href="./trading-card-generator.html" class="btn btn-primary">🎰 Launch Generator</a>
+            <a href="./index.html" class="btn btn-secondary">📚 View Examples</a>
+        </div>
+
+        <div class="info">
+            <h3>🚀 Get Started</h3>
+            <ul>
+                <li><strong>Launch Generator:</strong> Open the generator to create your first card</li>
+                <li><strong>Configure Card:</strong> Select images, colors, and set the holographic effects</li>
+                <li><strong>Preview:</strong> See your card rendered in real-time 3D</li>
+                <li><strong>Embed:</strong> Copy the iframe code and embed anywhere</li>
+                <li><strong>Share:</strong> Cards are self-contained and work in any HTML context</li>
+            </ul>
+
+            <div class="code-example">
+                // Using the API programmatically:
+                import { tradingCardGenerator } from './trading-card.js';
+
+                const gen = tradingCardGenerator();
+                gen.setFrontImage('card.png');
+                gen.setCardType('bordered');
+                const config = gen.getConfig();
+                const embedCode = gen.generateEmbedCode(config);
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holographic 3D Trading Card - mushu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 100%);
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        canvas {
+            display: block;
+            flex: 1;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 24px;
+            padding: 24px;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(10, 10, 15, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            overflow-y: auto;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #a0d8ff, #e28aff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a0d8ff, #e28aff);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a0d8ff, #e28aff);
+            cursor: pointer;
+            border: none;
+        }
+
+        button {
+            padding: 10px 16px;
+            background: rgba(160, 216, 255, 0.1);
+            border: 1px solid rgba(160, 216, 255, 0.3);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: rgba(160, 216, 255, 0.2);
+            border-color: rgba(160, 216, 255, 0.5);
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, #a0d8ff, #e28aff);
+            border: none;
+            color: #000;
+            font-weight: 600;
+        }
+
+        button.primary:hover {
+            opacity: 0.9;
+        }
+
+        select {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        select:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .value-display {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .controls-bottom {
+            margin-top: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+                gap: 0;
+                padding: 0;
+            }
+
+            .canvas-wrapper {
+                flex: 0 0 60vh;
+                border-radius: 0;
+            }
+
+            .sidebar {
+                flex: 1;
+                border-radius: 0;
+                width: 100%;
+                overflow-x: auto;
+                display: grid;
+                grid-auto-flow: column;
+                gap: 20px;
+                padding: 16px;
+            }
+        }
+    </style>
+  <script type="module" src="/examples/code-viewer.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="sidebar">
+            <div>
+                <h1>3D Trading Card</h1>
+                <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px;">Holographic Display Viewer
+                </p>
+            </div>
+
+            <!-- Effects Controls -->
+            <div class="section">
+                <div class="section-title">Holographic Effects</div>
+
+                <div class="control-group">
+                    <label>Hologram Intensity</label>
+                    <div class="value-display">
+                        <span>Intensity</span>
+                        <span id="hologramValue">0.70</span>
+                    </div>
+                    <input type="range" id="hologramIntensity" min="0" max="100" value="70">
+                </div>
+
+                <div class="control-group">
+                    <label>Shimmer Speed</label>
+                    <div class="value-display">
+                        <span>Speed</span>
+                        <span id="shimmerValue">1.20</span>
+                    </div>
+                    <input type="range" id="shimmerSpeed" min="0" max="300" value="120">
+                </div>
+
+                <div class="control-group">
+                    <label>Glow Intensity</label>
+                    <div class="value-display">
+                        <span>Intensity</span>
+                        <span id="glowValue">0.60</span>
+                    </div>
+                    <input type="range" id="glowIntensity" min="0" max="100" value="60">
+                </div>
+            </div>
+
+            <!-- Card Interaction -->
+            <div class="section">
+                <div class="section-title">Interaction</div>
+
+                <button id="flipButton" class="primary" style="width: 100%;">Flip Card</button>
+
+                <div class="control-group">
+                    <label for="autoRotate">
+                        <input type="checkbox" id="autoRotate" checked
+                            style="width: 16px; height: 16px; cursor: pointer;">
+                        Auto Rotate
+                    </label>
+                </div>
+            </div>
+
+            <!-- Card Style -->
+            <div class="section">
+                <div class="section-title">Card Style</div>
+
+                <div class="control-group">
+                    <label for="cardType">Type</label>
+                    <select id="cardType">
+                        <option value="bordered">Bordered</option>
+                        <option value="unbordered">Unbordered</option>
+                        <option value="full-image">Full Image</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="layout">Layout</label>
+                    <select id="layout">
+                        <option value="portrait">Portrait</option>
+                        <option value="landscape">Landscape</option>
+                        <option value="square">Square</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div class="info-box">
+                <strong>Tips:</strong><br>
+                • Drag to rotate the card<br>
+                • Scroll to zoom<br>
+                • Click "Flip Card" to see the back<br>
+                • Adjust effects in real-time
+            </div>
+
+            <!-- Bottom Controls -->
+            <div class="controls-bottom">
+                <button style="flex: 1;" onclick="copyEmbedCode()">Copy Embed Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createCardViewer } from './trading-card-mushu.js';
+
+        // Parse config from URL
+        function parseConfig() {
+            const params = new URLSearchParams(window.location.search);
+            const configStr = params.get('config');
+            if (configStr) {
+                try {
+                    return JSON.parse(decodeURIComponent(configStr));
+                } catch (e) {
+                    console.warn('Failed to parse config:', e);
+                }
+            }
+            return {};
+        }
+
+        const config = parseConfig();
+        let viewer = null;
+
+        // Initialize viewer (createCardViewer is now synchronous)
+        try {
+            viewer = createCardViewer('#canvas', config);
+        } catch (e) {
+            console.error('Viewer initialization error:', e);
+        }
+
+        // Setup controls
+        document.getElementById('hologramIntensity').addEventListener('input', (e) => {
+            const value = e.target.value / 100;
+            document.getElementById('hologramValue').textContent = value.toFixed(2);
+            if (viewer) viewer.setHologramIntensity(value);
+        });
+
+        document.getElementById('shimmerSpeed').addEventListener('input', (e) => {
+            const value = e.target.value / 100;
+            document.getElementById('shimmerValue').textContent = value.toFixed(2);
+            if (viewer) viewer.setShimmerSpeed(value);
+        });
+
+        document.getElementById('glowIntensity').addEventListener('input', (e) => {
+            const value = e.target.value / 100;
+            document.getElementById('glowValue').textContent = value.toFixed(2);
+            if (viewer) viewer.setGlowIntensity(value);
+        });
+
+        document.getElementById('flipButton').addEventListener('click', () => {
+            if (viewer) viewer.toggleFlip();
+        });
+
+        document.getElementById('autoRotate').addEventListener('change', (e) => {
+            if (viewer) viewer.setAutoRotate(e.target.checked);
+        });
+
+        // Global function for embed code
+        window.copyEmbedCode = function () {
+            const embedCode = `<iframe src="${window.location.href.split('?')[0]}?config=${encodeURIComponent(JSON.stringify(config))}" width="400" height="600" frameborder="0" style="border-radius: 12px;"></iframe>`;
+            navigator.clipboard.writeText(embedCode);
+            alert('Embed code copied to clipboard!');
+        };
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holographic Trading Card Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card-container {
+            perspective: 1200px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .card-frame {
+            position: relative;
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5),
+                0 0 60px rgba(100, 126, 234, 0.3);
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1), transparent);
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 25px;
+            border-radius: 30px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+        }
+
+        .info-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.5), transparent);
+            color: white;
+            z-index: 50;
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-subtitle {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .hints {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+            max-width: 200px;
+        }
+
+        .hint-item {
+            margin-bottom: 6px;
+            font-size: 0.8em;
+        }
+
+        .hint-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .hint-key {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            z-index: 200;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .controls {
+                bottom: 10px;
+                padding: 10px 15px;
+                gap: 10px;
+            }
+
+            .control-btn {
+                padding: 6px 12px;
+                font-size: 0.75em;
+            }
+
+            .hints {
+                font-size: 0.75em;
+                padding: 8px 12px;
+                top: 10px;
+                right: 10px;
+            }
+
+            .card-title {
+                font-size: 1.2em;
+            }
+
+            .card-subtitle {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+  <script type="module" src="/examples/code-viewer.js"></script>
+</head>
+
+<body>
+    <div class="card-container">
+        <div class="card-frame">
+            <canvas id="canvas"></canvas>
+
+            <div class="info-overlay" id="infoOverlay">
+                <div class="card-title" id="overlayTitle">Trading Card</div>
+                <div class="card-subtitle" id="overlaySubtitle">Interactive 3D Display</div>
+            </div>
+
+            <div class="hints">
+                <div class="hint-item"><span class="hint-key">🖱️ Drag:</span> Rotate</div>
+                <div class="hint-item"><span class="hint-key">🔄 Scroll:</span> Zoom</div>
+                <div class="hint-item"><span class="hint-key">⏸️ Hover:</span> Pause Auto</div>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn active" id="autoRotateBtn">🔄 Auto Rotate</button>
+                <button class="control-btn" id="flipCardBtn">🔁 Flip Card</button>
+            </div>
+
+            <div class="loading" id="loadingOverlay">
+                <div class="spinner"></div>
+                <p>Loading card...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createCardViewer } from './trading-card.js';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const configStr = urlParams.get('config');
+
+        let config = {
+            layoutStyle: 'portrait',
+            cardType: 'bordered',
+            borderColor: '#4a00e0',
+            brandColor: '#00d4ff',
+            accentColor: '#ff00ff',
+            hologramIntensity: 0.7,
+            shimmerSpeed: 1.2,
+            glowIntensity: 0.6,
+            title: 'Trading Card',
+            description: 'Interactive 3D Card',
+            enableRotation: true,
+            enableZoom: true,
+            autoRotate: true,
+            frontImage: null,
+            backImage: null
+        };
+
+        if (configStr) {
+            try {
+                config = { ...config, ...JSON.parse(decodeURIComponent(configStr)) };
+            } catch (e) {
+                console.warn('Failed to parse config:', e);
+            }
+        }
+
+        const canvas = document.getElementById('canvas');
+        const viewer = createCardViewer(canvas, config);
+
+        setTimeout(() => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }, 500);
+
+        document.getElementById('overlayTitle').textContent = config.title || 'Trading Card';
+        document.getElementById('overlaySubtitle').textContent = config.description || 'Interactive 3D Card';
+
+        const autoRotateBtn = document.getElementById('autoRotateBtn');
+        const flipCardBtn = document.getElementById('flipCardBtn');
+
+        let isAutoRotating = config.autoRotate !== false;
+        let isFlipped = false;
+
+        autoRotateBtn.addEventListener('click', () => {
+            isAutoRotating = !isAutoRotating;
+            viewer.setAutoRotate(isAutoRotating);
+            autoRotateBtn.classList.toggle('active', isAutoRotating);
+        });
+
+        flipCardBtn.addEventListener('click', () => {
+            isFlipped = !isFlipped;
+            viewer.flipCard(isFlipped);
+            flipCardBtn.classList.toggle('active', isFlipped);
+        });
+
+        window.cardViewer = viewer;
+    </script>
+</body>
+
+</html>

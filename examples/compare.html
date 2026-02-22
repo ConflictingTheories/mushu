@@ -37,6 +37,7 @@
     <a href="#smoke">Smoke (WebGL)</a>
     <a href="#gpu/plasma">Plasma (WebGPU)</a>
     <a href="#gpu/fire">Fire (WebGPU)</a>
+    <a href="#scene">Scene Graph</a>
   </nav>
 
   <div class="philosophy">
@@ -1019,6 +1020,74 @@ void main() {
     O = vec4(mix(col + vec3(0.2,0.22,0.25)*pow(smoke,0.5)*0.3, vec3(0.02,0.02,0.04), exp(-clamp(smoke,0.,1.)*2.0)), 1.0);
   }
 `</span>);</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+  <!-- SCENE GRAPH COMPARISON -->
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+  <section id="scene">
+    <h2>🎬 Scene Graph — WebGL</h2>
+
+    <div class="demo-links">
+      <a href="./scene/crystal-cluster.html" class="demo-link scene">▶ Run mushu Scene</a>
+      <a href="./3d/cube.html" class="demo-link secondary">▶ Run 3D Demo</a>
+    </div>
+
+    <div class="comparison-grid">
+      <div class="code-panel">
+        <div class="panel-header">
+          <span class="panel-title before">❌ Traditional WebGL (~400 lines)</span>
+          <span class="line-count">Matrices, Scenegraph, Shaders...</span>
+        </div>
+        <pre><code><span class="comment">// 1. Manual Matrix Math (Rotation, Translation, World)</span>
+<span class="keyword">function</span> <span class="function">multiply</span>(a, b) { ... }
+<span class="keyword">function</span> <span class="function">perspective</span>(fov, aspect) { ... }
+
+<span class="comment">// 2. Hierarchical Transforms</span>
+<span class="keyword">const</span> baseWorld = <span class="function">multiply</span>(parentMatrix, localMatrix);
+<span class="keyword">const</span> childWorld = <span class="function">multiply</span>(baseWorld, childLocal);
+
+<span class="comment">// 3. Material Uniform Management</span>
+gl.<span class="function">useProgram</span>(pbrProgram);
+gl.<span class="function">uniform3fv</span>(uAlbedo, [1,0,0]);
+gl.<span class="function">uniform1f</span>(uRough, 0.5);
+
+<span class="comment">// 4. Geometry Buffer Binding</span>
+gl.<span class="function">bindVertexArray</span>(cubeVAO);
+gl.<span class="function">drawElements</span>(...);
+
+<span class="comment">// 5. Render Loop with State Sorting</span>
+<span class="comment">// (Another 100 lines for each object...)</span></code></pre>
+      </div>
+
+      <div class="code-panel">
+        <div class="panel-header">
+          <span class="panel-title after">✅ mushu scene() (~15 lines)</span>
+          <span class="line-count reduced">95% reduction</span>
+        </div>
+        <pre><code><span class="keyword">import</span> { mushu, material } <span class="keyword">from</span> <span class="string">'/src/index.js'</span>;
+<span class="keyword">import</span> { camera, orbitControls } <span class="keyword">from</span> <span class="string">'/src/core/index.js'</span>;
+
+<span class="keyword">const</span> scene = <span class="function">mushu</span>(<span class="string">'#c'</span>).<span class="function">scene</span>();
+
+scene.<span class="function">add</span>(<span class="string">'cube'</span>, {
+  geometry: <span class="string">'cube'</span>,
+  material: <span class="function">material</span>(<span class="string">'pbr'</span>, { albedo: [<span class="number">1, 0, 0</span>] })
+});
+
+scene
+  .<span class="function">use</span>(<span class="function">camera</span>())
+  .<span class="function">use</span>(<span class="function">orbitControls</span>())
+  .<span class="function">go</span>();
+
+<span class="comment">// scene() handles EVERYTHING:</span>
+<span class="comment">// ✓ World matrix hierarchy</span>
+<span class="comment">// ✓ Material state management</span>
+<span class="comment">// ✓ Frustum culling</span>
+<span class="comment">// ✓ Camera & Orbit defaults</span></code></pre>
       </div>
     </div>
   </section>

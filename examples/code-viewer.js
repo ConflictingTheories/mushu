@@ -23,8 +23,13 @@ function initCodeViewer() {
     const closeBtn = panel.querySelector('.code-close-btn');
 
     // Extract code from the main script tag
-    const scripts = Array.from(document.querySelectorAll('script[type="module"]'));
-    const mainScript = scripts.find(s => s.innerText.includes('mushu'));
+    const scripts = Array.from(document.querySelectorAll('script:not([src])'));
+    let mainScript = scripts.find(s => s.innerText.includes('mushu'));
+
+    // Fallback: look for generic boilerplate/3D scripts
+    if (!mainScript) {
+        mainScript = scripts.find(s => s.innerText.includes('gl.') || s.innerText.includes('getContext'));
+    }
 
     if (mainScript) {
         let code = mainScript.innerText.trim();
